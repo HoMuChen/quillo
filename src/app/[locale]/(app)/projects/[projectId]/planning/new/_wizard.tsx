@@ -5,9 +5,9 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-// import { PlanStep2 } from './_step2'  // enabled in Task 27
+import { PlanStep2 } from './_step2'
 
-export function PlanWizard({ projectId, locale: _locale }: { projectId: string; locale: 'zh-TW' | 'en' }) {
+export function PlanWizard({ projectId, locale }: { projectId: string; locale: 'zh-TW' | 'en' }) {
   const t = useTranslations('planning')
   const [step, setStep] = useState<1 | 2>(1)
   const [topic, setTopic] = useState('')
@@ -120,15 +120,5 @@ export function PlanWizard({ projectId, locale: _locale }: { projectId: string; 
     )
   }
 
-  // Step 2 placeholder until Task 27 fills it in
-  return (
-    <section className="space-y-4 opacity-70">
-      <p className="font-serif italic text-[22px] text-ink">{t('step2_heading')}</p>
-      <p className="text-[12px] text-ink-4 uppercase tracking-[0.14em]">Coming in Task 27</p>
-      <pre className="whitespace-pre-wrap text-[13px] text-ink-2 rounded-lg border border-rule p-4 bg-bg-2/50">
-        {direction}
-      </pre>
-      <Button variant="ghost" onClick={() => setStep(1)}>← back</Button>
-    </section>
-  )
+  return <PlanStep2 projectId={projectId} locale={locale} direction={direction} />
 }
