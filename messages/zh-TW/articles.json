@@ -5,5 +5,20 @@
   "tab_interview": "訪談",
   "tab_editor": "編輯器",
   "tab_seo": "SEO",
-  "tab_publish": "發布"
+  "tab_publish": "發布",
+  "outline_title": "大綱",
+  "outline_subtitle": "幾個主要段落，加上每段的目的；需要訪談才能寫好的段落勾選 needs interview",
+  "outline_empty": "還沒有大綱，點擊「產生大綱」開始",
+  "outline_generate": "產生大綱",
+  "outline_regenerate": "重新產生",
+  "outline_add": "新增段落",
+  "outline_title_placeholder": "段落標題",
+  "outline_purpose_placeholder": "這段要講什麼？",
+  "outline_needs_interview": "需要訪談才能寫",
+  "generating": "生成中…",
+  "saving": "儲存中…",
+  "saved": "已儲存",
+  "save_error": "儲存失敗",
+  "error_generic": "操作失敗，請稍後再試",
+  "delete": "刪除"
 }

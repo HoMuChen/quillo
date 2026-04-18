@@ -5,5 +5,20 @@
   "tab_interview": "Interview",
   "tab_editor": "Editor",
   "tab_seo": "SEO",
-  "tab_publish": "Publish"
+  "tab_publish": "Publish",
+  "outline_title": "Outline",
+  "outline_subtitle": "Sections with their purpose; check needs interview when author input is required.",
+  "outline_empty": "No outline yet. Click Generate to start.",
+  "outline_generate": "Generate outline",
+  "outline_regenerate": "Regenerate",
+  "outline_add": "Add section",
+  "outline_title_placeholder": "Section title",
+  "outline_purpose_placeholder": "What does this section cover?",
+  "outline_needs_interview": "Needs interview",
+  "generating": "Generating…",
+  "saving": "Saving…",
+  "saved": "Saved",
+  "save_error": "Save failed",
+  "error_generic": "Operation failed. Please try again.",
+  "delete": "Delete"
 }
