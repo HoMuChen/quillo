@@ -17,5 +17,8 @@
   "form_theme": "Theme",
   "form_theme_placeholder": "What is this site about?",
   "form_locale": "Content language",
-  "error_generic": "Failed to create. Please try again."
+  "error_generic": "Failed to create. Please try again.",
+  "nav_planning": "Planning",
+  "nav_articles": "Articles",
+  "nav_settings": "Settings"
 }

@@ -17,5 +17,8 @@
   "form_theme": "網站主題",
   "form_theme_placeholder": "這個網站在講什麼？",
   "form_locale": "內容語言",
-  "error_generic": "建立失敗，請稍後再試"
+  "error_generic": "建立失敗，請稍後再試",
+  "nav_planning": "內容規劃",
+  "nav_articles": "文章",
+  "nav_settings": "設定"
 }

@@ -1,0 +1,20 @@
+{
+  "nav_brand": "品牌素材",
+  "title": "品牌素材",
+  "subtitle": "這些訊息會注入每次 AI 生成，影響語氣與內容方向",
+  "author_background": "作者 / 團隊背景",
+  "author_background_placeholder": "寫文章的人是誰？有什麼專業背景？",
+  "reader_persona": "目標讀者畫像",
+  "reader_persona_placeholder": "受眾痛點、知識水平、想解決什麼問題？",
+  "tone": "品牌語氣",
+  "tone_placeholder": "例：專業但親切、技術導向、輕鬆詼諧",
+  "preferred_terms": "偏好用語",
+  "preferred_terms_help": "按 Enter 加入，一個一項",
+  "forbidden_terms": "禁用字詞",
+  "forbidden_terms_help": "會在 AI 生成時明確避免",
+  "ee_at_cases": "代表性案例 / 經驗素材",
+  "ee_at_cases_placeholder": "E-E-A-T 來源：實際案例、量化結果、親身經驗",
+  "saving": "儲存中…",
+  "saved": "已儲存",
+  "save_error": "儲存失敗"
+}

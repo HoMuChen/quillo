@@ -1,0 +1,20 @@
+{
+  "nav_brand": "Brand",
+  "title": "Brand materials",
+  "subtitle": "Injected into every AI generation to shape tone and direction.",
+  "author_background": "Author / team background",
+  "author_background_placeholder": "Who writes? What expertise do they bring?",
+  "reader_persona": "Reader persona",
+  "reader_persona_placeholder": "Their pain points, knowledge level, what problems they want to solve",
+  "tone": "Brand tone",
+  "tone_placeholder": "e.g., professional but warm, technical, casual",
+  "preferred_terms": "Preferred terms",
+  "preferred_terms_help": "Press Enter to add one",
+  "forbidden_terms": "Forbidden terms",
+  "forbidden_terms_help": "AI will be told to avoid these",
+  "ee_at_cases": "Representative experiences",
+  "ee_at_cases_placeholder": "E-E-A-T sources: case studies, numbers, first-hand stories",
+  "saving": "Saving…",
+  "saved": "Saved",
+  "save_error": "Save failed"
+}
