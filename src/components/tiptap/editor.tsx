@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   Bold, Italic, Heading2, Heading3, List, ListOrdered, Quote, Code, Link2, Minus,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -20,11 +21,13 @@ export function TiptapEditor({
   initialTiptap,
   initialMarkdown,
   onSave,
+  onUploadImage,
   placeholder,
 }: {
   initialTiptap: unknown | null
   initialMarkdown: string | null
   onSave: SaveFn
+  onUploadImage?: (file: File) => Promise<string>
   placeholder?: string
 }) {
   const t = useTranslations('articles')
@@ -108,7 +111,7 @@ export function TiptapEditor({
 
   return (
     <div className="space-y-3">
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} onUploadImage={onUploadImage} />
       <div className="rounded-xl border border-rule bg-bg p-6 min-h-[400px] shadow-sh-1">
         <EditorContent editor={editor} />
       </div>
@@ -117,7 +120,7 @@ export function TiptapEditor({
   )
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, onUploadImage }: { editor: Editor; onUploadImage?: (file: File) => Promise<string> }) {
   const t = useTranslations('articles')
   const btn = (active: boolean, extra = '') =>
     cn(
@@ -135,6 +138,21 @@ function Toolbar({ editor }: { editor: Editor }) {
       return
     }
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+  }
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !onUploadImage) return
+    try {
+      const url = await onUploadImage(file)
+      editor.chain().focus().setImage({ src: url }).run()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      e.target.value = '' // reset so same file can be re-picked
+    }
   }
 
   return (
@@ -182,6 +200,17 @@ function Toolbar({ editor }: { editor: Editor }) {
         onClick={() => editor.chain().focus().setHorizontalRule().run()}>
         <Minus className="w-4 h-4" />
       </button>
+      <button type="button" title="Image" disabled={!onUploadImage} className={btn(false)}
+        onClick={() => fileInputRef.current?.click()}>
+        <ImageIcon className="w-4 h-4" />
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        hidden
+        onChange={handleFilePick}
+      />
     </div>
   )
 }

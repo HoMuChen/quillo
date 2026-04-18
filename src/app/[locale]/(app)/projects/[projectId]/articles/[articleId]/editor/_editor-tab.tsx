@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Sparkles } from 'lucide-react'
 import { TiptapEditor } from '@/components/tiptap/editor'
 import { saveArticleBodyAction } from './actions'
+import { getUploadUrlAction, saveImageAction } from './upload-actions'
 
 export function EditorTab({
   projectId,
@@ -63,6 +64,18 @@ export function EditorTab({
 
   function cancel() {
     abortRef.current?.abort()
+  }
+
+  async function handleImageUpload(file: File): Promise<string> {
+    const { path, signedUrl, token } = await getUploadUrlAction(articleId, file.type, file.size, 'inline')
+    const upload = await fetch(signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type, Authorization: `Bearer ${token}` },
+      body: file,
+    })
+    if (!upload.ok) throw new Error('upload failed')
+    const { url } = await saveImageAction(projectId, articleId, path, 'inline')
+    return url
   }
 
   // State A: no body yet → draft generation flow
@@ -122,6 +135,7 @@ export function EditorTab({
         onSave={async (tiptapDoc, md) => {
           await saveArticleBodyAction(projectId, articleId, tiptapDoc, md)
         }}
+        onUploadImage={handleImageUpload}
         placeholder={t('editor_placeholder')}
       />
     </section>

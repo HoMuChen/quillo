@@ -48,5 +48,11 @@
   "cancel": "Cancel",
   "editor_subtitle": "Rich text with markdown sync. Autosaves whenever you pause.",
   "editor_placeholder": "Start writing…",
-  "editor_link_prompt": "Enter URL (leave blank to remove link)"
+  "editor_link_prompt": "Enter URL (leave blank to remove link)",
+  "feature_image": "Feature image",
+  "feature_image_upload": "Upload feature image",
+  "feature_image_uploading": "Uploading…",
+  "feature_image_replace": "Replace",
+  "feature_image_remove": "Remove",
+  "feature_image_error": "Upload failed"
 }

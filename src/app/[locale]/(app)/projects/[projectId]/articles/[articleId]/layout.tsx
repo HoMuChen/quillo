@@ -3,6 +3,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/routing'
 import { createClient } from '@/lib/supabase/server'
 import { ArticleTabs } from './_tabs'
+import { FeatureImage } from './_feature-image'
 
 type Props = {
   children: React.ReactNode
@@ -17,7 +18,7 @@ export default async function ArticleLayout({ children, params }: Props) {
   const supabase = await createClient()
   const { data: article, error } = await supabase
     .from('articles')
-    .select('id,title,status,pillar_id,target_keyword,word_count_target,role,pillars(title)')
+    .select('id,title,status,pillar_id,target_keyword,word_count_target,role,feature_image_url,pillars(title)')
     .eq('id', articleId)
     .single()
 
@@ -47,6 +48,12 @@ export default async function ArticleLayout({ children, params }: Props) {
           {article.role && <span>·  {article.role}</span>}
         </div>
       </header>
+
+      <FeatureImage
+        projectId={projectId}
+        articleId={articleId}
+        featureImageUrl={article.feature_image_url}
+      />
 
       <ArticleTabs projectId={projectId} articleId={articleId} status={article.status} />
 
