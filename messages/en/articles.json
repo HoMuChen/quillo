@@ -72,5 +72,19 @@
   "rewrite_tone": "Warmer",
   "rewrite_custom": "Custom",
   "rewrite_custom_placeholder": "How to rewrite?",
-  "image_alt_prompt": "Image alt text:"
+  "image_alt_prompt": "Image alt text:",
+  "articles_back_to_planning": "Back to planning",
+  "articles_empty_title": "No articles yet",
+  "articles_empty_body": "Plan a Pillar Cluster to auto-generate articles.",
+  "articles_empty_cta": "Start planning",
+  "filter_pillar": "Pillar",
+  "filter_status": "Status",
+  "filter_all": "All",
+  "sort": "Sort",
+  "sort_updated": "Recently updated",
+  "sort_status": "Status",
+  "col_title": "Article",
+  "col_pillar": "Pillar",
+  "col_status": "Status",
+  "col_updated": "Updated"
 }
