@@ -66,5 +66,11 @@
   "seo_canonical": "Canonical URL",
   "seo_canonical_help": "若此文章內容有其他 URL 為權威版本，填入該 URL",
   "seo_tags": "標籤",
-  "seo_tags_help": "按 Enter 或逗號加入"
+  "seo_tags_help": "按 Enter 或逗號加入",
+  "rewrite_concise": "更簡潔",
+  "rewrite_detailed": "更詳細",
+  "rewrite_tone": "改語氣",
+  "rewrite_custom": "自訂",
+  "rewrite_custom_placeholder": "怎麼改寫？",
+  "image_alt_prompt": "輸入圖片替代文字（alt）："
 }

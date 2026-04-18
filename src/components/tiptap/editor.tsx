@@ -1,6 +1,7 @@
 'use client'
 
 import { useEditor, EditorContent, type Editor } from '@tiptap/react'
+import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
@@ -22,16 +23,21 @@ export function TiptapEditor({
   initialMarkdown,
   onSave,
   onUploadImage,
+  onRewrite,
+  onUpdateImageAlt,
   placeholder,
 }: {
   initialTiptap: unknown | null
   initialMarkdown: string | null
   onSave: SaveFn
   onUploadImage?: (file: File) => Promise<string>
+  onRewrite?: (selectedText: string, instruction: string) => Promise<Response>
+  onUpdateImageAlt?: (src: string, alt: string) => Promise<void>
   placeholder?: string
 }) {
   const t = useTranslations('articles')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [rewriting, setRewriting] = useState(false)
   const saveTimer = useRef<NodeJS.Timeout | null>(null)
   const firstUpdate = useRef(true)
 
@@ -63,7 +69,7 @@ export function TiptapEditor({
           '[&_pre]:bg-bg-2 [&_pre]:border [&_pre]:border-rule [&_pre]:rounded-lg [&_pre]:p-3 [&_pre]:my-4 ' +
           '[&_blockquote]:border-l-2 [&_blockquote]:border-ochre [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-ink-2 ' +
           '[&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 ' +
-          '[&_img]:rounded-lg [&_img]:border [&_img]:border-rule [&_img]:my-4',
+          '[&_img]:rounded-lg [&_img]:border [&_img]:border-rule [&_img]:my-4 [&_img]:cursor-pointer',
       },
     },
   })
@@ -107,16 +113,147 @@ export function TiptapEditor({
     return () => { editor.off('update', schedule) }
   }, [editor, schedule])
 
+  // Click-to-edit image alt
+  useEffect(() => {
+    if (!editor) return
+    const imageAltPrompt = t('image_alt_prompt')
+    function handleImageClick(e: Event) {
+      const el = e.target as HTMLElement
+      if (!el || el.tagName !== 'IMG') return
+      if (!editor) return
+      const currentAlt = el.getAttribute('alt') ?? ''
+      const newAlt = window.prompt(imageAltPrompt, currentAlt)
+      if (newAlt === null) return
+      const src = (el as HTMLImageElement).getAttribute('src') ?? ''
+      // Update Tiptap node
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'image' && node.attrs.src === src) {
+          editor.chain().focus().setNodeSelection(pos).updateAttributes('image', { alt: newAlt }).run()
+          return false
+        }
+        return true
+      })
+      // Update DB via callback
+      if (onUpdateImageAlt) {
+        void onUpdateImageAlt(src, newAlt).catch((err) => console.error(err))
+      }
+    }
+    const dom = editor.view.dom
+    dom.addEventListener('click', handleImageClick)
+    return () => dom.removeEventListener('click', handleImageClick)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, onUpdateImageAlt])
+
+  const doRewrite = useCallback(async (instruction: string) => {
+    if (!editor || !onRewrite) return
+    const { from, to } = editor.state.selection
+    if (from === to) return
+    const selectedText = editor.state.doc.textBetween(from, to, '\n')
+    if (!selectedText.trim()) return
+
+    setRewriting(true)
+    try {
+      const res = await onRewrite(selectedText, instruction)
+      if (!res.ok || !res.body) throw new Error('rewrite failed')
+      // Replace selection with empty, track insert position
+      editor.chain().focus().insertContentAt({ from, to }, '').run()
+      let insertPos = from
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      for (;;) {
+        const { value, done } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        if (!chunk) continue
+        editor.chain().focus().insertContentAt(insertPos, chunk).run()
+        insertPos += chunk.length
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setRewriting(false)
+    }
+  }, [editor, onRewrite])
+
   if (!editor) return null
 
   return (
     <div className="space-y-3">
+      {onRewrite && (
+        <BubbleMenu
+          editor={editor}
+          shouldShow={({ from, to }) => from !== to && !rewriting}
+        >
+          <div className="flex items-center gap-1 rounded-lg border border-rule bg-bg shadow-sh-2 p-1">
+            {([
+              ['rewrite_concise',  'rewrite the selection to be more concise'],
+              ['rewrite_detailed', 'expand the selection with more detail and examples'],
+              ['rewrite_tone',     'rewrite the selection in a warmer, more inviting tone'],
+            ] as const).map(([labelKey, instruction]) => (
+              <button
+                key={labelKey}
+                type="button"
+                onClick={() => doRewrite(instruction)}
+                className="text-[11px] font-mono uppercase tracking-[0.1em] px-2 py-1 rounded hover:bg-mist text-ink-2 hover:text-ink transition-colors"
+              >
+                {t(labelKey)}
+              </button>
+            ))}
+            <CustomInstructionButton onSubmit={doRewrite} />
+          </div>
+        </BubbleMenu>
+      )}
+
       <Toolbar editor={editor} onUploadImage={onUploadImage} />
       <div className="rounded-xl border border-rule bg-bg p-6 min-h-[400px] shadow-sh-1">
         <EditorContent editor={editor} />
       </div>
       <StatusLine status={status} t={t} wordCount={editor.storage.characterCount?.words?.() ?? 0} />
     </div>
+  )
+}
+
+function CustomInstructionButton({
+  onSubmit,
+}: {
+  onSubmit: (instruction: string) => Promise<void>
+}) {
+  const t = useTranslations('articles')
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState('')
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-[11px] font-mono uppercase tracking-[0.1em] px-2 py-1 rounded hover:bg-mist text-ink-2 hover:text-ink"
+      >
+        {t('rewrite_custom')}
+      </button>
+    )
+  }
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault()
+        if (!value.trim()) return
+        await onSubmit(value)
+        setOpen(false); setValue('')
+      }}
+      className="flex items-center gap-1"
+    >
+      <input
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={t('rewrite_custom_placeholder')}
+        className="text-[12px] px-2 py-1 rounded border border-rule bg-bg text-ink w-[200px]"
+      />
+      <button type="submit" className="text-[11px] font-mono uppercase px-2 py-1 rounded bg-ink text-bg">
+        ✦
+      </button>
+      <button type="button" onClick={() => setOpen(false)} className="text-[11px] text-ink-4 px-1">×</button>
+    </form>
   )
 }
 

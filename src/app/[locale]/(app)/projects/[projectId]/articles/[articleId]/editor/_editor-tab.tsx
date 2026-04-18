@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Sparkles } from 'lucide-react'
 import { TiptapEditor } from '@/components/tiptap/editor'
 import { saveArticleBodyAction } from './actions'
-import { getUploadUrlAction, saveImageAction } from './upload-actions'
+import { getUploadUrlAction, saveImageAction, updateImageAltByUrlAction } from './upload-actions'
 
 export function EditorTab({
   projectId,
@@ -78,6 +78,18 @@ export function EditorTab({
     return url
   }
 
+  async function handleRewrite(selectedText: string, instruction: string): Promise<Response> {
+    return fetch('/api/ai/rewrite', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ projectId, selectedText, instruction }),
+    })
+  }
+
+  async function handleUpdateImageAlt(src: string, alt: string): Promise<void> {
+    await updateImageAltByUrlAction(projectId, articleId, src, alt)
+  }
+
   // State A: no body yet → draft generation flow
   if (!bodyMarkdown && !bodyTiptap) {
     return (
@@ -136,6 +148,8 @@ export function EditorTab({
           await saveArticleBodyAction(projectId, articleId, tiptapDoc, md)
         }}
         onUploadImage={handleImageUpload}
+        onRewrite={handleRewrite}
+        onUpdateImageAlt={handleUpdateImageAlt}
         placeholder={t('editor_placeholder')}
       />
     </section>

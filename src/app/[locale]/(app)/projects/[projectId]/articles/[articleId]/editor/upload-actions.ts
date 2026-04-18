@@ -83,6 +83,22 @@ export async function updateImageMetaAction(
   revalidatePath(`/projects/${projectId}/articles/${articleId}`)
 }
 
+export async function updateImageAltByUrlAction(
+  projectId: string,
+  articleId: string,
+  url: string,
+  alt: string,
+) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('article_images')
+    .update({ alt })
+    .eq('article_id', articleId)
+    .eq('url', url)
+  if (error) throw error
+  revalidatePath(`/projects/${projectId}/articles/${articleId}`)
+}
+
 export async function clearFeatureImageAction(projectId: string, articleId: string) {
   const supabase = await createClient()
   // Unset on articles

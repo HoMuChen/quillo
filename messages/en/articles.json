@@ -66,5 +66,11 @@
   "seo_canonical": "Canonical URL",
   "seo_canonical_help": "If there's an authoritative URL elsewhere for this content, enter it.",
   "seo_tags": "Tags",
-  "seo_tags_help": "Press Enter or comma to add"
+  "seo_tags_help": "Press Enter or comma to add",
+  "rewrite_concise": "Concise",
+  "rewrite_detailed": "Detailed",
+  "rewrite_tone": "Warmer",
+  "rewrite_custom": "Custom",
+  "rewrite_custom_placeholder": "How to rewrite?",
+  "image_alt_prompt": "Image alt text:"
 }
