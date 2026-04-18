@@ -1,12 +1,29 @@
 'use server'
 
-import type { PillarPlan } from '@/lib/ai/schemas'
+import { revalidatePath } from 'next/cache'
+import { redirect } from '@/i18n/routing'
+import { createClient } from '@/lib/supabase/server'
+import { pillarPlanSchema, type PillarPlan } from '@/lib/ai/schemas'
 
 export async function savePlanAction(
-  _locale: 'zh-TW' | 'en',
-  _projectId: string,
-  _plan: PillarPlan,
+  locale: 'zh-TW' | 'en',
+  projectId: string,
+  plan: PillarPlan,
 ) {
-  // Task 29 implements this.
-  throw new Error('savePlanAction not yet implemented — Task 29')
+  const parsed = pillarPlanSchema.parse(plan)
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const { error } = await supabase.rpc('create_pillar_plan', {
+    p_project_id: projectId,
+    p_plan: parsed,
+  })
+  if (error) throw error
+
+  revalidatePath(`/projects/${projectId}/planning`)
+  redirect({ href: `/projects/${projectId}/planning`, locale })
 }

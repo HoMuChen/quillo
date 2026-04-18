@@ -560,6 +560,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_pillar_plan: {
+        Args: { p_plan: Json; p_project_id: string }
+        Returns: Json
+      }
       normalize_url: { Args: { u: string }; Returns: string }
       user_tenant_ids: { Args: never; Returns: string[] }
     }
