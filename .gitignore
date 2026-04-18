@@ -49,3 +49,4 @@ supabase/volumes
 # editor
 .vscode/
 .idea/
+.env*.local
