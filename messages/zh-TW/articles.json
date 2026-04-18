@@ -34,5 +34,16 @@
   "skip_all": "全部跳過",
   "q_pending": "待回答",
   "q_answered": "已回答",
-  "q_skipped": "已跳過"
+  "q_skipped": "已跳過",
+  "draft_title": "草稿生成",
+  "draft_subtitle": "根據大綱與訪談產出完整 Markdown 草稿。生成中請勿關閉此頁。",
+  "draft_generate": "產生草稿",
+  "draft_regenerate": "重新產生",
+  "draft_generating_warning": "請勿關閉此頁",
+  "draft_ready_title": "草稿已完成",
+  "draft_ready_subtitle": "預覽如下。點擊進入編輯器繼續調整。",
+  "editor_title": "編輯器",
+  "editor_coming_soon": "編輯器功能開發中（Task 43-44）",
+  "enter_editor": "進入編輯器",
+  "cancel": "取消"
 }

@@ -34,5 +34,16 @@
   "skip_all": "Skip all",
   "q_pending": "Pending",
   "q_answered": "Answered",
-  "q_skipped": "Skipped"
+  "q_skipped": "Skipped",
+  "draft_title": "Generate draft",
+  "draft_subtitle": "AI writes a full Markdown draft using outline + interview answers. Keep this tab open.",
+  "draft_generate": "Generate draft",
+  "draft_regenerate": "Regenerate",
+  "draft_generating_warning": "keep this tab open",
+  "draft_ready_title": "Draft ready",
+  "draft_ready_subtitle": "Preview below. Click Enter editor to polish.",
+  "editor_title": "Editor",
+  "editor_coming_soon": "Editor feature in progress (Tasks 43-44)",
+  "enter_editor": "Enter editor",
+  "cancel": "Cancel"
 }
