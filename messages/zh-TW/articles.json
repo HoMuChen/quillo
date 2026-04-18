@@ -54,5 +54,17 @@
   "feature_image_uploading": "上傳中…",
   "feature_image_replace": "更換",
   "feature_image_remove": "移除",
-  "feature_image_error": "上傳失敗"
+  "feature_image_error": "上傳失敗",
+  "seo_title": "SEO 設定",
+  "seo_subtitle": "控制搜尋結果與平台列表的呈現",
+  "seo_suggest": "AI 建議",
+  "seo_meta_title": "Meta Title",
+  "seo_meta_description": "Meta Description",
+  "seo_slug": "URL Slug",
+  "seo_focus_keyword": "Focus Keyword",
+  "seo_excerpt": "摘要",
+  "seo_canonical": "Canonical URL",
+  "seo_canonical_help": "若此文章內容有其他 URL 為權威版本，填入該 URL",
+  "seo_tags": "標籤",
+  "seo_tags_help": "按 Enter 或逗號加入"
 }

@@ -54,5 +54,17 @@
   "feature_image_uploading": "Uploading…",
   "feature_image_replace": "Replace",
   "feature_image_remove": "Remove",
-  "feature_image_error": "Upload failed"
+  "feature_image_error": "Upload failed",
+  "seo_title": "SEO settings",
+  "seo_subtitle": "Control how this shows up in search and on the platform",
+  "seo_suggest": "AI suggest",
+  "seo_meta_title": "Meta Title",
+  "seo_meta_description": "Meta Description",
+  "seo_slug": "URL Slug",
+  "seo_focus_keyword": "Focus Keyword",
+  "seo_excerpt": "Excerpt",
+  "seo_canonical": "Canonical URL",
+  "seo_canonical_help": "If there's an authoritative URL elsewhere for this content, enter it.",
+  "seo_tags": "Tags",
+  "seo_tags_help": "Press Enter or comma to add"
 }
