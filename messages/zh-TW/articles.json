@@ -20,5 +20,19 @@
   "saved": "已儲存",
   "save_error": "儲存失敗",
   "error_generic": "操作失敗，請稍後再試",
-  "delete": "刪除"
+  "delete": "刪除",
+  "interview_title": "訪談",
+  "interview_subtitle": "回答這些題目，AI 會用你的答案撰寫相關段落；不想回答可跳過。",
+  "interview_generate": "產生題目",
+  "interview_regenerate": "重新產生題目",
+  "interview_empty": "還沒有題目，點擊「產生題目」。",
+  "interview_no_sections": "大綱中沒有需要訪談的段落。回到大綱頁勾選需要訪談的段落。",
+  "interview_answer_placeholder": "你的答案…",
+  "interview_ready": "訪談完成，可以生成草稿了",
+  "interview_to_draft": "進入草稿生成",
+  "skip": "跳過",
+  "skip_all": "全部跳過",
+  "q_pending": "待回答",
+  "q_answered": "已回答",
+  "q_skipped": "已跳過"
 }

@@ -20,5 +20,19 @@
   "saved": "Saved",
   "save_error": "Save failed",
   "error_generic": "Operation failed. Please try again.",
-  "delete": "Delete"
+  "delete": "Delete",
+  "interview_title": "Interview",
+  "interview_subtitle": "Answer these to ground the AI draft in your experience. Skip if you'd rather use general knowledge.",
+  "interview_generate": "Generate questions",
+  "interview_regenerate": "Regenerate questions",
+  "interview_empty": "No questions yet. Click Generate.",
+  "interview_no_sections": "No outline sections need interview. Go back to the outline and tick sections that need it.",
+  "interview_answer_placeholder": "Your answer…",
+  "interview_ready": "Interview complete. Ready to generate the draft.",
+  "interview_to_draft": "Continue to draft",
+  "skip": "Skip",
+  "skip_all": "Skip all",
+  "q_pending": "Pending",
+  "q_answered": "Answered",
+  "q_skipped": "Skipped"
 }
