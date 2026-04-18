@@ -16,5 +16,10 @@
   "step2_intro": "依照確認的方向，產出 3-5 個 Pillar，每個下有 5-10 篇 Cluster 文章。",
   "direction_label": "已確認的方向",
   "save_plan": "儲存規劃",
-  "saving_plan": "儲存中…"
+  "saving_plan": "儲存中…",
+  "empty_title": "還沒有規劃",
+  "empty_body": "從你想經營的主題開始，AI 會幫你規劃 Pillar 與 Cluster 文章。",
+  "empty_cta": "開始規劃",
+  "plan_new_button": "＋ 新 Pillar Cluster",
+  "pillar_no_articles": "這個 Pillar 還沒有 Cluster 文章"
 }

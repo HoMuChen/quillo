@@ -16,5 +16,10 @@
   "step2_intro": "Based on the confirmed direction, generate 3-5 Pillars with 5-10 Cluster articles each.",
   "direction_label": "Confirmed direction",
   "save_plan": "Save plan",
-  "saving_plan": "Saving…"
+  "saving_plan": "Saving…",
+  "empty_title": "No plan yet",
+  "empty_body": "Pick a topic and AI will draft your Pillar Cluster plan.",
+  "empty_cta": "Start planning",
+  "plan_new_button": "+ New Pillar Cluster",
+  "pillar_no_articles": "No Cluster articles under this Pillar yet"
 }
