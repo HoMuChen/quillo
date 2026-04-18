@@ -1,0 +1,21 @@
+{
+  "title": "專案",
+  "subtitle": "你的內容地圖們",
+  "create": "建立新專案",
+  "new_button": "＋ 新專案",
+  "cancel": "取消",
+  "submit": "建立",
+  "empty_title": "還沒有任何專案",
+  "empty_body": "建立第一個專案，開始規劃你的 Pillar Cluster。",
+  "empty_cta": "建立第一個專案",
+  "form_name": "專案名稱",
+  "form_name_placeholder": "例：我的部落格",
+  "form_domain": "網站網址",
+  "form_domain_placeholder": "https://example.com（可選）",
+  "form_audience": "目標受眾",
+  "form_audience_placeholder": "誰會讀這些內容？",
+  "form_theme": "網站主題",
+  "form_theme_placeholder": "這個網站在講什麼？",
+  "form_locale": "內容語言",
+  "error_generic": "建立失敗，請稍後再試"
+}

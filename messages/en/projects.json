@@ -1,0 +1,21 @@
+{
+  "title": "Projects",
+  "subtitle": "Your content graphs",
+  "create": "Create new project",
+  "new_button": "+ New project",
+  "cancel": "Cancel",
+  "submit": "Create",
+  "empty_title": "No projects yet",
+  "empty_body": "Create your first project to start planning your Pillar Cluster.",
+  "empty_cta": "Create first project",
+  "form_name": "Project name",
+  "form_name_placeholder": "e.g. My blog",
+  "form_domain": "Website URL",
+  "form_domain_placeholder": "https://example.com (optional)",
+  "form_audience": "Target audience",
+  "form_audience_placeholder": "Who will read this?",
+  "form_theme": "Theme",
+  "form_theme_placeholder": "What is this site about?",
+  "form_locale": "Content language",
+  "error_generic": "Failed to create. Please try again."
+}
