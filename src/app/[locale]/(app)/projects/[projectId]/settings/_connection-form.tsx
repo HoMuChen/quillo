@@ -1,0 +1,171 @@
+'use client'
+
+import { useState, useTransition } from 'react'
+import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+import { Check, X, Trash2 } from 'lucide-react'
+import {
+  saveGhostConnectionAction, testGhostConnectionAction, deleteGhostConnectionAction,
+} from './settings-actions'
+
+type Initial = {
+  id: string
+  name: string
+  last_tested_at: string | null
+  last_test_ok: boolean | null
+} | null
+
+export function ConnectionForm({
+  projectId,
+  initial,
+}: {
+  projectId: string
+  initial: Initial
+}) {
+  const t = useTranslations('publish')
+  const [name, setName] = useState(initial?.name ?? '')
+  const [apiUrl, setApiUrl] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [testResult, setTestResult] = useState<{ ok: boolean; error: string | null } | null>(null)
+  const [savePending, startSave] = useTransition()
+  const [testPending, startTest] = useTransition()
+  const [deletePending, startDelete] = useTransition()
+  const [editing, setEditing] = useState(!initial)
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null); setMessage(null)
+    startSave(async () => {
+      try {
+        await saveGhostConnectionAction(projectId, { name, apiUrl, apiKey })
+        setMessage(t('saved'))
+        setEditing(false)
+        setApiUrl(''); setApiKey('')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('save_error'))
+      }
+    })
+  }
+
+  function test() {
+    setTestResult(null)
+    startTest(async () => {
+      try {
+        const result = await testGhostConnectionAction(projectId)
+        setTestResult(result)
+      } catch (err) {
+        setTestResult({ ok: false, error: err instanceof Error ? err.message : 'error' })
+      }
+    })
+  }
+
+  function remove() {
+    startDelete(async () => {
+      try {
+        await deleteGhostConnectionAction(projectId)
+        setName(''); setApiUrl(''); setApiKey(''); setEditing(true)
+        setMessage(t('deleted'))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('save_error'))
+      }
+    })
+  }
+
+  return (
+    <section className="space-y-4">
+      <h2 className="font-serif italic text-[22px] text-ink">{t('ghost_title')}</h2>
+
+      {initial && !editing ? (
+        <div className="rounded-xl border border-rule bg-bg p-5 shadow-sh-1 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[14px] text-ink font-medium">{initial.name}</div>
+              <div className="text-[11px] text-ink-4 mt-0.5">
+                {initial.last_tested_at ? (
+                  <>
+                    <LastTestBadge ok={initial.last_test_ok} />{' '}
+                    <span className="font-mono">{new Date(initial.last_tested_at).toISOString().slice(0, 16).replace('T', ' ')}</span>
+                  </>
+                ) : t('never_tested')}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="default" size="sm" onClick={test} disabled={testPending}>
+                {testPending ? '...' : t('test_connection')}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>{t('replace')}</Button>
+              <Button variant="ghost" size="sm" onClick={remove} disabled={deletePending}>
+                <Trash2 className="w-3 h-3 mr-1" /> {t('delete')}
+              </Button>
+            </div>
+          </div>
+          {testResult && (
+            <p className={cn('text-[12px]', testResult.ok ? 'text-sage' : 'text-rust')}>
+              {testResult.ok ? (
+                <><Check className="inline w-3 h-3 mr-1" />{t('test_success')}</>
+              ) : (
+                <><X className="inline w-3 h-3 mr-1" />{testResult.error ?? t('test_failed')}</>
+              )}
+            </p>
+          )}
+          {message && <p className="text-[12px] text-sage">{message}</p>}
+          {error && <p className="text-[12px] text-rust">{error}</p>}
+        </div>
+      ) : (
+        <form onSubmit={save} className="rounded-xl border border-rule bg-bg p-5 shadow-sh-1 space-y-4">
+          <div className="space-y-1.5">
+            <Label>{t('conn_name')}</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('conn_name_placeholder')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t('admin_api_url')}</Label>
+            <Input
+              type="url"
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              required
+              placeholder="https://your-blog.ghost.io"
+            />
+            <p className="text-[11px] text-ink-4">{t('admin_api_url_help')}</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t('admin_api_key')}</Label>
+            <Input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              required
+              placeholder="12345abcde:67890fghij..."
+              autoComplete="off"
+            />
+            <p className="text-[11px] text-ink-4">{t('admin_api_key_help')}</p>
+          </div>
+          {error && <p className="text-[12px] text-rust">{error}</p>}
+          {message && <p className="text-[12px] text-sage">{message}</p>}
+          <div className="flex justify-end gap-2">
+            {initial && (
+              <Button type="button" variant="ghost" onClick={() => { setEditing(false); setApiUrl(''); setApiKey('') }} disabled={savePending}>
+                {t('cancel')}
+              </Button>
+            )}
+            <Button type="submit" variant="primary" disabled={savePending}>
+              {savePending ? '...' : t('save')}
+            </Button>
+          </div>
+        </form>
+      )}
+    </section>
+  )
+}
+
+function LastTestBadge({ ok }: { ok: boolean | null }) {
+  if (ok === null) return <span className="text-ink-4">—</span>
+  return ok
+    ? <span className="text-sage inline-flex items-center gap-1"><Check className="w-3 h-3" /> ok</span>
+    : <span className="text-rust inline-flex items-center gap-1"><X className="w-3 h-3" /> failed</span>
+}

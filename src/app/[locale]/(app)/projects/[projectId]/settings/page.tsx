@@ -1,0 +1,42 @@
+import { notFound } from 'next/navigation'
+import { setRequestLocale, getTranslations } from 'next-intl/server'
+import { createClient } from '@/lib/supabase/server'
+import { ConnectionForm } from './_connection-form'
+
+type Props = { params: Promise<{ locale: string; projectId: string }> }
+
+export default async function SettingsPage({ params }: Props) {
+  const { locale, projectId } = await params
+  setRequestLocale(locale)
+  const t = await getTranslations('publish')
+
+  const supabase = await createClient()
+  const { data: project } = await supabase
+    .from('projects').select('id,name').eq('id', projectId).single()
+  if (!project) notFound()
+
+  const { data: connection } = await supabase
+    .from('site_connections')
+    .select('id,name,platform,last_tested_at,last_test_ok')
+    .eq('project_id', projectId)
+    .eq('platform', 'ghost')
+    .maybeSingle()
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <header>
+        <h1 className="font-serif italic text-[32px] text-ink leading-tight">{t('settings_title')}</h1>
+        <p className="text-[12px] text-ink-3 mt-1">{t('settings_subtitle')}</p>
+      </header>
+      <ConnectionForm
+        projectId={projectId}
+        initial={connection ? {
+          id: connection.id,
+          name: connection.name,
+          last_tested_at: connection.last_tested_at,
+          last_test_ok: connection.last_test_ok,
+        } : null}
+      />
+    </div>
+  )
+}

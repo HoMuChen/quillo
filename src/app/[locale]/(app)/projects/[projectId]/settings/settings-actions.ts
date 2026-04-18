@@ -1,0 +1,102 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
+import { encryptJson, decryptJson } from '@/lib/crypto/encrypt'
+import { ghostClientFromConfig } from '@/lib/ghost/client'
+
+const saveSchema = z.object({
+  name: z.string().min(1).max(100),
+  apiUrl: z.string().url().refine((u) => u.startsWith('http'), 'Must be http(s)'),
+  apiKey: z.string().regex(/^[a-f0-9]{24}:[a-f0-9]{64}$/, 'Invalid Ghost Admin API Key format'),
+})
+
+export async function saveGhostConnectionAction(
+  projectId: string,
+  input: z.infer<typeof saveSchema>,
+) {
+  const parsed = saveSchema.parse(input)
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data: membership } = await supabase
+    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
+  if (!membership) throw new Error('No tenant')
+
+  const ciphertext = encryptJson({ apiUrl: parsed.apiUrl, apiKey: parsed.apiKey })
+
+  // Upsert — one ghost connection per project for M1
+  const { data: existing } = await supabase
+    .from('site_connections')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('platform', 'ghost')
+    .maybeSingle()
+
+  if (existing) {
+    const { error } = await supabase
+      .from('site_connections')
+      .update({ name: parsed.name, config_encrypted: ciphertext as unknown as string })
+      .eq('id', existing.id)
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('site_connections').insert({
+      project_id: projectId,
+      tenant_id: membership.tenant_id,
+      platform: 'ghost',
+      name: parsed.name,
+      config_encrypted: ciphertext as unknown as string,
+    })
+    if (error) throw error
+  }
+
+  revalidatePath(`/projects/${projectId}/settings`)
+}
+
+export async function testGhostConnectionAction(projectId: string) {
+  const supabase = await createClient()
+  const { data: row, error } = await supabase
+    .from('site_connections')
+    .select('id,config_encrypted')
+    .eq('project_id', projectId)
+    .eq('platform', 'ghost')
+    .single()
+  if (error || !row) throw new Error('No connection to test')
+
+  let ok = false
+  let errorMessage: string | null = null
+  try {
+    const bytea = row.config_encrypted as unknown as Uint8Array | Buffer
+    const buf = Buffer.isBuffer(bytea) ? bytea : Buffer.from(bytea)
+    const config = decryptJson<{ apiUrl: string; apiKey: string }>(buf)
+    const client = ghostClientFromConfig(config)
+    await client.site.read()
+    ok = true
+  } catch (err) {
+    errorMessage = err instanceof Error ? err.message : 'Unknown error'
+  }
+
+  const { error: updErr } = await supabase
+    .from('site_connections')
+    .update({ last_tested_at: new Date().toISOString(), last_test_ok: ok })
+    .eq('id', row.id)
+  if (updErr) console.error('Could not persist test result', updErr)
+
+  revalidatePath(`/projects/${projectId}/settings`)
+  return { ok, error: errorMessage }
+}
+
+export async function deleteGhostConnectionAction(projectId: string) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('site_connections')
+    .delete()
+    .eq('project_id', projectId)
+    .eq('platform', 'ghost')
+  if (error) throw error
+  revalidatePath(`/projects/${projectId}/settings`)
+}

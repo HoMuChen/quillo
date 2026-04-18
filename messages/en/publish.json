@@ -1,0 +1,22 @@
+{
+  "settings_title": "Connection settings",
+  "settings_subtitle": "Manage publish targets for this project",
+  "ghost_title": "Ghost",
+  "conn_name": "Connection name",
+  "conn_name_placeholder": "e.g. My Blog",
+  "admin_api_url": "Admin API URL",
+  "admin_api_url_help": "Your Ghost site URL, e.g. https://blog.example.com",
+  "admin_api_key": "Admin API Key",
+  "admin_api_key_help": "In Ghost admin → Integrations → Create a custom integration → copy Admin API Key (format: id:secret)",
+  "save": "Save",
+  "saved": "Saved",
+  "save_error": "Save failed",
+  "deleted": "Connection removed",
+  "cancel": "Cancel",
+  "replace": "Replace",
+  "delete": "Remove",
+  "test_connection": "Test connection",
+  "test_success": "Connection OK",
+  "test_failed": "Connection failed",
+  "never_tested": "Not yet tested"
+}

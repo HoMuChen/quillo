@@ -1,0 +1,22 @@
+{
+  "settings_title": "連線設定",
+  "settings_subtitle": "管理此專案的發布目標",
+  "ghost_title": "Ghost",
+  "conn_name": "連線名稱",
+  "conn_name_placeholder": "例：我的部落格",
+  "admin_api_url": "Admin API URL",
+  "admin_api_url_help": "你 Ghost 站的網址，例如 https://blog.example.com",
+  "admin_api_key": "Admin API Key",
+  "admin_api_key_help": "在 Ghost 後台 → Integrations → 建立 custom integration → Admin API Key（格式：id:secret）",
+  "save": "儲存",
+  "saved": "已儲存",
+  "save_error": "儲存失敗",
+  "deleted": "已移除連線",
+  "cancel": "取消",
+  "replace": "更換",
+  "delete": "移除",
+  "test_connection": "測試連線",
+  "test_success": "連線成功",
+  "test_failed": "連線失敗",
+  "never_tested": "尚未測試"
+}
