@@ -1,0 +1,1665 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<title>Quillo · Content Graph</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Editorial / ink-on-off-white palette */
+    --bg: #faf7f0;              /* soft off-white */
+    --bg-2: #efeadc;
+    --ink: #12221c;             /* deep midnight green */
+    --ink-2: #2b3f36;
+    --ink-3: #5a6b62;
+    --ink-4: #8a9891;
+    --rule: #d9d2bf;            /* hairline */
+    --ochre: #c28c3c;           /* accent */
+    --ochre-2: #a0722c;
+    --rust: #9c4a30;            /* attention / unpublish */
+    --sage: #6a8466;            /* secondary accent */
+    --mist: rgba(18,34,28,0.06);
+
+    /* Pillar group colors — tinted but deep enough to feel like ink */
+    --p1: #2b3f36;              /* deep sage-ink (AI 寫作) */
+    --p1-tint: #e6ede6;
+    --p2: #2d4a66;              /* deep blue-ink (SEO 基礎) */
+    --p2-tint: #e4eaf0;
+    --p3: #6e3a2f;              /* deep rust-ink (內容策略) */
+    --p3-tint: #efe2dc;
+
+    --serif: "Instrument Serif", "Noto Serif TC", Georgia, serif;
+    --sans: "Geist", "Noto Sans TC", system-ui, sans-serif;
+    --mono: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+
+    --sh-1: 0 1px 0 rgba(18,34,28,0.05), 0 2px 8px rgba(18,34,28,0.04);
+    --sh-2: 0 2px 0 rgba(18,34,28,0.06), 0 8px 24px rgba(18,34,28,0.08);
+    --sh-focus: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ochre);
+  }
+  *{box-sizing:border-box}
+  html,body{
+    margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:14px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;height:100%;
+  }
+
+  /* subtle paper grain overlay */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+    background-image:
+      radial-gradient(rgba(18,34,28,0.035) 1px, transparent 1.2px),
+      radial-gradient(rgba(18,34,28,0.025) 1px, transparent 1.2px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+    mix-blend-mode:multiply;
+  }
+
+  /* ========== LAYOUT ========== */
+  .app{
+    display:grid;
+    grid-template-columns: 260px 1fr 340px;
+    grid-template-rows: 60px 1fr 48px;
+    height:100vh;
+    position:relative;z-index:2;
+  }
+  .app > header{
+    grid-column: 1 / -1;
+    display:flex;align-items:center;justify-content:space-between;
+    padding: 0 28px;
+    border-bottom:1px solid var(--rule);
+    background: linear-gradient(180deg, var(--bg) 0%, #f2ecdb 100%);
+  }
+  .app > aside.left{
+    grid-column:1;grid-row:2 / 4;
+    border-right:1px solid var(--rule);
+    padding: 22px 20px;
+    overflow:auto;
+    background:rgba(239,234,220,0.45);
+  }
+  .app > main{
+    grid-column:2;grid-row:2;
+    position:relative;overflow:hidden;
+    min-width:0;min-height:0;
+  }
+  .canvas-host{
+    position:absolute;inset:0;
+    overflow:auto;
+  }
+  .canvas-host > .canvas{
+    position:relative;
+    width:100%;height:100%;
+    min-width:900px;min-height:620px;
+  }
+  .app > aside.right{
+    grid-column:3;grid-row:2 / 4;
+    border-left:1px solid var(--rule);
+    padding: 24px 24px;
+    overflow:auto;
+    background:var(--bg);
+    transition: transform .3s cubic-bezier(.2,.8,.3,1), opacity .25s ease;
+  }
+  .app.no-panel{
+    grid-template-columns: 260px 1fr 0;
+  }
+  .app.no-panel > aside.right{
+    transform: translateX(100%);
+    opacity:0;
+    pointer-events:none;
+    padding-left:0;padding-right:0;border-left:none;
+  }
+  .app > footer{
+    grid-column:2;grid-row:3;
+    border-top:1px solid var(--rule);
+    display:flex;align-items:center;gap:20px;
+    padding:0 28px;
+    font-size:12px;color:var(--ink-3);
+    background:var(--bg);
+  }
+
+  /* ========== HEADER ========== */
+  .brand{display:flex;align-items:baseline;gap:14px}
+  .brand .q{
+    font-family:var(--serif);font-size:30px;font-style:italic;line-height:1;
+    letter-spacing:-0.01em;
+  }
+  .brand .crumb{
+    font-size:12px;color:var(--ink-3);letter-spacing:0.08em;text-transform:uppercase;
+    display:flex;align-items:center;gap:10px;
+  }
+  .brand .crumb b{color:var(--ink);font-weight:500;letter-spacing:0.02em;text-transform:none;font-size:13px}
+  .brand .crumb .slash{color:var(--ink-4)}
+
+  .head-tools{display:flex;align-items:center;gap:10px}
+  .seg{
+    display:inline-flex;border:1px solid var(--rule);border-radius:8px;
+    background:var(--bg);overflow:hidden;
+  }
+  .seg button{
+    border:none;background:transparent;padding:7px 12px;font:inherit;font-size:12px;
+    color:var(--ink-3);cursor:pointer;letter-spacing:0.02em;
+  }
+  .seg button.on{background:var(--ink);color:var(--bg)}
+  .seg button + button{border-left:1px solid var(--rule)}
+
+  .btn{
+    font:inherit;font-size:13px;font-weight:500;
+    border:1px solid var(--rule);border-radius:8px;
+    background:var(--bg);color:var(--ink);
+    padding:8px 14px;cursor:pointer;
+    transition: all .15s ease;
+    letter-spacing:0.01em;
+    display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-3);background:#f5efdf}
+  .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .btn.primary:hover{background:var(--ink-2);border-color:var(--ink-2)}
+  .btn.ochre{background:var(--ochre);color:#fff;border-color:var(--ochre-2)}
+  .btn.ghost{border:none;background:transparent;padding:6px 10px}
+  .btn.ghost:hover{background:var(--mist)}
+  .btn.sm{padding:5px 10px;font-size:12px}
+  .btn .k{font-family:var(--mono);font-size:10px;opacity:.6;margin-left:2px}
+
+  .sparkle{display:inline-block;width:14px;height:14px;vertical-align:-2px}
+
+  /* ========== LEFT PANEL ========== */
+  .left h3{
+    font-family:var(--serif);font-style:italic;font-size:22px;font-weight:400;
+    margin:0 0 2px;letter-spacing:-0.01em;
+  }
+  .left .tagline{font-size:12px;color:var(--ink-3);margin-bottom:18px}
+  .left .section-label{
+    font-size:10px;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.14em;
+    margin:22px 0 8px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .left .section-label .add{
+    cursor:pointer;font-size:14px;color:var(--ink-3);
+    width:20px;height:20px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .left .section-label .add:hover{background:var(--mist);color:var(--ink)}
+
+  .project{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;border-radius:7px;cursor:pointer;
+    font-size:13px;margin:0 -6px;
+  }
+  .project:hover{background:var(--mist)}
+  .project.active{background:var(--ink);color:var(--bg)}
+  .project.active .count{color:rgba(244,236,217,0.55)}
+  .project .swatch{
+    width:9px;height:9px;border-radius:2px;flex:none;background:var(--ink);
+  }
+  .project.active .swatch{background:var(--ochre)}
+  .project .count{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-4)}
+
+  .pillar-item{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 10px;border-radius:7px;cursor:pointer;
+    font-size:13px;margin:0 -6px 2px;
+    position:relative;
+  }
+  .pillar-item:hover{background:var(--mist)}
+  .pillar-item.active{background:var(--bg-2);color:var(--ink)}
+  .pillar-item .dot{
+    width:7px;height:7px;border-radius:50%;flex:none;
+  }
+  .pillar-item .title{flex:1;font-weight:500}
+  .pillar-item .prog{font-family:var(--mono);font-size:10px;color:var(--ink-4)}
+  .pillar-item.active::before{
+    content:"";position:absolute;left:-6px;top:8px;bottom:8px;width:2px;background:var(--ochre);
+  }
+
+  .legend{
+    border-top:1px solid var(--rule);padding-top:18px;margin-top:26px;
+    font-size:12px;color:var(--ink-3);
+  }
+  .legend-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+  .chip{
+    width:18px;height:18px;border-radius:50%;border:1px solid var(--ink);flex:none;
+    background:var(--bg);
+  }
+  .chip.pub{background:var(--ink);border-color:var(--ink)}
+  .chip.draft{
+    background: repeating-linear-gradient(45deg, var(--ink) 0 2px, var(--bg) 2px 4px);
+  }
+  .chip.empty{background:var(--bg);border-style:dashed;border-color:var(--ink-3)}
+
+  /* ========== CANVAS ========== */
+  .canvas{
+    position:absolute;inset:0;
+    cursor: grab;
+  }
+  .canvas:active{cursor:grabbing}
+  .canvas .inner{
+    position:absolute;inset:0;
+    transform-origin: 0 0;
+  }
+  .canvas-svg{position:absolute;inset:0;overflow:visible;pointer-events:none}
+
+  /* Canvas overlays — zoom controls, mini-toolbar */
+  .canvas-overlay-tl{
+    position:absolute;top:16px;left:18px;z-index:10;
+    display:flex;flex-direction:column;gap:8px;align-items:flex-start;
+  }
+  .canvas-overlay-tr{
+    position:absolute;top:16px;right:16px;z-index:10;
+    display:flex;gap:8px;
+  }
+  .canvas-overlay-br{
+    position:absolute;bottom:16px;right:16px;z-index:10;
+    display:flex;gap:6px;
+    background:var(--bg);border:1px solid var(--rule);border-radius:10px;
+    padding:4px;box-shadow:var(--sh-1);
+  }
+  .canvas-overlay-br button{
+    border:none;background:transparent;width:28px;height:28px;border-radius:6px;cursor:pointer;
+    font-size:13px;color:var(--ink-3);font-family:var(--mono);
+  }
+  .canvas-overlay-br button:hover{background:var(--mist);color:var(--ink)}
+  .canvas-overlay-br .zoom-val{
+    min-width:50px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--ink-3);
+    align-self:center;
+  }
+
+  .filter-bar{
+    display:flex;gap:6px;align-items:center;
+    background:var(--bg);border:1px solid var(--rule);border-radius:10px;
+    padding:6px;box-shadow:var(--sh-1);
+  }
+  .filter-bar .chip-btn{
+    border:none;background:transparent;padding:5px 10px;border-radius:6px;
+    font:inherit;font-size:12px;cursor:pointer;color:var(--ink-3);
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--sans);
+  }
+  .filter-bar .chip-btn .mini{
+    width:8px;height:8px;border-radius:50%;border:1px solid var(--ink);background:var(--bg);
+  }
+  .filter-bar .chip-btn .mini.pub{background:var(--ink)}
+  .filter-bar .chip-btn .mini.draft{
+    background:repeating-linear-gradient(45deg, var(--ink) 0 1.5px, var(--bg) 1.5px 3px);
+  }
+  .filter-bar .chip-btn .mini.empty{background:var(--bg);border-style:dashed;border-color:var(--ink-3)}
+  .filter-bar .chip-btn .n{font-family:var(--mono);font-size:10px;color:var(--ink-4)}
+  .filter-bar .chip-btn.on{background:var(--ink);color:var(--bg)}
+  .filter-bar .chip-btn.on .n{color:rgba(244,236,217,0.6)}
+
+  /* ========== NODES ========== */
+  /* pillar color is read from data-pillar via per-node CSS vars */
+  .node[data-pillar="p1"]{--pc:var(--p1); --pc-tint:var(--p1-tint)}
+  .node[data-pillar="p2"]{--pc:var(--p2); --pc-tint:var(--p2-tint)}
+  .node[data-pillar="p3"]{--pc:var(--p3); --pc-tint:var(--p3-tint)}
+
+  .node{
+    position:absolute;transform:translate(-50%,-50%);
+    display:flex;flex-direction:column;align-items:center;
+    cursor:pointer;user-select:none;
+    text-align:center;
+  }
+  .node .bubble{
+    border-radius:50%;
+    background:var(--pc-tint, var(--bg));
+    border:1.5px solid var(--pc, var(--ink));
+    display:flex;align-items:center;justify-content:center;
+    transition: transform .18s ease, box-shadow .18s ease;
+    box-shadow: var(--sh-1);
+    position:relative;
+  }
+  .node:hover .bubble{transform: scale(1.08);box-shadow: var(--sh-2)}
+  .node.selected .bubble{box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ochre)}
+
+  /* PILLAR — same hue, filled solid */
+  .node.pillar .bubble{
+    width:120px;height:120px;
+    background: radial-gradient(circle at 30% 25%, color-mix(in oklab, var(--pc) 85%, white), var(--pc) 75%);
+    border:none;
+    color:var(--bg);
+    flex-direction:column;gap:3px;
+    padding:10px;
+  }
+  .node.pillar .bubble::after{
+    content:"";position:absolute;inset:-6px;border-radius:50%;
+    border:1.5px solid var(--pc);opacity:.18;
+  }
+  .node.pillar .title{
+    font-family:var(--serif);font-style:italic;font-size:22px;line-height:1;
+    letter-spacing:-0.01em;
+  }
+  .node.pillar .meta{
+    font-family:var(--mono);font-size:10px;opacity:.75;letter-spacing:0.04em;
+  }
+  .node.pillar .pulse{
+    position:absolute;inset:-14px;border-radius:50%;
+    border:1.5px solid var(--pc);opacity:0;
+  }
+  .node.pillar.selected .pulse{opacity:.45;animation: pulse 2s ease-out infinite}
+  @keyframes pulse{
+    0%{transform:scale(1);opacity:.5}
+    100%{transform:scale(1.35);opacity:0}
+  }
+
+  /* CLUSTER (level 1) */
+  .node.cluster .kw{
+    font-family:var(--serif);font-style:italic;font-size:16px;line-height:1.15;
+    margin-top:8px;color:var(--ink);max-width:140px;
+    letter-spacing:-0.005em;
+  }
+  .node.cluster .meta{
+    font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:2px;
+    letter-spacing:0.04em;
+  }
+
+  /* SUB-CLUSTER (level 2+) */
+  .node.sub .bubble{border-width:1.25px}
+  .node.sub .kw{
+    font-family:var(--sans);font-style:normal;font-size:11.5px;font-weight:500;
+    margin-top:5px;max-width:110px;
+    color:var(--ink-2);
+  }
+  .node.sub .meta{font-size:9px}
+
+  /* ======= STATUS (fills ONLY — no color change) ======= */
+  /* Published — fully filled in pillar color */
+  .node.cluster.published .bubble,
+  .node.sub.published .bubble{
+    background: var(--pc);
+    border-color: var(--pc);
+  }
+  .node.cluster.published .bubble::before,
+  .node.sub.published .bubble::before{
+    content:"";position:absolute;inset:3px;border-radius:50%;
+    background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.14), transparent 60%);
+  }
+
+  /* Draft — tinted fill, solid border in pillar color */
+  .node.cluster.draft .bubble,
+  .node.sub.draft .bubble{
+    background: var(--pc-tint);
+    border:1.5px solid var(--pc);
+  }
+  .node.cluster.draft .bubble::after,
+  .node.sub.draft .bubble::after{
+    content:"";position:absolute;inset:0;border-radius:50%;
+    background:
+      repeating-linear-gradient(135deg,
+        color-mix(in oklab, var(--pc) 35%, transparent) 0 1.5px,
+        transparent 1.5px 6px);
+  }
+  .node.sub.draft .bubble{border-width:1.25px}
+
+  /* Empty — just outline, dashed */
+  .node.cluster.empty .bubble,
+  .node.sub.empty .bubble{
+    background: var(--bg);
+    border: 1.5px dashed color-mix(in oklab, var(--pc) 55%, var(--ink-4));
+    color: color-mix(in oklab, var(--pc) 60%, var(--ink-4));
+  }
+  .node.cluster.empty .bubble::before,
+  .node.sub.empty .bubble::before{
+    content:"+";font-family:var(--serif);font-size:22px;line-height:1;
+    color: color-mix(in oklab, var(--pc) 60%, var(--ink-4));
+  }
+  .node.sub.empty .bubble::before{font-size:16px}
+  .node.sub.empty .bubble{border-width:1.25px}
+
+  /* Pillar status visuals — same color logic */
+  .node.pillar.draft .bubble{
+    background: var(--pc-tint);
+    color: var(--pc);
+    border: 2px solid var(--pc);
+  }
+  .node.pillar.draft .bubble::before{
+    content:"";position:absolute;inset:0;border-radius:50%;
+    background:
+      repeating-linear-gradient(135deg,
+        color-mix(in oklab, var(--pc) 35%, transparent) 0 2px,
+        transparent 2px 8px);
+  }
+  .node.pillar.empty .bubble{
+    background: var(--bg);
+    color: var(--pc);
+    border: 2px dashed var(--pc);
+  }
+  .node.pillar.empty .bubble::after{display:none}
+
+  /* "hub" — cluster with children — subtle outer ring in pillar color */
+  .node.hub .bubble{
+    box-shadow:
+      0 0 0 3px var(--bg),
+      0 0 0 4px color-mix(in oklab, var(--pc) 65%, var(--ink-4)),
+      var(--sh-1);
+  }
+  .node.hub:hover .bubble{
+    box-shadow:
+      0 0 0 3px var(--bg),
+      0 0 0 4px var(--pc),
+      var(--sh-2);
+  }
+  .node.hub.selected .bubble{box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ochre)}
+
+  /* edges — color per pillar */
+  .edge{
+    fill:none;
+    stroke: var(--ink-3);
+    stroke-width:1.25;
+    opacity:.55;
+    stroke-linecap:round;
+    transition: opacity .2s ease, stroke-width .2s ease;
+  }
+  .edge[data-pillar="p1"]{stroke: var(--p1)}
+  .edge[data-pillar="p2"]{stroke: var(--p2)}
+  .edge[data-pillar="p3"]{stroke: var(--p3)}
+  .edge.dashed{stroke-dasharray: 3 5; opacity:.4}
+  .edge.sub{stroke-width:1; opacity:.4}
+
+  /* Hover-group: when canvas has .group-hover, dim non-group nodes + edges */
+  .canvas.group-hover .node:not(.in-group){opacity:.18 !important; filter:saturate(.55)}
+  .canvas.group-hover .node.in-group{z-index:3}
+  .canvas.group-hover .node.in-group .bubble{
+    filter: drop-shadow(0 2px 8px color-mix(in oklab, var(--pc) 35%, transparent));
+  }
+  .canvas.group-hover .node.pillar.in-group .bubble::after{
+    opacity:.55;inset:-10px;border-width:2px;
+  }
+  .canvas.group-hover #edges .edge{opacity:.08}
+  .canvas.group-hover #edges .edge.in-group{opacity:.8; stroke-width:1.75}
+  .canvas.group-hover #edges .edge.in-group.sub{stroke-width:1.25}
+
+  /* ========== RIGHT PANEL ========== */
+  .right .status-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .status-chip{
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;
+    padding:5px 10px;border-radius:999px;
+    border:1px solid var(--rule);background:var(--bg);color:var(--ink-2);
+  }
+  .status-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
+  .status-chip.draft .dot{background:var(--ochre)}
+  .status-chip.published{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .status-chip.published .dot{background:var(--ochre)}
+  .status-chip.empty{background:transparent;border-style:dashed;color:var(--ink-3)}
+
+  .right h2.title{
+    font-family:var(--serif);font-style:italic;font-weight:400;
+    font-size:32px;line-height:1.1;margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .right .parent-line{
+    font-size:12px;color:var(--ink-3);margin-bottom:22px;
+  }
+  .right .parent-line b{color:var(--ink);font-weight:500}
+  .right .parent-line .arrow{color:var(--ink-4);margin:0 6px}
+
+  .stats{
+    display:grid;grid-template-columns:1fr 1fr;gap:1px;
+    background:var(--rule);
+    border:1px solid var(--rule);border-radius:10px;
+    overflow:hidden;margin-bottom:22px;
+  }
+  .stat{
+    background:var(--bg);padding:12px 14px;
+  }
+  .stat .k{font-size:10px;color:var(--ink-4);letter-spacing:0.12em;text-transform:uppercase}
+  .stat .v{font-family:var(--mono);font-size:22px;font-weight:500;margin-top:2px;color:var(--ink)}
+  .stat .sub{font-size:11px;color:var(--ink-3);margin-top:1px}
+
+  .kw-tags{margin-bottom:22px}
+  .kw-tag{
+    display:inline-block;font-family:var(--mono);font-size:11px;
+    background:var(--bg-2);border:1px solid var(--rule);padding:3px 9px;border-radius:6px;
+    margin:0 4px 4px 0;color:var(--ink-2);
+  }
+  .kw-tag.more{background:transparent;color:var(--ink-3);border-style:dashed;cursor:pointer}
+
+  .right h4{
+    font-size:10px;color:var(--ink-4);letter-spacing:0.14em;text-transform:uppercase;
+    margin:0 0 10px;font-weight:500;
+  }
+
+  .actions{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:22px;
+  }
+  .actions .btn{justify-content:center;padding:10px 12px}
+  .actions .btn.full{grid-column:1 / -1}
+
+  .right section{
+    border-top:1px solid var(--rule);
+    padding-top:18px;margin-top:18px;
+  }
+
+  .link-list{list-style:none;margin:0;padding:0;font-size:13px}
+  .link-list li{
+    display:flex;align-items:center;gap:10px;
+    padding:6px 0;color:var(--ink-2);cursor:pointer;
+  }
+  .link-list li:hover{color:var(--ink)}
+  .link-list .arrow{font-family:var(--mono);color:var(--ink-4);font-size:11px;width:18px}
+
+  .ai-note{
+    background: linear-gradient(180deg, #f7f0d8 0%, #f1e7c6 100%);
+    border:1px solid var(--rule);border-radius:10px;
+    padding:14px 16px;
+    font-family:var(--serif);font-style:italic;font-size:15px;line-height:1.4;
+    color:var(--ink-2);
+    position:relative;
+  }
+  .ai-note::before{
+    content:"✦";position:absolute;top:10px;right:14px;color:var(--ochre);font-size:14px;
+  }
+  .ai-note .label{
+    font-family:var(--sans);font-style:normal;font-size:10px;font-weight:500;
+    letter-spacing:0.14em;text-transform:uppercase;color:var(--ochre-2);
+    display:block;margin-bottom:6px;
+  }
+
+  /* ========== FOOTER ========== */
+  .footer-progress{
+    flex:1;display:flex;align-items:center;gap:14px;max-width:520px;
+  }
+  .bar{
+    flex:1;height:4px;background:var(--bg-2);border-radius:2px;overflow:hidden;position:relative;
+  }
+  .bar .fill{
+    position:absolute;top:0;bottom:0;left:0;background:var(--ink);border-radius:2px;
+  }
+  .bar .fill.ochre{background:var(--ochre);opacity:.6}
+  .footer-num{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+  .footer-num b{color:var(--ink);font-weight:500}
+
+  /* ========== CONTEXT MENU ========== */
+  .ctx{
+    position:fixed;z-index:100;
+    background:var(--bg);border:1px solid var(--rule);border-radius:10px;
+    box-shadow: var(--sh-2);
+    padding:6px;min-width:200px;
+    font-size:13px;
+    display:none;
+  }
+  .ctx.show{display:block}
+  .ctx button{
+    display:flex;align-items:center;gap:10px;width:100%;
+    border:none;background:transparent;padding:8px 10px;border-radius:6px;
+    font:inherit;cursor:pointer;text-align:left;color:var(--ink);
+  }
+  .ctx button:hover{background:var(--mist)}
+  .ctx button.danger{color:var(--rust)}
+  .ctx .sep{height:1px;background:var(--rule);margin:4px 6px}
+  .ctx button .k{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--ink-4)}
+  .ctx button .ic{width:16px;display:inline-flex;justify-content:center;color:var(--ink-3)}
+
+  /* ========== TOAST ========== */
+  .toast{
+    position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(12px);
+    background:var(--ink);color:var(--bg);
+    padding:10px 18px;border-radius:999px;font-size:13px;
+    box-shadow:var(--sh-2);opacity:0;pointer-events:none;
+    transition: all .25s ease;z-index:200;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ========== ENTRY ANIMATION ========== */
+  @keyframes inkBloom{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
+    60%{opacity:1}
+    100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  }
+  @keyframes drawStroke{
+    0%{stroke-dashoffset: var(--len, 300);opacity:0}
+    15%{opacity:.55}
+    100%{stroke-dashoffset: 0;opacity:.55}
+  }
+  .node.enter{animation: inkBloom .55s cubic-bezier(.2,.8,.3,1) both}
+  .edge.enter{
+    stroke-dasharray: var(--len, 300);
+    animation: drawStroke .7s ease-out both;
+  }
+  .edge.dashed.enter{
+    animation-name: drawStroke;
+    /* keep dashed look AFTER draw by resetting via JS or letting it be */
+  }
+
+  /* scrollbar polish */
+  aside::-webkit-scrollbar{width:8px}
+  aside::-webkit-scrollbar-track{background:transparent}
+  aside::-webkit-scrollbar-thumb{background:var(--rule);border-radius:4px}
+  aside::-webkit-scrollbar-thumb:hover{background:var(--ink-4)}
+
+  /* ========== TWEAKS PANEL ========== */
+  .tweaks{
+    position:fixed;right:360px;bottom:68px;z-index:100;
+    background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+    box-shadow:var(--sh-2);padding:16px 18px;
+    font-size:12px;min-width:220px;
+    display:none;
+  }
+  .tweaks.show{display:block}
+  .tweaks h5{
+    font-family:var(--serif);font-style:italic;font-size:18px;margin:0 0 10px;font-weight:400;
+  }
+  .tweaks label{display:flex;align-items:center;gap:8px;margin:7px 0;cursor:pointer}
+  .tweaks .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;margin-bottom:8px}
+  .tweaks .row .tbtn{
+    font:inherit;font-size:11px;border:1px solid var(--rule);border-radius:6px;
+    padding:4px 10px;background:var(--bg);cursor:pointer;color:var(--ink-2);
+  }
+  .tweaks .row .tbtn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .tweaks .k{font-size:10px;color:var(--ink-4);letter-spacing:0.14em;text-transform:uppercase;margin-top:8px;display:block}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="q">Quillo</div>
+      <div class="crumb">
+        <span>Quillo SEO Blog</span>
+        <span class="slash">/</span>
+        <b>Content Graph</b>
+      </div>
+    </div>
+    <div class="head-tools">
+      <div class="seg">
+        <button class="on">Graph</button>
+        <button>Table</button>
+        <button>Calendar</button>
+      </div>
+      <button class="btn" id="btn-new-pillar">＋ New Pillar</button>
+      <button class="btn primary" id="btn-ai">
+        <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 3l1.8 4.5 4.7 1.2-4.7 1.2L12 14.4 10.2 9.9 5.5 8.7l4.7-1.2z"/>
+          <path d="M19 15l.8 2 2.2.6-2.2.6L19 20l-.8-1.8-2.2-.6 2.2-.6z"/>
+        </svg>
+        AI Plan Keywords
+      </button>
+    </div>
+  </header>
+
+  <!-- LEFT -->
+  <aside class="left">
+    <h3>Projects</h3>
+    <div class="tagline">編輯內容地圖</div>
+
+    <div class="project active">
+      <span class="swatch"></span>
+      <span>Quillo SEO Blog</span>
+      <span class="count">58</span>
+    </div>
+    <div class="project">
+      <span class="swatch" style="background:#d0a84c"></span>
+      <span>電商教學站</span>
+      <span class="count">22</span>
+    </div>
+    <div class="project">
+      <span class="swatch" style="background:#6a8466"></span>
+      <span>理財部落格</span>
+      <span class="count">41</span>
+    </div>
+
+    <div class="section-label">
+      <span>Pillars</span>
+      <span class="add" title="新增 pillar">＋</span>
+    </div>
+
+    <div class="pillar-item active" data-pillar="p1">
+      <span class="dot" style="background:var(--ink)"></span>
+      <span class="title">AI 寫作</span>
+      <span class="prog">已發佈</span>
+    </div>
+    <div class="pillar-item" data-pillar="p2">
+      <span class="dot" style="background:var(--ochre)"></span>
+      <span class="title">SEO 基礎</span>
+      <span class="prog">草稿</span>
+    </div>
+    <div class="pillar-item" data-pillar="p3">
+      <span class="dot" style="background:transparent;border:1px dashed var(--ink-3)"></span>
+      <span class="title">內容策略</span>
+      <span class="prog">未生成</span>
+    </div>
+
+    <div class="legend">
+      <div class="section-label" style="margin-top:0">Legend</div>
+      <div class="legend-row"><span class="chip pub"></span>已發佈</div>
+      <div class="legend-row"><span class="chip draft"></span>草稿</div>
+      <div class="legend-row"><span class="chip empty"></span>未生成</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CANVAS -->
+  <main>
+   <div class="canvas-host">
+    <div class="canvas" id="canvas">
+      <svg class="canvas-svg" id="edges"></svg>
+      <div class="inner" id="inner">
+        <!-- nodes injected here -->
+      </div>
+    </div>
+   </div>
+
+    <!-- Top-left: filter -->
+    <div class="canvas-overlay-tl">
+      <div class="filter-bar" id="filter-bar">
+        <button class="chip-btn on" data-f="all">全部 <span class="n">19</span></button>
+        <button class="chip-btn" data-f="published"><span class="mini pub"></span>已發佈 <span class="n">9</span></button>
+        <button class="chip-btn" data-f="draft"><span class="mini draft"></span>草稿 <span class="n">6</span></button>
+        <button class="chip-btn" data-f="empty"><span class="mini empty"></span>未生成 <span class="n">4</span></button>
+      </div>
+    </div>
+
+    <!-- Top-right: view toggle -->
+    <div class="canvas-overlay-tr">
+      <button class="btn sm" id="btn-tweaks" title="View options">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+        </svg>
+        View
+      </button>
+    </div>
+
+    <!-- Bottom-right: zoom -->
+    <div class="canvas-overlay-br">
+      <button id="zoom-out" title="Zoom out">−</button>
+      <div class="zoom-val" id="zoom-val">100%</div>
+      <button id="zoom-in" title="Zoom in">+</button>
+      <button id="zoom-fit" title="Fit">⊡</button>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="right" id="right-panel">
+    <!-- populated by JS -->
+  </aside>
+
+  <!-- FOOTER -->
+  <footer>
+    <div style="font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink-2)">進度</div>
+    <div class="footer-progress">
+      <div class="bar">
+        <div class="fill ochre" style="width:62%"></div>
+        <div class="fill" style="width:33%"></div>
+      </div>
+      <div class="footer-num"><b>9</b> 已發佈 · <b>6</b> 草稿 · <b>4</b> 未生成 / 19 節點</div>
+    </div>
+    <div style="color:var(--ink-4)">最後同步 · 2 分鐘前</div>
+  </footer>
+</div>
+
+<!-- Context menu -->
+<div class="ctx" id="ctx">
+  <button data-act="open"><span class="ic">✎</span> 編輯文章 <span class="k">E</span></button>
+  <button data-act="generate"><span class="ic">✦</span> AI 生成文章 <span class="k">G</span></button>
+  <button data-act="preview"><span class="ic">⌕</span> 預覽 <span class="k">P</span></button>
+  <div class="sep"></div>
+  <button data-act="child"><span class="ic">+</span> 新增子節點</button>
+  <button data-act="publish"><span class="ic">↑</span> 發佈 / 取消發佈</button>
+  <div class="sep"></div>
+  <button data-act="delete" class="danger"><span class="ic">⌫</span> 刪除節點</button>
+</div>
+
+<!-- Tweaks -->
+<div class="tweaks" id="tweaks">
+  <h5>View options</h5>
+  <label><input type="checkbox" id="tw-links" checked/> 顯示跨 pillar 連線</label>
+  <label><input type="checkbox" id="tw-labels" checked/> 顯示關鍵字標籤</label>
+  <label><input type="checkbox" id="tw-volume" checked/> 顯示搜尋量</label>
+  <label><input type="checkbox" id="tw-animate" checked/> 進場動畫</label>
+  <span class="k">Density</span>
+  <div class="row">
+    <button class="tbtn" data-dense="compact">Compact</button>
+    <button class="tbtn on" data-dense="comfy">Comfy</button>
+    <button class="tbtn" data-dense="spacious">Spacious</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============== DATA ============== */
+const DATA = [
+  {
+    id:"p1", title:"AI 寫作", color:"#c28c3c",
+    status:"published", vol:22000,
+    summary:"關於 AI 寫作工具、prompt、長尾佈局的總索引文章。",
+    clusters:[
+      {id:"c1", kw:"ChatGPT 寫部落格", status:"published", vol:8100, children:[
+        {id:"c1-1", kw:"ChatGPT prompts 範例", status:"draft", vol:1900},
+        {id:"c1-2", kw:"ChatGPT 寫文案", status:"published", vol:2400},
+        {id:"c1-3", kw:"ChatGPT 中文設定", status:"empty", vol:720},
+      ]},
+      {id:"c2", kw:"AI 長尾關鍵字", status:"draft", vol:2400, sel:true, children:[
+        {id:"c2-1", kw:"longtail tool 比較", status:"empty", vol:590},
+        {id:"c2-2", kw:"AI keyword cluster", status:"draft", vol:480},
+      ]},
+      {id:"c3", kw:"AI 文章偵測", status:"published", vol:5400, children:[
+        {id:"c3-1", kw:"GPTZero 使用", status:"published", vol:1100},
+      ]},
+      {id:"c4", kw:"prompt engineering", status:"empty", vol:1600},
+      {id:"c5", kw:"AI SEO 工具比較", status:"published", vol:3300},
+      {id:"c6", kw:"Claude 寫文章", status:"draft", vol:1900},
+      {id:"c7", kw:"AI 內容政策", status:"published", vol:720},
+    ]
+  },
+  {
+    id:"p2", title:"SEO 基礎", color:"#6a8466",
+    status:"draft", vol:18500,
+    summary:"給中小品牌的 SEO 入門總覽:on-page、schema、技術性指標。",
+    clusters:[
+      {id:"d1", kw:"on-page SEO", status:"published", vol:6600, children:[
+        {id:"d1-1", kw:"title tag 優化", status:"published", vol:2200},
+        {id:"d1-2", kw:"H1 vs H2 用法", status:"draft", vol:880},
+        {id:"d1-3", kw:"alt text 寫法", status:"empty", vol:590},
+      ]},
+      {id:"d2", kw:"schema markup", status:"draft", vol:2900, children:[
+        {id:"d2-1", kw:"FAQ schema", status:"published", vol:1300},
+      ]},
+      {id:"d3", kw:"core web vitals", status:"published", vol:3600},
+      {id:"d4", kw:"內部連結策略", status:"empty", vol:1300},
+      {id:"d5", kw:"外部連結", status:"draft", vol:2400},
+      {id:"d6", kw:"sitemap.xml", status:"published", vol:1600},
+    ]
+  },
+  {
+    id:"p3", title:"內容策略", color:"#9c4a30",
+    status:"empty", vol:13200,
+    summary:"topic cluster、E-E-A-T、編輯流程 — 內容團隊的作業手冊。",
+    clusters:[
+      {id:"e1", kw:"topic cluster 模型", status:"published", vol:2100, children:[
+        {id:"e1-1", kw:"pillar page 範例", status:"draft", vol:590},
+        {id:"e1-2", kw:"hub-and-spoke SEO", status:"empty", vol:390},
+      ]},
+      {id:"e2", kw:"E-E-A-T", status:"published", vol:4800},
+      {id:"e3", kw:"內容日曆", status:"draft", vol:1600},
+      {id:"e4", kw:"content brief", status:"draft", vol:1100},
+      {id:"e5", kw:"競品分析", status:"empty", vol:2200},
+      {id:"e6", kw:"SERP 分析", status:"draft", vol:1400},
+    ]
+  },
+];
+
+/* Utility helpers */
+function el(t,c,h){const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;}
+function byId(id){ for(const p of DATA){ if(p.id===id)return {node:p,parent:null,kind:"pillar"}; for(const c of p.clusters){ if(c.id===id)return {node:c,parent:p,kind:"cluster"}; if(c.children)for(const s of c.children){if(s.id===id)return {node:s,parent:c,kind:"sub",pillar:p};}}} return null;}
+function fmt(n){ return n>=1000 ? (n/1000).toFixed(n>=10000?0:1).replace(/\.0$/,'')+"k" : String(n); }
+
+/* ============== STATE ============== */
+const state = {
+  selectedId: "c2",
+  showLinks: true,
+  showLabels: true,
+  showVolume: true,
+  animate: true,
+  filter: "all",
+  density: "comfy",
+  zoom: 1,
+  pan: {x:0, y:0},
+};
+
+/* ============== LAYOUT ============== */
+const canvas = document.getElementById("canvas");
+const inner = document.getElementById("inner");
+const edgesSvg = document.getElementById("edges");
+
+/* Computed positions keyed by id */
+const positions = new Map();
+
+function densityMult(){
+  return state.density==="compact"?0.85 : state.density==="spacious"?1.2 : 1;
+}
+
+function computeLayout(){
+  positions.clear();
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  const DM = densityMult();
+
+  // Scale everything to the smaller dimension — handles narrow viewports
+  const S = Math.min(W, H);
+  const narrow = S < 520;
+
+  const cx=W*0.5, cy=H*0.5;
+  const sep = S * (narrow ? 0.32 : 0.38);
+  const roots=[
+    {id:DATA[0].id, cx: cx,              cy: cy - sep*0.95,  toCenterAng: Math.PI*0.5 },
+    {id:DATA[1].id, cx: cx - sep*1.05,   cy: cy + sep*0.60,  toCenterAng: -Math.PI*0.18 },
+    {id:DATA[2].id, cx: cx + sep*1.05,   cy: cy + sep*0.60,  toCenterAng: Math.PI + Math.PI*0.18 },
+  ];
+
+  // Distance between neighbouring pillars — clusters must fit WITHIN this
+  const p01 = Math.hypot(roots[0].cx-roots[1].cx, roots[0].cy-roots[1].cy);
+  const p12 = Math.hypot(roots[1].cx-roots[2].cx, roots[1].cy-roots[2].cy);
+  const minPillarDist = Math.min(p01, p12);
+
+  // Node sizes: fixed per depth (no longer ∝ search volume)
+  const scale = Math.max(0.55, Math.min(1.0, S / 700));
+  function nodeSize(vol, depth){
+    const base = depth===1 ? 64 : 36;  // cluster / sub-cluster
+    return base * scale;
+  }
+  const pillarSize = 130 * scale;
+  const pillarR = pillarSize/2 + 8;
+
+  // Base radius — room for the largest child to breathe
+  const clusterR = (64 * scale)/2 + 18;
+  const minBaseR = pillarR + clusterR + 10;
+  const baseR1 = Math.max(minBaseR, 170 * scale * DM);
+  const baseR2 = Math.max(60 * scale, 75 * scale * DM);
+
+  const placed=[]; // {id,x,y,r,pillarId,depth,pinned}
+  function wouldCollide(x,y,r){
+    for(const q of placed){
+      const dx=x-q.x, dy=y-q.y;
+      if(Math.sqrt(dx*dx+dy*dy) < r + q.r + 3) return true;
+    }
+    return false; // allow overflow off-canvas
+  }
+
+  function placeTree(parentX, parentY, parentId, items, angMin, angMax, baseR, depth, pillarId){
+    const N=items.length;
+    items.forEach((c, i)=>{
+      const pad = 0.4/N;
+      const t = N===1 ? 0.5 : pad + (i/(N-1))*(1 - 2*pad);
+      let ang = angMin + (angMax-angMin)*t;
+      const size=nodeSize(c.vol, depth);
+      const padR = depth===1 ? 42 : 28;  // label breathing room
+      const pr = size/2 + padR;
+
+      let x,y,ok=false, R=baseR;
+      for(let tr=0; tr<50; tr++){
+        x=parentX+Math.cos(ang)*R;
+        y=parentY+Math.sin(ang)*R;
+        if(!wouldCollide(x,y,pr)){ok=true;break;}
+        if(tr%3===2) R += 6;
+        else ang += (tr%2===0?1:-1)*0.06*Math.ceil(tr/2);
+      }
+      if(!ok){ R+=12; x=parentX+Math.cos(ang)*R; y=parentY+Math.sin(ang)*R; }
+
+      positions.set(c.id, {x,y,size,depth,ang,parentX,parentY,parentId,status:c.status,hasChildren:!!(c.children&&c.children.length),pillarId});
+      placed.push({id:c.id, x,y,r:pr, pillarId, depth, pinned:false, parentId, size});
+
+      if(c.children && c.children.length){
+        const spread=Math.min(Math.PI*0.55, Math.PI*0.2 + c.children.length*0.1);
+        placeTree(x, y, c.id, c.children, ang-spread/2, ang+spread/2, baseR2, depth+1, pillarId);
+      }
+    });
+  }
+
+  // Narrower wedge when narrow — keep clusters on outward-facing side
+  const wedge = narrow ? Math.PI * 1.25 : Math.PI * 1.55;
+
+  roots.forEach((r,idx)=>{
+    const pillar = DATA[idx];
+    positions.set(r.id, {x:r.cx, y:r.cy, size:pillarSize, depth:0, status:pillar.status||"published", pillarId:r.id});
+    placed.push({id:r.id, x:r.cx, y:r.cy, r:pillarR, pillarId:r.id, depth:0, pinned:true});
+
+    const outward = r.toCenterAng + Math.PI;
+    placeTree(r.cx, r.cy, r.id, pillar.clusters, outward - wedge/2, outward + wedge/2, baseR1, 1, r.id);
+  });
+
+  // ==== Overlap relaxation with own-pillar pull ====
+  const pillarCentroids = new Map();
+  roots.forEach(r => pillarCentroids.set(r.id, {x:r.cx, y:r.cy}));
+
+  const ITER = 120;
+  for(let it=0; it<ITER; it++){
+    let maxMove=0;
+    for(let i=0;i<placed.length;i++){
+      const a = placed[i];
+      if(a.pinned) continue;
+      let fx=0, fy=0;
+
+      // node-node repulsion
+      for(let j=0;j<placed.length;j++){
+        if(i===j) continue;
+        const b = placed[j];
+        const dx = a.x-b.x, dy=a.y-b.y;
+        const d = Math.sqrt(dx*dx+dy*dy) || 0.01;
+        const minD = a.r + b.r + 2;
+        if(d < minD){
+          const push = (minD - d) * 0.55;
+          fx += (dx/d) * push;
+          fy += (dy/d) * push;
+        }
+      }
+
+      // tether to own parent
+      const pos = positions.get(a.id);
+      if(pos && pos.parentX != null){
+        const tx = a.x - pos.parentX, ty = a.y - pos.parentY;
+        const td = Math.sqrt(tx*tx+ty*ty) || 0.01;
+        const want = (pos.depth===1 ? baseR1 : baseR2);
+        const k = 0.1;
+        const diff = td - want;
+        fx -= (tx/td) * diff * k;
+        fy -= (ty/td) * diff * k;
+      }
+
+      // territorial pull — if another pillar is closer than own, push back
+      const ownCentroid = pillarCentroids.get(a.pillarId);
+      if(ownCentroid){
+        const ownD = Math.hypot(a.x - ownCentroid.x, a.y - ownCentroid.y);
+        for(const [pid, c] of pillarCentroids){
+          if(pid === a.pillarId) continue;
+          const otherD = Math.hypot(a.x - c.x, a.y - c.y);
+          if(otherD < ownD){
+            // being stolen by another pillar — pull hard back to own
+            const tx = ownCentroid.x - a.x, ty = ownCentroid.y - a.y;
+            const td = Math.sqrt(tx*tx+ty*ty) || 0.01;
+            const k = 0.4;
+            fx += (tx/td) * k * (ownD - otherD);
+            fy += (ty/td) * k * (ownD - otherD);
+          }
+        }
+      }
+
+      // No canvas-edge clamp — let clusters overflow naturally
+      const nx = a.x + fx;
+      const ny = a.y + fy;
+      const move = Math.hypot(nx-a.x, ny-a.y);
+      maxMove = Math.max(maxMove, move);
+      a.x = nx; a.y = ny;
+    }
+    if(maxMove < 0.25) break;
+  }
+
+  placed.forEach(p=>{
+    if(p.pinned) return;
+    const pos = positions.get(p.id);
+    if(pos){ pos.x = p.x; pos.y = p.y; }
+  });
+}
+
+/* ============== RENDER ============== */
+function renderNodes(){
+  inner.innerHTML="";
+  edgesSvg.innerHTML="";
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  edgesSvg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  edgesSvg.setAttribute("width", W);
+  edgesSvg.setAttribute("height", H);
+
+  const anim = state.animate;
+  let delay = 0;
+
+  // Draw edges first (behind nodes)
+  function drawEdge(fromId, to, isEmpty, depth, pillarId){
+    const f=positions.get(fromId);
+    if(!f) return;
+    const mx=(f.x+to.x)/2, my=(f.y+to.y)/2;
+    const dx=to.x-f.x, dy=to.y-f.y;
+    const perpX=-dy, perpY=dx;
+    const pl=Math.sqrt(perpX*perpX+perpY*perpY)||1;
+    const off = depth===1 ? 14 : 8;
+    const cpx=mx + (perpX/pl)*off*0.5;
+    const cpy=my + (perpY/pl)*off*0.5;
+    const d = `M${f.x} ${f.y} Q${cpx} ${cpy} ${to.x} ${to.y}`;
+    const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+    const len = Math.hypot(dx,dy) + 30;
+    p.setAttribute("class","edge"+(isEmpty?" dashed":"")+(depth>=2?" sub":"")+(anim?" enter":""));
+    p.setAttribute("d", d);
+    p.style.setProperty("--len", len);
+    if(pillarId) p.setAttribute("data-pillar", pillarId);
+    if(anim){ p.style.animationDelay = (delay*30 + 100)+"ms"; }
+    edgesSvg.appendChild(p);
+  }
+
+  // Recurse and render
+  function renderTree(items, parentId, depth, pillarId){
+    items.forEach((c)=>{
+      const pos = positions.get(c.id);
+      if(!pos) return;
+
+      // filter visibility
+      const visible = state.filter==="all" || c.status===state.filter;
+
+      if(visible){
+        drawEdge(parentId, pos, c.status==="empty", depth, pillarId);
+      }
+
+      // node element
+      const isSub = depth>=2;
+      const hub = !!(c.children && c.children.length);
+      const cls = [
+        "node",
+        isSub ? "sub" : "cluster",
+        c.status,
+        hub?"hub":"",
+        c.id===state.selectedId?"selected":"",
+        anim?"enter":"",
+        visible?"":"hidden"
+      ].filter(Boolean).join(" ");
+      const n = el("div", cls);
+      n.dataset.id = c.id;
+      n.dataset.pillar = pillarId;
+      n.style.left=pos.x+"px";
+      n.style.top=pos.y+"px";
+      n.style.opacity = visible?"":"0.15";
+      n.style.pointerEvents = visible?"":"none";
+
+      const b = el("div","bubble");
+      b.style.width=pos.size+"px";
+      b.style.height=pos.size+"px";
+      n.appendChild(b);
+
+      if(state.showLabels){
+        const kw = el("div","kw", c.kw);
+        n.appendChild(kw);
+      }
+      if(state.showVolume){
+        const m = el("div","meta", fmt(c.vol)+"/mo");
+        n.appendChild(m);
+      }
+
+      if(anim){
+        n.style.animationDelay = (delay*30 + 200)+"ms";
+      }
+      delay++;
+      inner.appendChild(n);
+
+      if(c.children) renderTree(c.children, c.id, depth+1, pillarId);
+    });
+  }
+
+  DATA.forEach(p=>{
+    const pos=positions.get(p.id);
+    const cls = ["node","pillar", p.status||"published", state.selectedId===p.id?"selected":"", anim?"enter":""].filter(Boolean).join(" ");
+    const n = el("div", cls);
+    n.dataset.id = p.id;
+    n.dataset.pillar = p.id;
+    n.style.left=pos.x+"px";
+    n.style.top=pos.y+"px";
+    const b = el("div","bubble");
+    b.innerHTML = `
+      <span class="pulse"></span>
+      <div class="title">${p.title}</div>
+      <div class="meta">${p.clusters.filter(c=>c.status==="published").length}/${p.clusters.length} 已發佈</div>
+    `;
+    n.appendChild(b);
+    if(anim) n.style.animationDelay = (delay*30)+"ms";
+    delay++;
+    inner.appendChild(n);
+
+    renderTree(p.clusters, p.id, 1, p.id);
+  });
+
+  // Optional cross-pillar link highlight
+  if(state.showLinks){
+    const pairs = [["c2","d4"], ["c5","d1"], ["e1","c1"]];
+    pairs.forEach(([a,b])=>{
+      const A=positions.get(a), B=positions.get(b);
+      if(!A||!B) return;
+      const mx=(A.x+B.x)/2, my=Math.min(A.y,B.y)-60;
+      const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+      p.setAttribute("class","edge dashed cross");
+      p.setAttribute("d",`M${A.x} ${A.y} Q${mx} ${my} ${B.x} ${B.y}`);
+      p.setAttribute("stroke","var(--ochre)");
+      p.setAttribute("stroke-opacity","0.5");
+      p.setAttribute("stroke-width","1");
+      p.setAttribute("data-pillar-a", A.pillarId||"");
+      p.setAttribute("data-pillar-b", B.pillarId||"");
+      edgesSvg.appendChild(p);
+    });
+  }
+
+  applyTransform();
+}
+
+function applyTransform(){
+  inner.style.transform = `translate(${state.pan.x}px, ${state.pan.y}px) scale(${state.zoom})`;
+  edgesSvg.style.transform = `translate(${state.pan.x}px, ${state.pan.y}px) scale(${state.zoom})`;
+  edgesSvg.style.transformOrigin = "0 0";
+  document.getElementById("zoom-val").textContent = Math.round(state.zoom*100) + "%";
+}
+
+/* ============== RIGHT PANEL ============== */
+function renderRight(){
+  const found = byId(state.selectedId);
+  const panel = document.getElementById("right-panel");
+  if(!found){ panel.innerHTML=""; return; }
+
+  if(found.kind==="pillar"){
+    const p = found.node;
+    const pub = p.clusters.filter(c=>c.status==="published").length;
+    const draft = p.clusters.filter(c=>c.status==="draft").length;
+    const empty = p.clusters.filter(c=>c.status==="empty").length;
+    const statusLabel = {published:"已發佈", draft:"草稿", empty:"未生成"}[p.status||"published"];
+    panel.innerHTML = `
+      <div class="status-row">
+        <span class="status-chip ${p.status||"published"}"><span class="dot"></span>Pillar · ${statusLabel}</span>
+        <button class="btn ghost sm">···</button>
+      </div>
+      <h2 class="title">${p.title}</h2>
+      <div class="parent-line" style="font-style:italic;color:var(--ink-2);font-family:var(--serif);font-size:15px;line-height:1.45">
+        ${p.summary || ""}
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="k">Pillar 月搜尋量</div><div class="v">${fmt(p.vol||0)}</div><div class="sub">/ mo</div></div>
+        <div class="stat"><div class="k">難度</div><div class="v">${Math.min(85, 30 + Math.round(Math.log(p.vol||1000)*5))}</div><div class="sub">KD</div></div>
+        <div class="stat"><div class="k">子主題</div><div class="v">${p.clusters.length}</div><div class="sub">clusters</div></div>
+        <div class="stat"><div class="k">總節點</div><div class="v">${p.clusters.length + p.clusters.reduce((s,c)=>s+(c.children?c.children.length:0),0)}</div><div class="sub">nodes</div></div>
+      </div>
+
+      <div class="kw-tags">
+        <span class="kw-tag">${p.title}</span>
+        <span class="kw-tag">${p.title} 指南</span>
+        <span class="kw-tag">${p.title} 教學</span>
+        <span class="kw-tag more">+5</span>
+      </div>
+
+      <h4>Pillar 文章</h4>
+      <div class="actions">
+        ${p.status==="empty"
+          ? `<button class="btn primary full" data-act="generate">✦ AI 生成 Pillar 文章</button>`
+          : `<button class="btn primary" data-act="open">✎ 編輯文章</button>
+             <button class="btn" data-act="preview">⌕ 預覽</button>`}
+        ${p.status==="draft" ? `<button class="btn ochre full" data-act="publish">↑ 發佈</button>` : ""}
+        ${p.status==="published" ? `<button class="btn full" data-act="publish">↓ 取消發佈</button>` : ""}
+      </div>
+
+      <h4>子主題管理</h4>
+      <div class="actions">
+        <button class="btn primary full">✦ AI 擴充 cluster</button>
+        <button class="btn full" data-act="child">＋ 新增 cluster</button>
+      </div>
+
+      <section>
+        <h4>Cluster 概覽 · ${p.clusters.length}</h4>
+        <ul class="link-list">
+          ${p.clusters.map(s=>`
+            <li data-id="${s.id}">
+              <span class="arrow">${s.status==="published"?"●":s.status==="draft"?"◐":"○"}</span>
+              <span style="flex:1">${s.kw}</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--ink-4)">${fmt(s.vol)}</span>
+            </li>
+          `).join("")}
+        </ul>
+      </section>
+
+      <section>
+        <div class="ai-note">
+          <span class="label">Quillo AI</span>
+          「${p.title}」的長尾機會還沒挖完:建議補上 ${empty>0?"未生成的 "+empty+" 個子主題":"2–3 個新角度"},預估月流量 +1,500。
+        </div>
+      </section>
+    `;
+    // Wire buttons
+    panel.querySelectorAll("[data-act]").forEach(btn=>{
+      btn.addEventListener("click",()=>act(btn.dataset.act, state.selectedId));
+    });
+    panel.querySelectorAll("li[data-id]").forEach(li=>{
+      li.addEventListener("click",()=>selectNode(li.dataset.id));
+    });
+    return;
+  }
+
+  const c = found.node;
+  const p = found.pillar || found.parent;
+  const parentName = found.kind==="sub" ? (found.parent.kw + " <span class='arrow'>→</span> ") : "";
+  const pillarName = found.pillar ? found.pillar.title : (found.parent.title || "");
+  const hasChildren = !!(c.children && c.children.length);
+  const statusLabel = {published:"已發佈", draft:"草稿", empty:"未生成"}[c.status];
+
+  panel.innerHTML = `
+    <div class="status-row">
+      <span class="status-chip ${c.status}"><span class="dot"></span>${statusLabel}</span>
+      <button class="btn ghost sm" id="panel-more">···</button>
+    </div>
+    <h2 class="title">${c.kw}</h2>
+    <div class="parent-line">
+      <b>${pillarName}</b><span class="arrow">/</span>${parentName}${found.kind==="sub" ? c.kw : ""}
+      ${found.kind==="cluster"? "cluster" : found.kind==="sub" ? "sub-topic" : ""}
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="k">月搜尋量</div>
+        <div class="v">${fmt(c.vol)}</div>
+        <div class="sub">volume</div>
+      </div>
+      <div class="stat">
+        <div class="k">難度</div>
+        <div class="v">${Math.min(80, 20 + Math.round(Math.log(c.vol)*6))}</div>
+        <div class="sub">KD</div>
+      </div>
+      <div class="stat">
+        <div class="k">層級</div>
+        <div class="v">${found.kind==="cluster"?"2":"3"}</div>
+        <div class="sub">depth</div>
+      </div>
+      <div class="stat">
+        <div class="k">子節點</div>
+        <div class="v">${hasChildren ? c.children.length : 0}</div>
+        <div class="sub">nodes</div>
+      </div>
+    </div>
+
+    <div class="kw-tags">
+      <span class="kw-tag">${c.kw}</span>
+      <span class="kw-tag">how to ${c.kw}</span>
+      <span class="kw-tag">${c.kw} 範例</span>
+      <span class="kw-tag more">+4</span>
+    </div>
+
+    <h4>動作</h4>
+    <div class="actions">
+      ${c.status==="empty"
+        ? `<button class="btn primary full" data-act="generate">✦ AI 生成文章</button>`
+        : `<button class="btn primary" data-act="open">✎ 編輯</button>
+           <button class="btn" data-act="preview">⌕ 預覽</button>`}
+      ${c.status==="draft" ? `<button class="btn ochre full" data-act="publish">↑ 發佈</button>` : ""}
+      ${c.status==="published" ? `<button class="btn full" data-act="publish">↓ 取消發佈</button>` : ""}
+      <button class="btn" data-act="child">＋ 子節點</button>
+      <button class="btn" data-act="delete" style="color:var(--rust)">⌫ 刪除</button>
+    </div>
+
+    ${hasChildren ? `
+    <section>
+      <h4>子節點 · ${c.children.length}</h4>
+      <ul class="link-list">
+        ${c.children.map(s=>`
+          <li data-id="${s.id}">
+            <span class="arrow">${s.status==="published"?"●":s.status==="draft"?"◐":"○"}</span>
+            <span style="flex:1">${s.kw}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--ink-4)">${fmt(s.vol)}</span>
+          </li>
+        `).join("")}
+      </ul>
+    </section>
+    ` : ""}
+
+    <section>
+      <h4>連結</h4>
+      <ul class="link-list">
+        <li><span class="arrow">→</span><span style="flex:1">連到 ChatGPT 寫部落格</span><span style="font-family:var(--mono);font-size:11px;color:var(--ink-4)">internal</span></li>
+        <li><span class="arrow">→</span><span style="flex:1">連到 AI SEO 工具比較</span><span style="font-family:var(--mono);font-size:11px;color:var(--ink-4)">internal</span></li>
+        <li><span class="arrow">←</span><span style="flex:1">被 on-page SEO 引用</span><span style="font-family:var(--mono);font-size:11px;color:var(--ink-4)">cross</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <div class="ai-note">
+        <span class="label">Quillo AI</span>
+        ${c.status==="empty"
+          ? "還沒產出 — 抓到 SERP top 10 的共同主題後,估計 1,400 字可覆蓋主要意圖。"
+          : c.status==="draft"
+          ? "草稿還缺結尾 CTA 與 FAQ schema;建議補上後再發佈。"
+          : "已發佈 14 天,排名浮動於 8–12 位;可再補 3 個長尾子節點撐內部連結。"}
+      </div>
+    </section>
+  `;
+
+  // Wire action buttons
+  panel.querySelectorAll("[data-act]").forEach(btn=>{
+    btn.addEventListener("click",()=>act(btn.dataset.act, state.selectedId));
+  });
+  // Sub-node clicks
+  panel.querySelectorAll("li[data-id]").forEach(li=>{
+    li.addEventListener("click",()=>selectNode(li.dataset.id));
+  });
+}
+
+/* ============== ACTIONS ============== */
+function act(kind, id){
+  const found = byId(id);
+  if(!found) return;
+  switch(kind){
+    case "generate":
+      if(found.node.status==="empty"){
+        found.node.status="draft";
+        toast("✦ AI 已生成草稿:" + found.node.kw);
+      } else toast("已存在草稿或文章");
+      break;
+    case "publish":
+      if(found.node.status==="draft"){ found.node.status="published"; toast("↑ 已發佈"); }
+      else if(found.node.status==="published"){ found.node.status="draft"; toast("↓ 已取消發佈"); }
+      break;
+    case "child":
+      const newChild = {id:"n"+Math.random().toString(36).slice(2,7), kw:"新主題 "+(Math.floor(Math.random()*100)), status:"empty", vol:400 + Math.floor(Math.random()*800)};
+      found.node.children = found.node.children || [];
+      found.node.children.push(newChild);
+      toast("＋ 新增子節點");
+      break;
+    case "delete":
+      if(found.kind==="pillar"){ toast("⚠ 無法刪除 pillar"); return; }
+      const parent = found.parent;
+      const arr = parent.clusters || parent.children;
+      const idx = arr.indexOf(found.node);
+      if(idx>=0){ arr.splice(idx,1); toast("⌫ 已刪除"); }
+      state.selectedId = parent.id;
+      break;
+    case "open": toast("✎ 開啟編輯器…"); return;
+    case "preview": toast("⌕ 預覽文章…"); return;
+  }
+  computeLayout();
+  renderNodes();
+  renderRight();
+  updateFilterCounts();
+}
+
+function selectNode(id){
+  state.selectedId = id;
+  // Ensure panel is visible
+  document.querySelector(".app").classList.remove("no-panel");
+  // Only update selection class, don't re-render (no animation flash)
+  document.querySelectorAll(".node.selected").forEach(n=>n.classList.remove("selected"));
+  document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+  // Also reflect pillar selection in left panel
+  const found = byId(id);
+  if(found){
+    const pillarId = found.kind==="pillar" ? id : (found.pillar ? found.pillar.id : (found.parent && found.parent.id && found.parent.id.startsWith("p") ? found.parent.id : null));
+    // Figure out top-level pillar by tracing
+    let pid = id;
+    if(found.kind==="cluster") pid = found.parent.id;
+    if(found.kind==="sub") pid = found.pillar.id;
+    document.querySelectorAll(".pillar-item").forEach(x=>x.classList.remove("active"));
+    document.querySelector(`.pillar-item[data-pillar="${pid}"]`)?.classList.add("active");
+  }
+  renderRight();
+}
+
+/* ============== TOAST ============== */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 1800);
+}
+
+/* ============== EVENT WIRING ============== */
+canvas.addEventListener("click", e=>{
+  const n = e.target.closest(".node");
+  if(n){
+    selectNode(n.dataset.id);
+  } else {
+    // Click on empty canvas — deselect & close panel
+    state.selectedId = null;
+    document.querySelectorAll(".node.selected").forEach(x=>x.classList.remove("selected"));
+    document.querySelectorAll(".pillar-item.active").forEach(x=>x.classList.remove("active"));
+    document.querySelector(".app").classList.add("no-panel");
+  }
+  document.getElementById("ctx").classList.remove("show");
+});
+
+/* Hover-group highlight */
+canvas.addEventListener("mouseover", e=>{
+  const n = e.target.closest(".node");
+  if(!n) return;
+  const pid = n.dataset.pillar;
+  if(!pid) return;
+  canvas.classList.add("group-hover");
+  document.querySelectorAll(`.node[data-pillar="${pid}"]`).forEach(x=>x.classList.add("in-group"));
+  document.querySelectorAll(`#edges .edge[data-pillar="${pid}"]`).forEach(x=>x.classList.add("in-group"));
+});
+canvas.addEventListener("mouseout", e=>{
+  const n = e.target.closest(".node");
+  if(!n) return;
+  const to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(".node");
+  if(to && to.dataset.pillar === n.dataset.pillar) return;
+  canvas.classList.remove("group-hover");
+  document.querySelectorAll(".in-group").forEach(x=>x.classList.remove("in-group"));
+});
+
+canvas.addEventListener("contextmenu", e=>{
+  const n = e.target.closest(".node");
+  if(!n) return;
+  e.preventDefault();
+  selectNode(n.dataset.id);
+  const ctx = document.getElementById("ctx");
+  ctx.style.left = e.clientX+"px";
+  ctx.style.top = e.clientY+"px";
+  ctx.classList.add("show");
+});
+document.addEventListener("click", e=>{
+  if(!e.target.closest(".ctx")) document.getElementById("ctx").classList.remove("show");
+});
+document.getElementById("ctx").addEventListener("click", e=>{
+  const b = e.target.closest("button");
+  if(!b) return;
+  act(b.dataset.act, state.selectedId);
+  document.getElementById("ctx").classList.remove("show");
+});
+
+/* Pan & zoom */
+let isPanning=false, panStart={x:0,y:0}, panBase={x:0,y:0};
+canvas.addEventListener("mousedown", e=>{
+  if(e.target.closest(".node")) return;
+  isPanning=true;
+  panStart = {x:e.clientX, y:e.clientY};
+  panBase = {...state.pan};
+});
+window.addEventListener("mousemove", e=>{
+  if(!isPanning) return;
+  state.pan.x = panBase.x + (e.clientX - panStart.x);
+  state.pan.y = panBase.y + (e.clientY - panStart.y);
+  applyTransform();
+});
+window.addEventListener("mouseup",()=>{ isPanning=false; });
+
+canvas.addEventListener("wheel", e=>{
+  if(e.ctrlKey || e.metaKey){
+    e.preventDefault();
+    const delta = -e.deltaY * 0.002;
+    state.zoom = Math.min(2, Math.max(0.4, state.zoom + delta));
+    applyTransform();
+  }
+}, {passive:false});
+
+document.getElementById("zoom-in").onclick = ()=>{state.zoom=Math.min(2, state.zoom+0.1); applyTransform();};
+document.getElementById("zoom-out").onclick = ()=>{state.zoom=Math.max(0.4, state.zoom-0.1); applyTransform();};
+document.getElementById("zoom-fit").onclick = ()=>{state.zoom=1; state.pan={x:0,y:0}; applyTransform();};
+
+/* Filter */
+function updateFilterCounts(){
+  const all = [];
+  DATA.forEach(p=>all.push({status:p.status||"published"}));
+  (function walk(items){items.forEach(c=>{all.push(c); if(c.children)walk(c.children);});})(DATA.flatMap(d=>d.clusters));
+  const counts = {
+    all: all.length,
+    published: all.filter(c=>c.status==="published").length,
+    draft: all.filter(c=>c.status==="draft").length,
+    empty: all.filter(c=>c.status==="empty").length,
+  };
+  document.querySelectorAll("#filter-bar .chip-btn").forEach(b=>{
+    const f = b.dataset.f;
+    const n = b.querySelector(".n");
+    if(n) n.textContent = counts[f];
+  });
+}
+document.querySelectorAll("#filter-bar .chip-btn").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll("#filter-bar .chip-btn").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    state.filter = b.dataset.f;
+    state.animate = false;
+    renderNodes();
+    state.animate = TWEAK_DEFAULTS.animate;
+  });
+});
+
+/* Pillar items */
+document.querySelectorAll(".pillar-item").forEach(p=>{
+  p.addEventListener("click",()=>{
+    document.querySelectorAll(".pillar-item").forEach(x=>x.classList.remove("active"));
+    p.classList.add("active");
+    selectNode(p.dataset.pillar);
+  });
+});
+
+/* Header buttons */
+document.getElementById("btn-ai").onclick = ()=>toast("✦ 開始 AI 關鍵字規劃…");
+document.getElementById("btn-new-pillar").onclick = ()=>toast("＋ 新增 pillar(mock)");
+
+/* Tweaks panel */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "showLinks": true,
+  "showLabels": true,
+  "showVolume": true,
+  "animate": true,
+  "density": "spacious"
+}/*EDITMODE-END*/;
+Object.assign(state, TWEAK_DEFAULTS);
+
+const tweaksPanel = document.getElementById("tweaks");
+document.getElementById("btn-tweaks").onclick = ()=>tweaksPanel.classList.toggle("show");
+document.getElementById("tw-links").addEventListener("change", e=>{ state.showLinks=e.target.checked; rerender(); saveTweaks(); });
+document.getElementById("tw-labels").addEventListener("change", e=>{ state.showLabels=e.target.checked; rerender(); saveTweaks(); });
+document.getElementById("tw-volume").addEventListener("change", e=>{ state.showVolume=e.target.checked; rerender(); saveTweaks(); });
+document.getElementById("tw-animate").addEventListener("change", e=>{ state.animate=e.target.checked; saveTweaks(); });
+document.querySelectorAll(".tweaks [data-dense]").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll(".tweaks [data-dense]").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    state.density = b.dataset.dense;
+    computeLayout(); rerender(); saveTweaks();
+  });
+});
+function rerender(){ const a=state.animate; state.animate=false; renderNodes(); state.animate=a; }
+function saveTweaks(){
+  try{ window.parent.postMessage({type:"__edit_mode_set_keys", edits:{
+    showLinks:state.showLinks,showLabels:state.showLabels,showVolume:state.showVolume,animate:state.animate,density:state.density
+  }},"*");}catch(e){}
+}
+
+/* Edit-mode host protocol */
+window.addEventListener("message",(e)=>{
+  const d=e.data||{};
+  if(d.type==="__activate_edit_mode") tweaksPanel.classList.add("show");
+  if(d.type==="__deactivate_edit_mode") tweaksPanel.classList.remove("show");
+});
+try{ window.parent.postMessage({type:"__edit_mode_available"},"*"); }catch(e){}
+
+/* Keyboard shortcuts */
+window.addEventListener("keydown", e=>{
+  if(e.target.matches("input,textarea")) return;
+  const k = e.key.toLowerCase();
+  if(k==="e") act("open", state.selectedId);
+  else if(k==="g") act("generate", state.selectedId);
+  else if(k==="p") act("preview", state.selectedId);
+  else if(k==="escape") document.getElementById("ctx").classList.remove("show");
+});
+
+/* Init */
+function init(){
+  computeLayout();
+  renderNodes();
+  renderRight();
+  updateFilterCounts();
+}
+window.addEventListener("load", init);
+let resizeT; window.addEventListener("resize",()=>{clearTimeout(resizeT);resizeT=setTimeout(()=>{state.animate=false; computeLayout(); renderNodes(); state.animate=TWEAK_DEFAULTS.animate;},120);});
+</script>
+</body>
+</html>
