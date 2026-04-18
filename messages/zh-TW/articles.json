@@ -45,5 +45,8 @@
   "editor_title": "編輯器",
   "editor_coming_soon": "編輯器功能開發中（Task 43-44）",
   "enter_editor": "進入編輯器",
-  "cancel": "取消"
+  "cancel": "取消",
+  "editor_subtitle": "Markdown 與富文字雙向即時同步，每次停筆自動儲存",
+  "editor_placeholder": "開始編輯…",
+  "editor_link_prompt": "輸入網址（留空即取消連結）"
 }

@@ -45,5 +45,8 @@
   "editor_title": "Editor",
   "editor_coming_soon": "Editor feature in progress (Tasks 43-44)",
   "enter_editor": "Enter editor",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "editor_subtitle": "Rich text with markdown sync. Autosaves whenever you pause.",
+  "editor_placeholder": "Start writing…",
+  "editor_link_prompt": "Enter URL (leave blank to remove link)"
 }
