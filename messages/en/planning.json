@@ -1,0 +1,20 @@
+{
+  "new_title": "Plan a new Pillar Cluster",
+  "step1_heading": "Step 1 — explore directions",
+  "step1_intro": "Describe the topic you want to cover. AI will propose a few angles.",
+  "topic_label": "Topic",
+  "topic_placeholder": "e.g. Knowledge management in Notion, sustainable fashion",
+  "audience_label": "Audience notes (optional)",
+  "audience_placeholder": "What the audience already knows, problems they want to solve...",
+  "generate": "Generate direction",
+  "regenerate": "Regenerate",
+  "accept_continue": "Accept direction and continue",
+  "generating": "Generating — keep this tab open…",
+  "cancel": "Cancel",
+  "error_generic": "Generation failed. Please try again.",
+  "step2_heading": "Step 2 — Pillars and Cluster articles",
+  "step2_intro": "Based on the confirmed direction, generate 3-5 Pillars with 5-10 Cluster articles each.",
+  "direction_label": "Confirmed direction",
+  "save_plan": "Save plan",
+  "saving_plan": "Saving…"
+}

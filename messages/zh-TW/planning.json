@@ -1,0 +1,20 @@
+{
+  "new_title": "規劃新的 Pillar Cluster",
+  "step1_heading": "Step 1 — 探索主題方向",
+  "step1_intro": "描述你想深耕的主題，AI 會產出幾個可能的切入角度。",
+  "topic_label": "主題",
+  "topic_placeholder": "例：Notion 的知識管理、永續時尚",
+  "audience_label": "受眾補充（可選）",
+  "audience_placeholder": "對主題現有理解、他們正在解決的問題…",
+  "generate": "產出方向",
+  "regenerate": "重新產出",
+  "accept_continue": "接受方向並進入 Step 2",
+  "generating": "生成中，請勿關閉…",
+  "cancel": "取消",
+  "error_generic": "生成失敗，請稍後再試",
+  "step2_heading": "Step 2 — Pillar 與 Cluster 文章",
+  "step2_intro": "依照確認的方向，產出 3-5 個 Pillar，每個下有 5-10 篇 Cluster 文章。",
+  "direction_label": "已確認的方向",
+  "save_plan": "儲存規劃",
+  "saving_plan": "儲存中…"
+}
