@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { Pencil, Trash2, Plus, Check, X } from 'lucide-react'
+import { Pencil, Trash2, Plus, Check, X, RefreshCw } from 'lucide-react'
 import {
   updatePillar,
   deletePillar,
@@ -16,6 +16,7 @@ import {
   deleteArticle,
   addArticle,
 } from './planning-actions'
+import { RegenerateClusterOverlay } from './_regenerate-cluster'
 
 type Pillar = {
   id: string
@@ -115,7 +116,9 @@ function PillarCard({
   const [editing, setEditing] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [addingArticle, setAddingArticle] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
   const [pending, startTransition] = useTransition()
+  const canRegenerate = articles.every((a) => a.status === 'planned')
 
   function onDelete() {
     startTransition(async () => {
@@ -156,6 +159,20 @@ function PillarCard({
             </div>
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              title={canRegenerate ? t('regenerate_tooltip') : t('regenerate_blocked')}
+              disabled={!canRegenerate}
+              className={cn(
+                'p-1.5 rounded-md transition-colors',
+                canRegenerate
+                  ? 'hover:bg-mist text-ink-3 hover:text-ochre-2'
+                  : 'text-ink-4/50 cursor-not-allowed',
+              )}
+              onClick={() => setRegenerating(true)}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
             <button
               type="button"
               title={t('edit')}
@@ -225,6 +242,15 @@ function PillarCard({
           </button>
         )}
       </div>
+
+      {regenerating && (
+        <RegenerateClusterOverlay
+          projectId={projectId}
+          pillarId={pillar.id}
+          pillarTitle={pillar.title}
+          onClose={() => setRegenerating(false)}
+        />
+      )}
     </article>
   )
 }

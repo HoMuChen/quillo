@@ -36,5 +36,9 @@
   "form_lsi_keywords": "LSI keywords (comma-separated)",
   "form_search_intent": "Search intent",
   "form_role": "Role",
-  "form_word_count": "Word count"
+  "form_word_count": "Word count",
+  "regenerate_tooltip": "Regenerate this Pillar's Cluster articles",
+  "regenerate_blocked": "Some articles are beyond planning — cannot regenerate",
+  "regenerate_title": "Regenerate cluster articles",
+  "accept_regenerate": "Replace existing articles"
 }

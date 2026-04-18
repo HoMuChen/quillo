@@ -28,6 +28,21 @@ export const pillarPlanSchema = z.object({
 
 export type PillarPlan = z.infer<typeof pillarPlanSchema>
 
+export const clusterArticlesSchema = z.object({
+  articles: z.array(
+    z.object({
+      title: z.string(),
+      target_keyword: z.string(),
+      lsi_keywords: z.array(z.string()).max(3),
+      search_intent: searchIntent,
+      word_count_target: z.number().int().min(500).max(5000),
+      role: z.enum(['hub', 'supporting', 'comparison']),
+    }),
+  ).min(5).max(10),
+})
+
+export type ClusterArticles = z.infer<typeof clusterArticlesSchema>
+
 export const outlineSchema = z.object({
   sections: z
     .array(

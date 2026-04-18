@@ -36,5 +36,9 @@
   "form_lsi_keywords": "LSI 關鍵字（逗號分隔）",
   "form_search_intent": "搜尋意圖",
   "form_role": "角色",
-  "form_word_count": "字數"
+  "form_word_count": "字數",
+  "regenerate_tooltip": "重新生成此 Pillar 的 Cluster 文章",
+  "regenerate_blocked": "已有文章進入撰寫階段，無法重生成",
+  "regenerate_title": "重新生成 Cluster 文章",
+  "accept_regenerate": "以此替換現有文章"
 }

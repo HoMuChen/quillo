@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { clusterArticlesSchema, type ClusterArticles } from '@/lib/ai/schemas'
 
 const intent = z.enum(['informational', 'commercial', 'transactional'])
 const role = z.enum(['hub', 'supporting', 'comparison'])
@@ -166,5 +167,53 @@ export async function addArticle(
     position: nextPos,
   })
   if (error) throw error
+  revalidatePath(`/projects/${projectId}/planning`)
+}
+
+// --- Regenerate Cluster ---
+
+export async function regenerateClusterAction(
+  projectId: string,
+  pillarId: string,
+  articles: ClusterArticles['articles'],
+) {
+  const parsed = clusterArticlesSchema.parse({ articles })
+
+  const supabase = await sb()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const { data: membership } = await supabase
+    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
+  if (!membership) throw new Error('No tenant')
+
+  // Guard: all existing articles for this pillar must be planned
+  const { data: existing } = await supabase
+    .from('articles').select('id,status').eq('pillar_id', pillarId)
+  const blocker = (existing ?? []).find((a) => a.status !== 'planned')
+  if (blocker) throw new Error('Some articles already past planning — cannot regenerate')
+
+  // Replace: delete all children, insert new ones
+  const { error: delError } = await supabase
+    .from('articles').delete().eq('pillar_id', pillarId)
+  if (delError) throw delError
+
+  const rows = parsed.articles.map((a, i) => ({
+    project_id: projectId,
+    pillar_id: pillarId,
+    tenant_id: membership.tenant_id,
+    title: a.title,
+    target_keyword: a.target_keyword,
+    lsi_keywords: a.lsi_keywords,
+    search_intent: a.search_intent,
+    word_count_target: a.word_count_target,
+    role: a.role,
+    position: i,
+  }))
+  const { error: insError } = await supabase.from('articles').insert(rows)
+  if (insError) throw insError
+
   revalidatePath(`/projects/${projectId}/planning`)
 }
