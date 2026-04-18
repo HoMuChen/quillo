@@ -21,5 +21,20 @@
   "empty_body": "從你想經營的主題開始，AI 會幫你規劃 Pillar 與 Cluster 文章。",
   "empty_cta": "開始規劃",
   "plan_new_button": "＋ 新 Pillar Cluster",
-  "pillar_no_articles": "這個 Pillar 還沒有 Cluster 文章"
+  "pillar_no_articles": "這個 Pillar 還沒有 Cluster 文章",
+  "edit": "編輯",
+  "delete": "刪除",
+  "save": "儲存",
+  "add_pillar": "＋ 新增 Pillar",
+  "add_article": "新增文章",
+  "confirm_delete_pillar": "刪除此 Pillar？所有 Cluster 文章也會一併刪除。",
+  "confirm_delete_article": "確認刪除這篇文章？",
+  "form_pillar_title": "Pillar 標題",
+  "form_pillar_description": "描述",
+  "form_article_title": "文章標題",
+  "form_target_keyword": "目標關鍵字",
+  "form_lsi_keywords": "LSI 關鍵字（逗號分隔）",
+  "form_search_intent": "搜尋意圖",
+  "form_role": "角色",
+  "form_word_count": "字數"
 }

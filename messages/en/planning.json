@@ -21,5 +21,20 @@
   "empty_body": "Pick a topic and AI will draft your Pillar Cluster plan.",
   "empty_cta": "Start planning",
   "plan_new_button": "+ New Pillar Cluster",
-  "pillar_no_articles": "No Cluster articles under this Pillar yet"
+  "pillar_no_articles": "No Cluster articles under this Pillar yet",
+  "edit": "Edit",
+  "delete": "Delete",
+  "save": "Save",
+  "add_pillar": "+ Add Pillar",
+  "add_article": "Add article",
+  "confirm_delete_pillar": "Delete this Pillar? All Cluster articles will also be removed.",
+  "confirm_delete_article": "Delete this article?",
+  "form_pillar_title": "Pillar title",
+  "form_pillar_description": "Description",
+  "form_article_title": "Article title",
+  "form_target_keyword": "Target keyword",
+  "form_lsi_keywords": "LSI keywords (comma-separated)",
+  "form_search_intent": "Search intent",
+  "form_role": "Role",
+  "form_word_count": "Word count"
 }
