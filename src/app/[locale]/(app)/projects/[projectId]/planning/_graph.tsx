@@ -91,9 +91,9 @@ function computeLayout(
   const cx = W / 2
   const cy = H / 2
   const S = Math.min(W, H)
-  const scale = Math.max(0.55, Math.min(1, S / 700))
-  const pillarSize = 130 * scale
-  const clusterSize = 64 * scale
+  const scale = Math.max(0.6, Math.min(1, S / 700))
+  const pillarSize = 96 * scale
+  const clusterSize = 46 * scale
   const sep = S * (S < 520 ? 0.3 : 0.34)
 
   type Placed = {
@@ -155,7 +155,7 @@ function computeLayout(
   }
 
   // Place clusters in an outward-facing wedge around each pillar
-  const baseR = Math.max(pillarSize / 2 + clusterSize / 2 + 48, 160 * scale)
+  const baseR = Math.max(pillarSize / 2 + clusterSize / 2 + 36, 130 * scale)
   const wedge = Math.PI * (S < 520 ? 1.1 : 1.45)
 
   for (const info of pillarInfo) {
@@ -192,7 +192,7 @@ function computeLayout(
       placed.push({
         id: article.id,
         x, y,
-        r: clusterSize / 2 + 32, // label breathing room
+        r: clusterSize / 2 + 22, // label breathing room (keyword only)
         size: clusterSize,
         kind: 'cluster',
         pillarId: info.pillar.id,
@@ -303,12 +303,6 @@ function curvePath(ax: number, ay: number, bx: number, by: number): string {
   return `M ${ax.toFixed(1)} ${ay.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}`
 }
 
-const COLOR_CLASSES = {
-  0: { fill: 'bg-p1', tint: 'bg-p1-tint', border: 'border-p1', text: 'text-p1', stroke: 'stroke-p1' },
-  1: { fill: 'bg-p2', tint: 'bg-p2-tint', border: 'border-p2', text: 'text-p2', stroke: 'stroke-p2' },
-  2: { fill: 'bg-p3', tint: 'bg-p3-tint', border: 'border-p3', text: 'text-p3', stroke: 'stroke-p3' },
-} as const
-
 const COLOR_HEX = {
   0: { main: '#2b3f36', tint: '#e6ede6' },
   1: { main: '#2d4a66', tint: '#e4eaf0' },
@@ -377,10 +371,7 @@ export function PlanningGraph({
     <div className="space-y-3">
       <div
         ref={canvasRef}
-        className={cn(
-          'relative w-full h-[calc(100vh-210px)] min-h-[560px]',
-          'rounded-xl border border-rule bg-bg shadow-sh-1 overflow-hidden',
-        )}
+        className="relative w-full h-[calc(100vh-180px)] min-h-[560px] overflow-hidden"
         onClick={(e) => {
           if (e.target === e.currentTarget) setSelectedId(null)
         }}
@@ -413,7 +404,6 @@ export function PlanningGraph({
 
         {/* Nodes */}
         {nodes.map((n) => {
-          const c = COLOR_CLASSES[n.colorIdx as 0 | 1 | 2]
           const hex = COLOR_HEX[n.colorIdx as 0 | 1 | 2]
           const isInGroup = hoveredPillarId && hoveredPillarId === n.pillarId
           const isDimmed = hoveredPillarId && hoveredPillarId !== n.pillarId
@@ -547,15 +537,12 @@ export function PlanningGraph({
                   </span>
                 )}
               </span>
-              <span className="font-serif italic text-[14px] text-ink leading-tight whitespace-normal"
-                style={{ maxWidth: n.size + 70 }}>
-                {n.title}
+              <span
+                className="font-serif italic text-[13px] text-ink leading-tight whitespace-normal"
+                style={{ maxWidth: n.size + 80 }}
+              >
+                {n.subtitle || n.title}
               </span>
-              {n.subtitle && (
-                <span className="font-mono text-[10px] text-ink-3 whitespace-nowrap">
-                  {n.subtitle}
-                </span>
-              )}
             </button>
           )
         })}
