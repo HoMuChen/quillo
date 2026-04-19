@@ -6,7 +6,6 @@ import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
-import CharacterCount from '@tiptap/extension-character-count'
 import { Markdown } from 'tiptap-markdown'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -17,6 +16,14 @@ import {
 import { cn } from '@/lib/utils'
 
 export type SaveFn = (tiptapDoc: unknown, markdown: string) => Promise<void>
+
+const CJK_RE = /[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]/g
+
+function countWords(text: string): number {
+  const cjk = text.match(CJK_RE)?.length ?? 0
+  const rest = text.replace(CJK_RE, ' ').trim().split(/\s+/).filter(Boolean).length
+  return cjk + rest
+}
 
 export function TiptapEditor({
   initialTiptap,
@@ -38,6 +45,7 @@ export function TiptapEditor({
   const t = useTranslations('articles')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [rewriting, setRewriting] = useState(false)
+  const [wordCount, setWordCount] = useState(0)
   const saveTimer = useRef<NodeJS.Timeout | null>(null)
   const firstUpdate = useRef(true)
 
@@ -48,7 +56,6 @@ export function TiptapEditor({
       Image.configure({ inline: false, allowBase64: false }),
       Link.configure({ openOnClick: false, HTMLAttributes: { rel: 'noopener', target: '_blank' } }),
       Placeholder.configure({ placeholder: placeholder ?? '' }),
-      CharacterCount,
       Markdown.configure({
         html: false,
         tightLists: true,
@@ -112,6 +119,14 @@ export function TiptapEditor({
     editor.on('update', schedule)
     return () => { editor.off('update', schedule) }
   }, [editor, schedule])
+
+  useEffect(() => {
+    if (!editor) return
+    const update = () => setWordCount(countWords(editor.getText()))
+    update()
+    editor.on('update', update)
+    return () => { editor.off('update', update) }
+  }, [editor])
 
   // Click-to-edit image alt
   useEffect(() => {
@@ -208,7 +223,7 @@ export function TiptapEditor({
       <div className="rounded-xl border border-rule bg-bg p-6 min-h-[400px] shadow-sh-1">
         <EditorContent editor={editor} />
       </div>
-      <StatusLine status={status} t={t} wordCount={editor.storage.characterCount?.words?.() ?? 0} />
+      <StatusLine status={status} t={t} wordCount={wordCount} />
     </div>
   )
 }
@@ -359,7 +374,7 @@ function StatusLine({
 }: {
   status: 'idle' | 'saving' | 'saved' | 'error'
   wordCount: number
-  t: (k: 'saving' | 'saved' | 'save_error') => string
+  t: (k: 'saving' | 'saved' | 'save_error' | 'words') => string
 }) {
   return (
     <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.14em]">
@@ -372,7 +387,7 @@ function StatusLine({
          status === 'saved' ? t('saved') :
          status === 'error' ? t('save_error') : ''}
       </span>
-      <span className="font-mono text-ink-4">{wordCount} words</span>
+      <span className="font-mono text-ink-4">{wordCount} {t('words')}</span>
     </div>
   )
 }
