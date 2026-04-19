@@ -1,5 +1,11 @@
 {
   "app_name": "Quillo",
   "hello": "Hello",
-  "tagline": "editorial, ink-on-off-white"
+  "tagline": "editorial, ink-on-off-white",
+  "error_title": "Something went wrong",
+  "error_body": "The last action didn't complete. Please try again.",
+  "error_retry": "Retry",
+  "notfound_title": "Page not found",
+  "notfound_body": "The URL may be mistyped, or the resource has been removed.",
+  "notfound_cta": "Back to projects"
 }

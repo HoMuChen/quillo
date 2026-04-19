@@ -9,6 +9,7 @@ import {
   Noto_Sans_TC,
 } from 'next/font/google'
 import { routing } from '@/i18n/routing'
+import { Toaster } from '@/components/toaster'
 import '../globals.css'
 
 const serif = Instrument_Serif({
@@ -69,6 +70,7 @@ export default async function LocaleLayout({
     >
       <body className="min-h-full bg-bg text-ink font-sans flex flex-col">
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <Toaster />
       </body>
     </html>
   )

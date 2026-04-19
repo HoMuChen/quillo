@@ -1,5 +1,11 @@
 {
   "app_name": "Quillo",
   "hello": "你好",
-  "tagline": "editorial, ink-on-off-white"
+  "tagline": "editorial, ink-on-off-white",
+  "error_title": "出了點狀況",
+  "error_body": "剛才的操作沒成功，請重試。",
+  "error_retry": "重試",
+  "notfound_title": "找不到這個頁面",
+  "notfound_body": "網址可能打錯，或這個東西已經被刪掉。",
+  "notfound_cta": "回到專案列表"
 }
