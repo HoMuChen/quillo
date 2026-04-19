@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { setRequestLocale, getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import { decryptJson } from '@/lib/crypto/encrypt'
 import { ConnectionForm } from './_connection-form'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
@@ -17,10 +18,22 @@ export default async function SettingsPage({ params }: Props) {
 
   const { data: connection } = await supabase
     .from('site_connections')
-    .select('id,name,platform,last_tested_at,last_test_ok')
+    .select('id,name,platform,last_tested_at,last_test_ok,config_encrypted')
     .eq('project_id', projectId)
     .eq('platform', 'ghost')
     .maybeSingle()
+
+  let apiUrl: string | null = null
+  if (connection?.config_encrypted) {
+    try {
+      const bytea = connection.config_encrypted as unknown as Uint8Array | Buffer
+      const buf = Buffer.isBuffer(bytea) ? bytea : Buffer.from(bytea)
+      const cfg = decryptJson<{ apiUrl: string; apiKey: string }>(buf)
+      apiUrl = cfg.apiUrl
+    } catch (err) {
+      console.error('decrypt ghost config', err)
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -35,6 +48,7 @@ export default async function SettingsPage({ params }: Props) {
           name: connection.name,
           last_tested_at: connection.last_tested_at,
           last_test_ok: connection.last_test_ok,
+          apiUrl,
         } : null}
       />
     </div>

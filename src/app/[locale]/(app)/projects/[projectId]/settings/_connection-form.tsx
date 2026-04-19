@@ -16,6 +16,7 @@ type Initial = {
   name: string
   last_tested_at: string | null
   last_test_ok: boolean | null
+  apiUrl: string | null
 } | null
 
 export function ConnectionForm({
@@ -27,7 +28,7 @@ export function ConnectionForm({
 }) {
   const t = useTranslations('publish')
   const [name, setName] = useState(initial?.name ?? '')
-  const [apiUrl, setApiUrl] = useState('')
+  const [apiUrl, setApiUrl] = useState(initial?.apiUrl ?? '')
   const [apiKey, setApiKey] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -45,7 +46,7 @@ export function ConnectionForm({
         await saveGhostConnectionAction(projectId, { name, apiUrl, apiKey })
         setMessage(t('saved'))
         setEditing(false)
-        setApiUrl(''); setApiKey('')
+        setApiKey('')
       } catch (err) {
         setError(err instanceof Error ? err.message : t('save_error'))
       }
@@ -149,7 +150,7 @@ export function ConnectionForm({
           {message && <p className="text-[12px] text-sage">{message}</p>}
           <div className="flex justify-end gap-2">
             {initial && (
-              <Button type="button" variant="ghost" onClick={() => { setEditing(false); setApiUrl(''); setApiKey('') }} disabled={savePending}>
+              <Button type="button" variant="ghost" onClick={() => { setEditing(false); setApiUrl(initial.apiUrl ?? ''); setApiKey('') }} disabled={savePending}>
                 {t('cancel')}
               </Button>
             )}
