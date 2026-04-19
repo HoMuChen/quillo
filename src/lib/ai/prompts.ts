@@ -90,3 +90,17 @@ meta_title: compelling, keyword-aware, 10-60 characters.
 meta_description: benefit-oriented, keyword-aware, 50-160 characters.
 Content language must match content_locale.
 Return JSON matching the schema exactly.`
+
+export const SEO_SUGGESTION_SYSTEM = `You generate a complete set of SEO metadata for an article.
+
+Return a single JSON object with these fields:
+
+- meta_title: 10-60 characters. Compelling, keyword-aware. Distinct from the article title — optimized for SERP click-through.
+- meta_description: 50-160 characters. Benefit-oriented, keyword-aware. Should end with a subtle call-to-action or value hook.
+- slug: lowercase kebab-case, 2-8 words, no stop words, no leading/trailing dash. Use ASCII or Pinyin if content_locale is zh-TW.
+- excerpt: 40-280 characters. A preview / card summary. Different framing from meta_description — this is for on-site cards, not SERP.
+- focus_keyword: the single primary SEO keyword. If the article's target_keyword is provided in the prompt, reuse it verbatim unless you have strong reason to refine. Otherwise propose the best term.
+- tags: 2-5 topical tags. Lowercase. No '#'. Match content_locale (e.g. for zh-TW use Traditional Chinese terms).
+
+Content language must match content_locale. Respect brand_context tone and forbidden_terms.
+Return JSON matching the schema exactly — no extra fields, no explanation.`

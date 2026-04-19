@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Sparkles, X } from 'lucide-react'
-import { metaSchema } from '@/lib/ai/schemas'
+import { seoSuggestionSchema } from '@/lib/ai/schemas'
 import { saveSeoAction } from './actions'
 
 type Seo = {
@@ -65,19 +65,28 @@ export function SeoTab({
 
   const { object, submit, isLoading } = useObject({
     api: '/api/ai/meta-suggest',
-    schema: metaSchema,
+    schema: seoSuggestionSchema,
   })
 
-  // When AI streams, reflect into the form in real time
+  // When AI streams, reflect into the form in real time — each field
+  // gets overwritten as soon as Claude emits it.
   useEffect(() => {
     if (!object) return
     setForm((f) => ({
       ...f,
       meta_title: object.meta_title ?? f.meta_title,
       meta_description: object.meta_description ?? f.meta_description,
+      slug: object.slug ?? f.slug,
+      excerpt: object.excerpt ?? f.excerpt,
+      focus_keyword: object.focus_keyword ?? f.focus_keyword,
+      tags: (object.tags?.filter((x): x is string => typeof x === 'string' && x.length > 0)) ?? f.tags,
     }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [object?.meta_title, object?.meta_description])
+  }, [
+    object?.meta_title, object?.meta_description, object?.slug,
+    object?.excerpt, object?.focus_keyword,
+    JSON.stringify(object?.tags),
+  ])
 
   return (
     <section className="space-y-6 max-w-2xl">

@@ -2,8 +2,8 @@ import { streamObject } from 'ai'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { MODELS } from '@/lib/ai/gateway'
-import { META_SYSTEM, brandContextBlock } from '@/lib/ai/prompts'
-import { metaSchema } from '@/lib/ai/schemas'
+import { SEO_SUGGESTION_SYSTEM, brandContextBlock } from '@/lib/ai/prompts'
+import { seoSuggestionSchema } from '@/lib/ai/schemas'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   const supabase = await createClient()
   const { data: article } = await supabase
     .from('articles')
-    .select('title,target_keyword,focus_keyword,body_markdown,project_id')
+    .select('title,target_keyword,focus_keyword,lsi_keywords,body_markdown,project_id')
     .eq('id', parsed.data.articleId)
     .single()
   if (!article) return new Response('Not found', { status: 404 })
@@ -30,12 +30,21 @@ export async function POST(req: Request) {
 
   const bodyTruncated = (article.body_markdown ?? '').slice(0, 4000)
   const focus = article.focus_keyword || article.target_keyword || ''
+  const lsi = (article.lsi_keywords ?? []).join(', ')
 
   const result = streamObject({
     model: MODELS.fast,
-    schema: metaSchema,
-    system: `${META_SYSTEM}\n\n${brandContextBlock(project, brand)}`,
-    prompt: `Article title: ${article.title}\nFocus keyword: ${focus}\n\nArticle body (truncated):\n${bodyTruncated}`,
+    schema: seoSuggestionSchema,
+    system: `${SEO_SUGGESTION_SYSTEM}\n\n${brandContextBlock(project, brand)}`,
+    prompt: [
+      `Article title: ${article.title}`,
+      `Target keyword: ${article.target_keyword ?? '(none)'}`,
+      `Focus keyword hint: ${focus || '(none)'}`,
+      `LSI keywords: ${lsi || '(none)'}`,
+      ``,
+      `Article body (truncated to 4000 chars):`,
+      bodyTruncated || '(empty — article has not been drafted yet)',
+    ].join('\n'),
   })
 
   return result.toTextStreamResponse()

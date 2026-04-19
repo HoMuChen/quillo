@@ -102,3 +102,14 @@ export const metaSchema = z.object({
 })
 
 export type MetaSuggestion = z.infer<typeof metaSchema>
+
+export const seoSuggestionSchema = z.object({
+  meta_title: z.string().min(10).max(60),
+  meta_description: z.string().min(50).max(160),
+  slug: z.string().regex(/^[a-z0-9-]+$/, 'slug must be lowercase kebab-case'),
+  excerpt: z.string().min(40).max(280),
+  focus_keyword: z.string().min(1),
+  tags: z.array(z.string()).min(2).max(5),
+})
+
+export type SeoSuggestion = z.infer<typeof seoSuggestionSchema>
