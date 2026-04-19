@@ -55,6 +55,13 @@ export function InterviewTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading])
 
+  // Sync local state when server props change (e.g. after router.refresh()
+  // delivers newly-generated questions). Without this, useState keeps the
+  // mount-time snapshot and the UI appears stale until manual reload.
+  useEffect(() => {
+    setQuestions(initialQuestions)
+  }, [initialQuestions])
+
   const sectionLabelById = new Map(sections.map((s) => [s.id, s.title]))
 
   const pendingCount = questions.filter((q) => q.status === 'pending').length
