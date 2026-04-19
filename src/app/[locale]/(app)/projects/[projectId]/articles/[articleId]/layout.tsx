@@ -14,6 +14,7 @@ export default async function ArticleLayout({ children, params }: Props) {
   const { locale, projectId, articleId } = await params
   setRequestLocale(locale)
   const t = await getTranslations('articles')
+  const tp = await getTranslations('planning')
 
   const supabase = await createClient()
   const { data: article, error } = await supabase
@@ -38,7 +39,7 @@ export default async function ArticleLayout({ children, params }: Props) {
         </Link>
         {pillarTitle && (
           <div className="text-[12px] text-ink-3">
-            <span className="text-ink-4">Pillar</span> · {pillarTitle}
+            <span className="text-ink-4">{tp('pillar_label')}</span> · {pillarTitle}
           </div>
         )}
         <h1 className="font-serif italic text-[36px] text-ink leading-tight">{article.title}</h1>

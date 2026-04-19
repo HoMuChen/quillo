@@ -22,6 +22,8 @@
   "empty_cta": "開始規劃",
   "plan_new_button": "＋ 新 Pillar Cluster",
   "pillar_no_articles": "這個 Pillar 還沒有 Cluster 文章",
+  "pillar_label": "Pillar",
+  "article_count": "{count} 篇文章",
   "edit": "編輯",
   "delete": "刪除",
   "save": "儲存",

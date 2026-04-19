@@ -37,5 +37,6 @@
   "error_generic": "Operation failed. Please try again.",
   "no_connection_title": "No Ghost connection yet",
   "no_connection_body": "Set up a Ghost connection in settings to publish this article.",
-  "no_connection_cta": "Go to settings"
+  "no_connection_cta": "Go to settings",
+  "status_not_published": "not published"
 }

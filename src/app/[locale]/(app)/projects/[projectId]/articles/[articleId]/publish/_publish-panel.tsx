@@ -189,11 +189,12 @@ export function PublishPanel({
 }
 
 function RemoteStatusChip({ target }: { target: Target }) {
+  const t = useTranslations('publish')
   if (!target || !target.remote_status || target.remote_status === 'unpublished') {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.14em] px-2 py-0.5 rounded-full border border-rule bg-bg text-ink-3">
         <span className="w-1.5 h-1.5 rounded-full bg-ink-3" />
-        not published
+        {t('status_not_published')}
       </span>
     )
   }

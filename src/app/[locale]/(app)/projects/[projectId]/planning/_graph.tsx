@@ -622,7 +622,7 @@ function PillarDetail({
     <aside className="fixed right-6 bottom-6 top-24 w-[340px] z-40 flex flex-col rounded-xl border border-rule bg-bg shadow-sh-2 overflow-hidden">
       <header className="flex items-start justify-between gap-2 p-4 border-b border-rule">
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4">Pillar</div>
+          <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4">{t('pillar_label')}</div>
           <h3 className="font-serif italic text-[24px] text-ink leading-tight truncate">{pillar.title}</h3>
           {pillar.target_keyword && (
             <p className="font-mono text-[11px] text-ink-3 mt-1 truncate">{pillar.target_keyword}</p>
@@ -662,7 +662,7 @@ function PillarDetail({
 
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4 mb-2">
-                {articles.length} articles
+                {t('article_count', { count: articles.length })}
               </div>
               <ul className="divide-y divide-rule/60 rounded-lg border border-rule overflow-hidden">
                 {articles.map((a) => (

@@ -37,5 +37,6 @@
   "error_generic": "操作失敗，請稍後再試",
   "no_connection_title": "還沒有 Ghost 連線",
   "no_connection_body": "請先在設定中建立 Ghost 連線，才能發布文章",
-  "no_connection_cta": "前往設定"
+  "no_connection_cta": "前往設定",
+  "status_not_published": "尚未發布"
 }

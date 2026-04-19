@@ -22,6 +22,8 @@
   "empty_cta": "Start planning",
   "plan_new_button": "+ New Pillar Cluster",
   "pillar_no_articles": "No Cluster articles under this Pillar yet",
+  "pillar_label": "Pillar",
+  "article_count": "{count} articles",
   "edit": "Edit",
   "delete": "Delete",
   "save": "Save",
