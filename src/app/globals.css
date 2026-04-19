@@ -47,19 +47,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Paper-grain overlay — sits above everything (pointer-events:none so it
-   doesn't block clicks, mix-blend-mode:multiply so cards/modals show
-   through with a subtle dotted texture). */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
+/* Paper-grain — apply as a class to the element that should feel like
+   paper. Components with a solid bg-bg (cards, inputs, selects, tables)
+   naturally cover the dots underneath, so they sit ON TOP of the paper. */
+.paper-grain {
+  background-color: var(--color-bg);
   background-image:
     radial-gradient(rgba(18, 34, 28, 0.035) 1px, transparent 1.2px),
     radial-gradient(rgba(18, 34, 28, 0.025) 1px, transparent 1.2px);
   background-size: 3px 3px, 7px 7px;
   background-position: 0 0, 1px 2px;
-  mix-blend-mode: multiply;
 }
