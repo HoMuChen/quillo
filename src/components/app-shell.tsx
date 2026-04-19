@@ -1,33 +1,30 @@
 import type { ReactNode } from 'react'
 import { Link } from '@/i18n/routing'
+import { ProjectsSidebar } from './projects-sidebar'
+
+type Project = { id: string; name: string }
 
 export function AppShell({
   children,
   userEmail,
   userMenu,
+  projects,
 }: {
   children: ReactNode
   userEmail?: string
   userMenu?: ReactNode
+  projects: Project[]
 }) {
   return (
     <div className="relative z-10 min-h-screen grid grid-cols-[260px_1fr] bg-bg">
       <aside className="border-r border-rule bg-[rgba(239,234,220,0.45)] p-5 flex flex-col justify-between min-h-screen">
-        <div>
-          <div className="mb-6">
-            <Link href="/projects" className="inline-block">
-              <div className="font-serif italic text-[26px] leading-none text-ink tracking-tight">Quillo</div>
-              <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4 mt-1.5">editorial content graph</div>
-            </Link>
-          </div>
-          <nav className="space-y-1 text-[13px]">
-            <Link
-              href="/projects"
-              className="block px-2.5 py-1.5 rounded-md hover:bg-mist text-ink transition-colors"
-            >
-              Projects
-            </Link>
-          </nav>
+        <div className="space-y-5">
+          <Link href="/projects" className="block">
+            <div className="font-serif italic text-[26px] leading-none text-ink tracking-tight">Quillo</div>
+            <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4 mt-1.5">editorial content graph</div>
+          </Link>
+
+          <ProjectsSidebar projects={projects} />
         </div>
 
         {(userEmail || userMenu) && (

@@ -20,5 +20,8 @@
   "error_generic": "Failed to create. Please try again.",
   "nav_planning": "Planning",
   "nav_articles": "Articles",
-  "nav_settings": "Settings"
+  "nav_settings": "Settings",
+  "switcher_placeholder": "Select project",
+  "switcher_none": "No projects yet",
+  "switcher_all_projects": "View all projects"
 }
