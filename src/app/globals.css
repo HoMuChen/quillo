@@ -47,13 +47,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Paper-grain overlay */
+/* Paper-grain overlay — sits above everything (pointer-events:none so it
+   doesn't block clicks, mix-blend-mode:multiply so cards/modals show
+   through with a subtle dotted texture). */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 1;
+  z-index: 9999;
   background-image:
     radial-gradient(rgba(18, 34, 28, 0.035) 1px, transparent 1.2px),
     radial-gradient(rgba(18, 34, 28, 0.025) 1px, transparent 1.2px);
