@@ -3,7 +3,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/routing'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-import { PlanningTree } from './_tree'
+import { PlanningGraph } from './_graph'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
 
@@ -31,25 +31,27 @@ export default async function PlanningPage({ params }: Props) {
   const { data: articles } = pillarIds.length
     ? await supabase
         .from('articles')
-        .select(
-          'id,title,target_keyword,lsi_keywords,search_intent,word_count_target,role,status,position,pillar_id',
-        )
+        .select('id,title,target_keyword,search_intent,role,status,position,pillar_id')
         .in('pillar_id', pillarIds)
         .order('position')
-    : {
-        data: [] as Array<{
-          id: string
-          title: string
-          target_keyword: string | null
-          lsi_keywords: string[]
-          search_intent: string | null
-          word_count_target: number | null
-          role: string | null
-          status: string
-          position: number
-          pillar_id: string | null
-        }>,
-      }
+    : { data: [] as Array<{
+        id: string
+        title: string
+        target_keyword: string | null
+        search_intent: string | null
+        role: string | null
+        status: string
+        position: number
+        pillar_id: string | null
+      }> }
+
+  const articleIds = (articles ?? []).map((a) => a.id)
+  const { data: publishTargets } = articleIds.length
+    ? await supabase
+        .from('publish_targets')
+        .select('article_id,remote_status')
+        .in('article_id', articleIds)
+    : { data: [] as Array<{ article_id: string; remote_status: string | null }> }
 
   if (!pillars || pillars.length === 0) {
     return (
@@ -71,7 +73,7 @@ export default async function PlanningPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-4">
       <header className="flex items-start justify-between gap-6">
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">
           {tp('nav_planning')}
@@ -80,10 +82,11 @@ export default async function PlanningPage({ params }: Props) {
           <Button variant="default">{t('plan_new_button')}</Button>
         </Link>
       </header>
-      <PlanningTree
+      <PlanningGraph
         projectId={projectId}
-        pillars={pillars ?? []}
+        pillars={pillars}
         articles={articles ?? []}
+        publishTargets={publishTargets ?? []}
       />
     </div>
   )
