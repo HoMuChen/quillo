@@ -77,12 +77,7 @@ export async function POST(req: NextRequest) {
     .eq('connection_id', conn.id)
     .maybeSingle()
 
-  const configRow = {
-    config_encrypted: Buffer.isBuffer(conn.config_encrypted)
-      ? (conn.config_encrypted as unknown as Buffer)
-      : Buffer.from(conn.config_encrypted as unknown as Uint8Array | string),
-  }
-  const ghost = ghostClientFromRow(configRow)
+  const ghost = ghostClientFromRow({ config_encrypted: conn.config_encrypted })
 
   // --- Log helper ---
   async function writeLog(

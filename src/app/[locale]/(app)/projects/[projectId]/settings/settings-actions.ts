@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { encryptJson, decryptJson } from '@/lib/crypto/encrypt'
+import { encryptJson, decryptJson, toBytea, fromBytea } from '@/lib/crypto/encrypt'
 import { ghostClientFromConfig } from '@/lib/ghost/client'
 
 const saveSchema = z.object({
@@ -27,7 +27,7 @@ export async function saveGhostConnectionAction(
     .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
   if (!membership) throw new Error('No tenant')
 
-  const ciphertext = encryptJson({ apiUrl: parsed.apiUrl, apiKey: parsed.apiKey })
+  const ciphertext = toBytea(encryptJson({ apiUrl: parsed.apiUrl, apiKey: parsed.apiKey }))
 
   // Upsert — one ghost connection per project for M1
   const { data: existing } = await supabase
@@ -40,7 +40,7 @@ export async function saveGhostConnectionAction(
   if (existing) {
     const { error } = await supabase
       .from('site_connections')
-      .update({ name: parsed.name, config_encrypted: ciphertext as unknown as string })
+      .update({ name: parsed.name, config_encrypted: ciphertext })
       .eq('id', existing.id)
     if (error) throw error
   } else {
@@ -49,7 +49,7 @@ export async function saveGhostConnectionAction(
       tenant_id: membership.tenant_id,
       platform: 'ghost',
       name: parsed.name,
-      config_encrypted: ciphertext as unknown as string,
+      config_encrypted: ciphertext,
     })
     if (error) throw error
   }
@@ -70,9 +70,7 @@ export async function testGhostConnectionAction(projectId: string) {
   let ok = false
   let errorMessage: string | null = null
   try {
-    const bytea = row.config_encrypted as unknown as Uint8Array | Buffer
-    const buf = Buffer.isBuffer(bytea) ? bytea : Buffer.from(bytea)
-    const config = decryptJson<{ apiUrl: string; apiKey: string }>(buf)
+    const config = decryptJson<{ apiUrl: string; apiKey: string }>(fromBytea(row.config_encrypted))
     const client = ghostClientFromConfig(config)
     await client.site.read()
     ok = true

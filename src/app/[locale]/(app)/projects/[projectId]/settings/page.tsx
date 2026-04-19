@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { setRequestLocale, getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
-import { decryptJson } from '@/lib/crypto/encrypt'
+import { decryptJson, fromBytea } from '@/lib/crypto/encrypt'
 import { ConnectionForm } from './_connection-form'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
@@ -26,9 +26,7 @@ export default async function SettingsPage({ params }: Props) {
   let apiUrl: string | null = null
   if (connection?.config_encrypted) {
     try {
-      const bytea = connection.config_encrypted as unknown as Uint8Array | Buffer
-      const buf = Buffer.isBuffer(bytea) ? bytea : Buffer.from(bytea)
-      const cfg = decryptJson<{ apiUrl: string; apiKey: string }>(buf)
+      const cfg = decryptJson<{ apiUrl: string; apiKey: string }>(fromBytea(connection.config_encrypted))
       apiUrl = cfg.apiUrl
     } catch (err) {
       console.error('decrypt ghost config', err)

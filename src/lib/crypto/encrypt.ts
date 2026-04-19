@@ -33,3 +33,34 @@ export function decryptJson<T = unknown>(buf: Buffer): T {
   const pt = Buffer.concat([decipher.update(ct), decipher.final()])
   return JSON.parse(pt.toString('utf-8')) as T
 }
+
+export function toBytea(buf: Buffer): string {
+  return '\\x' + buf.toString('hex')
+}
+
+export function fromBytea(raw: unknown): Buffer {
+  if (Buffer.isBuffer(raw)) return raw
+  if (raw instanceof Uint8Array) return Buffer.from(raw)
+  if (typeof raw === 'string') {
+    const bytes = raw.startsWith('\\x')
+      ? Buffer.from(raw.slice(2), 'hex')
+      : /^[0-9a-fA-F]+$/.test(raw) && raw.length % 2 === 0
+        ? Buffer.from(raw, 'hex')
+        : Buffer.from(raw, 'base64')
+    // Salvage legacy rows where a Buffer was JSON-serialized into bytea
+    // as {"type":"Buffer","data":[...]}
+    const head = bytes.subarray(0, 16).toString('utf-8')
+    if (head.startsWith('{"type":"Buffer"')) {
+      try {
+        const parsed = JSON.parse(bytes.toString('utf-8')) as { type: string; data: number[] }
+        if (parsed.type === 'Buffer' && Array.isArray(parsed.data)) {
+          return Buffer.from(parsed.data)
+        }
+      } catch {
+        /* fall through */
+      }
+    }
+    return bytes
+  }
+  throw new Error('unsupported bytea value')
+}
