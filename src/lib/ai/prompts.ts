@@ -79,7 +79,15 @@ Section order must match the outline exactly. For each section:
 Follow brand_context: tone, preferred_terms, and absolutely NEVER use forbidden_terms.
 Use ## as heading level 2 for each section; use the section's title verbatim.
 Start the article with a short intro paragraph before the first ##.
-Write in the project's content_locale.`
+Write in the project's content_locale.
+
+Length discipline:
+- The user payload provides word_count_target and length_unit (for CJK locales
+  length_unit is "字/characters"; for Latin locales it is "words").
+- Aim for the target; stay within 85%–110% of it. NEVER exceed 110%.
+- Distribute length proportionally across the outline sections; keep the intro
+  short (roughly 5–10% of the total).
+- Prefer cutting over padding: tighten prose rather than filler sentences.`
 
 export const REWRITE_SYSTEM = `You rewrite the user-selected text according to the given instruction.
 Preserve meaning. Keep the same content_locale. Respect brand_context tone and forbidden_terms.

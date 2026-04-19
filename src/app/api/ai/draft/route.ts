@@ -40,12 +40,21 @@ export async function POST(req: Request) {
   const previousStatus = article.status
   await supabase.from('articles').update({ status: 'drafting' }).eq('id', article.id)
 
+  const isCjk = /^(zh|ja|ko)/i.test(project.content_locale ?? '')
+  const lengthUnit = isCjk ? '字 (characters)' : 'words'
+  const target = article.word_count_target ?? 1500
+  const lengthMin = Math.round(target * 0.85)
+  const lengthMax = Math.round(target * 1.1)
+
   const userPayload = {
     article: {
       title: article.title,
       target_keyword: article.target_keyword,
       lsi_keywords: article.lsi_keywords,
-      word_count_target: article.word_count_target,
+      word_count_target: target,
+      length_unit: lengthUnit,
+      length_min: lengthMin,
+      length_max: lengthMax,
       role: article.role,
     },
     outline_sections: sections,
