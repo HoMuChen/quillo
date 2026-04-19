@@ -115,7 +115,12 @@ export async function POST(req: NextRequest) {
       }
       const { error: updErr } = await supabase
         .from('publish_targets')
-        .update({ remote_status: 'unpublished' })
+        .update({
+          remote_status: 'unpublished',
+          remote_post_id: null,
+          remote_url: null,
+          published_at: null,
+        })
         .eq('id', existingTarget.id)
       if (updErr) throw updErr
 
@@ -177,12 +182,28 @@ export async function POST(req: NextRequest) {
     published_at: parsed.scheduledFor ?? (parsed.action === 'publish' ? new Date().toISOString() : undefined),
   }
 
-  // 5. Call Ghost: add or edit
+  // 5. Call Ghost: add or edit.
+  // - Ghost Admin API rejects edits without a matching updated_at — read the
+  //   current post first to get it.
+  // - If the stored remote_post_id no longer exists on Ghost (deleted there,
+  //   or cleared-but-stale locally), fall through to add instead of surfacing
+  //   a confusing "cannot edit post" error.
   let remotePost: GhostPost
+  const canEdit =
+    !!existingTarget?.remote_post_id && existingTarget.remote_status !== 'unpublished'
   try {
-    if (existingTarget?.remote_post_id) {
+    let current: GhostPost | null = null
+    if (canEdit) {
+      try {
+        current = await ghost.posts.read({ id: existingTarget!.remote_post_id! })
+      } catch (err) {
+        console.warn('Ghost read returned error, will create a new post:', err)
+        current = null
+      }
+    }
+    if (canEdit && current) {
       remotePost = await ghost.posts.edit(
-        { ...payload, id: existingTarget.remote_post_id },
+        { ...payload, id: existingTarget!.remote_post_id!, updated_at: current.updated_at },
         { source: 'html' },
       )
     } else {

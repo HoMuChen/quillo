@@ -20,6 +20,7 @@ declare module '@tryghost/admin-api' {
     feature_image?: string | null
     tags?: Array<string | { name: string }>
     excerpt?: string | null
+    updated_at?: string
     [k: string]: unknown
   }
 
