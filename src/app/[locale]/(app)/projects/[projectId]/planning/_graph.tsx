@@ -460,15 +460,13 @@ export function PlanningGraph({
                       }}
                     />
                   )}
-                  <span className="font-serif italic leading-tight px-2" style={{ fontSize: Math.max(14, n.size * 0.17) }}>
-                    {n.title}
+                  <span
+                    className="font-serif italic leading-tight px-2 text-center"
+                    style={{ fontSize: Math.max(12, n.size * 0.15) }}
+                  >
+                    {n.subtitle || n.title}
                   </span>
                 </span>
-                {n.subtitle && (
-                  <span className="font-mono text-[10px] text-ink-3 whitespace-nowrap">
-                    {n.subtitle}
-                  </span>
-                )}
               </button>
             )
           }
