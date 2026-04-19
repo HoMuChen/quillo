@@ -17,7 +17,7 @@ export default async function ProjectsPage({ params }: Props) {
     .order('updated_at', { ascending: false })
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-6xl">
       <header className="flex items-start justify-between gap-6">
         <div>
           <h1 className="font-serif italic text-[40px] leading-none text-ink tracking-tight">{t('title')}</h1>

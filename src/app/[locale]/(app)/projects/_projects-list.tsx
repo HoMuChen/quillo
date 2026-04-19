@@ -25,7 +25,7 @@ export function ProjectsList({ projects }: { projects: Project[] }) {
   }
 
   return (
-    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {projects.map((p) => (
         <li key={p.id}>
           <Link

@@ -31,7 +31,7 @@ export default async function ArticlesPage({ params }: Props) {
     .order('position')
 
   return (
-    <div className="space-y-5 max-w-5xl">
+    <div className="space-y-5 max-w-6xl">
       <header className="flex items-start justify-between gap-4">
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">{tp('nav_articles')}</h1>
         <Link href={`/projects/${projectId}/planning`}>
