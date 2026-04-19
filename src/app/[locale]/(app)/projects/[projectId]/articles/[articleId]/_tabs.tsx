@@ -5,7 +5,6 @@ import { Link, usePathname } from '@/i18n/routing'
 import { cn } from '@/lib/utils'
 
 const TABS = [
-  { key: 'outline',   path: 'outline'   },
   { key: 'interview', path: 'interview' },
   { key: 'editor',    path: 'editor'    },
   { key: 'seo',       path: 'seo'       },
@@ -28,7 +27,7 @@ export function ArticleTabs({
     <nav className="flex gap-0 border-b border-rule">
       {TABS.map((tab) => {
         const href = `/projects/${projectId}/articles/${articleId}/${tab.path}`
-        const active = pathname.endsWith(`/${tab.path}`) || (tab.path === 'outline' && pathname.endsWith(`/${articleId}`))
+        const active = pathname.endsWith(`/${tab.path}`) || (tab.path === 'interview' && pathname.endsWith(`/${articleId}`))
         return (
           <Link
             key={tab.key}

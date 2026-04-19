@@ -45,6 +45,32 @@ A good question asks for specific numbers, concrete cases, or first-hand experie
 "what's your experience with X" or "do you have any thoughts on Y".
 Write questions in the project's content_locale.`
 
+export const PLAN_AND_QUESTIONS_SYSTEM = `You are an SEO writer planning an article.
+
+Produce two things in a single JSON object:
+
+1. sections: an outline of 3-15 sections covering the article's target_keyword
+   and search_intent. Each section has:
+   - id: lowercase kebab-case slug unique within the outline
+   - title: concise section heading
+   - purpose: one-sentence reason the section exists
+   - needs_interview: true only when the section requires first-hand experience,
+     data, or author perspective that general knowledge cannot reliably provide.
+
+2. questions: interview questions for the sections where needs_interview=true.
+   For each such section, produce at most 2 concrete, verifiable questions.
+   Total across the article is at most 8 questions.
+   A good question asks for specific numbers, concrete cases, or first-hand
+   experience — not "what's your experience with X".
+   Each question has:
+   - section_id: must match a section's id where needs_interview=true
+   - question: the question text
+
+If no section needs first-hand experience, return questions: [].
+
+Write all text in the project's content_locale. Respect brand_context tone
+and forbidden_terms.`
+
 export const DRAFT_SYSTEM = `You are an SEO writer producing a Markdown article.
 Section order must match the outline exactly. For each section:
 - If the section has answered interview Q&A, you MUST ground the section in those answers.

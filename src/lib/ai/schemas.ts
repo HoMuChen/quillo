@@ -72,6 +72,30 @@ export const interviewSchema = z.object({
 
 export type InterviewQuestions = z.infer<typeof interviewSchema>
 
+export const planAndQuestionsSchema = z.object({
+  sections: z
+    .array(
+      z.object({
+        id: z.string().regex(/^[a-z0-9-]+$/, 'id must be lowercase kebab-case'),
+        title: z.string(),
+        purpose: z.string(),
+        needs_interview: z.boolean(),
+      }),
+    )
+    .min(3)
+    .max(15),
+  questions: z
+    .array(
+      z.object({
+        section_id: z.string(),
+        question: z.string(),
+      }),
+    )
+    .max(8),
+})
+
+export type PlanAndQuestions = z.infer<typeof planAndQuestionsSchema>
+
 export const metaSchema = z.object({
   meta_title: z.string().min(10).max(60),
   meta_description: z.string().min(50).max(160),

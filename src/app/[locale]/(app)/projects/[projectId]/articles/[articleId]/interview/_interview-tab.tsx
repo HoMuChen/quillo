@@ -3,11 +3,11 @@
 import { useEffect, useState, useRef, useTransition } from 'react'
 import { experimental_useObject as useObject } from '@ai-sdk/react'
 import { useTranslations } from 'next-intl'
-import { Link } from '@/i18n/routing'
+import { Link, useRouter } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Sparkles, SkipForward } from 'lucide-react'
-import { interviewSchema } from '@/lib/ai/schemas'
+import { planAndQuestionsSchema } from '@/lib/ai/schemas'
 import {
   answerQuestionAction, skipQuestionAction, skipAllAction,
 } from './actions'
@@ -37,31 +37,41 @@ export function InterviewTab({
   questions: Question[]
 }) {
   const t = useTranslations('articles')
+  const router = useRouter()
   const [questions, setQuestions] = useState<Question[]>(initialQuestions)
   const [pending, startTransition] = useTransition()
 
-  const { submit, isLoading, error: streamError } = useObject({
+  const { object, submit, isLoading, error: streamError } = useObject({
     api: '/api/ai/interview',
-    schema: interviewSchema,
+    schema: planAndQuestionsSchema,
   })
 
-  // After streaming finishes, refresh from DB by triggering reload
+  // After streaming ends, refresh the server page to pick up the
+  // freshly persisted outline + interview_questions rows.
   useEffect(() => {
-    if (!isLoading && status === 'interviewing') {
-      // nothing — the Next revalidatePath is triggered via actions.
-      // For a more reactive experience we could router.refresh() here.
+    if (!isLoading && object?.questions) {
+      router.refresh()
     }
-  }, [isLoading, status])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading])
 
-  const needsInterviewSections = sections.filter((s) => s.needs_interview)
   const sectionLabelById = new Map(sections.map((s) => [s.id, s.title]))
 
-  // Status summary
   const pendingCount = questions.filter((q) => q.status === 'pending').length
   const hasQuestions = questions.length > 0
   const allNonPending = hasQuestions && pendingCount === 0
 
-  const canGenerate = !isLoading && !['drafting'].includes(status) && needsInterviewSections.length > 0
+  const canGenerate = !isLoading && !['drafting'].includes(status)
+
+  // After streaming completes, detect "no questions needed" outcome.
+  // Streamed object is partial; only trust after isLoading becomes false.
+  const streamFinishedWithNoQuestions =
+    !isLoading &&
+    !!object?.sections &&
+    object.sections.length > 0 &&
+    (!object.questions || object.questions.length === 0)
+
+  const showNoQuestionsCard = !hasQuestions && streamFinishedWithNoQuestions
 
   return (
     <section className="space-y-5">
@@ -95,7 +105,7 @@ export function InterviewTab({
             disabled={!canGenerate}
           >
             <Sparkles className="w-3.5 h-3.5 mr-1" />
-            {hasQuestions ? t('interview_regenerate') : t('interview_generate')}
+            {hasQuestions ? t('interview_regenerate') : t('interview_start')}
           </Button>
         </div>
       </div>
@@ -109,15 +119,21 @@ export function InterviewTab({
 
       {streamError && <p className="text-[12px] text-rust" role="alert">{t('error_generic')}</p>}
 
-      {needsInterviewSections.length === 0 && (
+      {!hasQuestions && !isLoading && !showNoQuestionsCard && (
         <div className="rounded-xl border border-rule border-dashed p-10 text-center text-ink-3">
-          <p className="text-[13px]">{t('interview_no_sections')}</p>
+          <p className="text-[13px]">{t('interview_start_desc')}</p>
         </div>
       )}
 
-      {needsInterviewSections.length > 0 && !hasQuestions && !isLoading && (
-        <div className="rounded-xl border border-rule border-dashed p-10 text-center text-ink-3">
-          <p className="text-[13px]">{t('interview_empty')}</p>
+      {showNoQuestionsCard && (
+        <div className="rounded-xl border border-ochre bg-[linear-gradient(180deg,#f7f0d8_0%,#f1e7c6_100%)] p-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-serif italic text-[18px] text-ink">{t('interview_no_questions_title')}</p>
+            <p className="text-[12px] text-ink-2 mt-1">{t('interview_no_questions_body')}</p>
+          </div>
+          <Link href={`/projects/${projectId}/articles/${articleId}/editor`}>
+            <Button variant="primary">{t('interview_continue_no_q')}</Button>
+          </Link>
         </div>
       )}
 
