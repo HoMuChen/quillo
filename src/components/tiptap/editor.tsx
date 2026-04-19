@@ -194,30 +194,49 @@ export function TiptapEditor({
 
   return (
     <div className="space-y-3">
-      {onRewrite && (
-        <BubbleMenu
-          editor={editor}
-          shouldShow={({ from, to }) => from !== to && !rewriting}
-        >
-          <div className="flex items-center gap-1 rounded-lg border border-rule bg-bg shadow-sh-2 p-1">
-            {([
-              ['rewrite_concise',  'rewrite the selection to be more concise'],
-              ['rewrite_detailed', 'expand the selection with more detail and examples'],
-              ['rewrite_tone',     'rewrite the selection in a warmer, more inviting tone'],
-            ] as const).map(([labelKey, instruction]) => (
-              <button
-                key={labelKey}
-                type="button"
-                onClick={() => doRewrite(instruction)}
-                className="text-[11px] font-mono uppercase tracking-[0.1em] px-2 py-1 rounded hover:bg-mist text-ink-2 hover:text-ink transition-colors"
-              >
-                {t(labelKey)}
-              </button>
-            ))}
-            <CustomInstructionButton onSubmit={doRewrite} />
-          </div>
-        </BubbleMenu>
-      )}
+      <BubbleMenu
+        editor={editor}
+        shouldShow={({ from, to }) => from !== to && !rewriting}
+      >
+        <div className="flex items-center gap-1 rounded-lg border border-rule bg-bg shadow-sh-2 p-1">
+          <FormatButton title="Bold" active={editor.isActive('bold')}
+            onClick={() => editor.chain().focus().toggleBold().run()}>
+            <Bold className="w-3.5 h-3.5" />
+          </FormatButton>
+          <FormatButton title="Italic" active={editor.isActive('italic')}
+            onClick={() => editor.chain().focus().toggleItalic().run()}>
+            <Italic className="w-3.5 h-3.5" />
+          </FormatButton>
+          <FormatButton title="H2" active={editor.isActive('heading', { level: 2 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+            <Heading2 className="w-3.5 h-3.5" />
+          </FormatButton>
+          <FormatButton title="H3" active={editor.isActive('heading', { level: 3 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+            <Heading3 className="w-3.5 h-3.5" />
+          </FormatButton>
+          {onRewrite && (
+            <>
+              <span className="w-px h-5 bg-rule mx-1" />
+              {([
+                ['rewrite_concise',  'rewrite the selection to be more concise'],
+                ['rewrite_detailed', 'expand the selection with more detail and examples'],
+                ['rewrite_tone',     'rewrite the selection in a warmer, more inviting tone'],
+              ] as const).map(([labelKey, instruction]) => (
+                <button
+                  key={labelKey}
+                  type="button"
+                  onClick={() => doRewrite(instruction)}
+                  className="text-[11px] font-mono uppercase tracking-[0.1em] px-2 py-1 rounded hover:bg-mist text-ink-2 hover:text-ink transition-colors"
+                >
+                  {t(labelKey)}
+                </button>
+              ))}
+              <CustomInstructionButton onSubmit={doRewrite} />
+            </>
+          )}
+        </div>
+      </BubbleMenu>
 
       <Toolbar editor={editor} onUploadImage={onUploadImage} />
       <div className="rounded-xl border border-rule bg-bg p-6 min-h-[400px] shadow-sh-1">
@@ -225,6 +244,29 @@ export function TiptapEditor({
       </div>
       <StatusLine status={status} t={t} wordCount={wordCount} />
     </div>
+  )
+}
+
+function FormatButton({
+  title, active, onClick, children,
+}: {
+  title: string
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onMouseDown={(e) => { e.preventDefault(); onClick() }}
+      className={cn(
+        'h-7 w-7 inline-flex items-center justify-center rounded transition-colors',
+        active ? 'bg-ink text-bg' : 'text-ink-2 hover:bg-mist hover:text-ink',
+      )}
+    >
+      {children}
+    </button>
   )
 }
 
