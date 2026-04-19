@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '@/i18n/routing'
 import { ProjectsSidebar } from './projects-sidebar'
+import { LocaleSwitcher } from './locale-switcher'
 
 type Project = { id: string; name: string }
 
@@ -28,8 +29,11 @@ export function AppShell({
         </div>
 
         {(userEmail || userMenu) && (
-          <div className="text-[12px] text-ink-3 border-t border-rule pt-4 mt-4">
-            {userEmail && <div className="truncate mb-2">{userEmail}</div>}
+          <div className="text-[12px] text-ink-3 border-t border-rule pt-4 mt-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              {userEmail && <div className="truncate flex-1">{userEmail}</div>}
+              <LocaleSwitcher />
+            </div>
             {userMenu}
           </div>
         )}
