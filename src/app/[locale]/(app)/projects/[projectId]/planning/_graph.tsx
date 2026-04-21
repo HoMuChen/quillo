@@ -417,7 +417,7 @@ export function PlanningGraph({
                 onMouseEnter={() => setHoveredPillarId(n.id)}
                 onMouseLeave={() => setHoveredPillarId(null)}
                 onClick={() => setSelectedId(n.id === selectedId ? null : n.id)}
-                className="absolute flex flex-col items-center gap-1 text-center select-none group"
+                className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
                 style={{
                   left: n.x,
                   top: n.y,
@@ -481,7 +481,7 @@ export function PlanningGraph({
               onClick={() => {
                 window.location.href = `/projects/${projectId}/articles/${n.id}`
               }}
-              className="absolute flex flex-col items-center gap-1 text-center select-none group"
+              className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
               style={{
                 left: n.x,
                 top: n.y,
@@ -628,7 +628,7 @@ function PillarDetail({
             <p className="font-mono text-[11px] text-ink-3 mt-1 truncate">{pillar.target_keyword}</p>
           )}
         </div>
-        <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink">
+        <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink cursor-pointer">
           <X className="w-4 h-4" />
         </button>
       </header>
@@ -670,7 +670,7 @@ function PillarDetail({
                     <button
                       type="button"
                       onClick={() => { window.location.href = `/projects/${projectId}/articles/${a.id}` }}
-                      className="w-full text-left px-3 py-2 hover:bg-mist transition-colors flex items-center justify-between gap-2"
+                      className="w-full text-left px-3 py-2 hover:bg-mist transition-colors flex items-center justify-between gap-2 cursor-pointer"
                     >
                       <span className="text-[13px] text-ink truncate">{a.title}</span>
                       {a.role === 'hub' && (

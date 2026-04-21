@@ -152,7 +152,7 @@ function ArticleRow({ projectId, row }: { projectId: string; row: Row }) {
             type="button"
             onClick={() => setConfirming(true)}
             title={t('delete')}
-            className="p-1.5 rounded-md text-ink-4 hover:text-rust hover:bg-bg-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="p-1.5 rounded-md text-ink-4 hover:text-rust hover:bg-bg-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

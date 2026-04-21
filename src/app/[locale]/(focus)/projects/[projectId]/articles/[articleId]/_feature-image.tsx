@@ -77,7 +77,7 @@ export function FeatureImage({
           type="button"
           onClick={() => inputRef.current?.click()}
           className={cn(
-            'w-full aspect-[16/5] rounded-lg border border-dashed border-rule flex flex-col items-center justify-center gap-2 text-ink-3 hover:bg-mist hover:text-ink transition-colors',
+            'w-full aspect-[16/5] rounded-lg border border-dashed border-rule flex flex-col items-center justify-center gap-2 text-ink-3 hover:bg-mist hover:text-ink transition-colors cursor-pointer',
             uploading && 'opacity-50',
           )}
           disabled={uploading}

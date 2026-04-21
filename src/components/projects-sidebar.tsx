@@ -64,7 +64,7 @@ export function ProjectsSidebar({ projects }: { projects: Project[] }) {
           type="button"
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            'w-full flex items-center justify-between gap-2 rounded-lg border border-rule bg-bg px-3 py-2 text-left transition-colors',
+            'w-full flex items-center justify-between gap-2 rounded-lg border border-rule bg-bg px-3 py-2 text-left transition-colors cursor-pointer',
             'hover:border-ink-3',
             open && 'border-ink-3 shadow-sh-1',
           )}

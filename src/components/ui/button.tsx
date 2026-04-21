@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
   Focus ring is ochre — consistent across all variants so keyboard users see the same anchor.
 */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1.5 font-medium leading-none transition-colors ' +
+  'inline-flex items-center justify-center gap-1.5 font-medium leading-none transition-colors cursor-pointer ' +
     'disabled:opacity-50 disabled:cursor-not-allowed ' +
     'focus:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
   {

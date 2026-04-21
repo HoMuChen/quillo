@@ -176,7 +176,7 @@ function ChipsField({
             <button
               type="button"
               onClick={() => onChange(value.filter((x) => x !== term))}
-              className="text-ink-4 hover:text-ink transition-colors"
+              className="text-ink-4 hover:text-ink transition-colors cursor-pointer"
               aria-label={`remove ${term}`}
             >
               ×

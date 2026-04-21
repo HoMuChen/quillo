@@ -28,7 +28,7 @@ export function LocaleSwitcher() {
           onClick={() => pick(loc)}
           disabled={pending}
           className={cn(
-            'text-[10px] font-mono uppercase tracking-[0.1em] px-1.5 py-0.5 rounded transition-colors',
+            'text-[10px] font-mono uppercase tracking-[0.1em] px-1.5 py-0.5 rounded transition-colors cursor-pointer',
             loc === current
               ? 'bg-ink text-bg'
               : 'text-ink-3 hover:text-ink',

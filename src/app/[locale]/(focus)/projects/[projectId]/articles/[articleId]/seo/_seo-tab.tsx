@@ -216,7 +216,7 @@ function TagsField({ value, onChange }: { value: string[]; onChange: (v: string[
       {value.map((tag) => (
         <span key={tag} className="inline-flex items-center gap-1.5 font-mono text-[11px] px-2 py-0.5 rounded-md border border-rule bg-bg-2 text-ink-2">
           {tag}
-          <button type="button" onClick={() => onChange(value.filter((x) => x !== tag))} className="text-ink-4 hover:text-ink">
+          <button type="button" onClick={() => onChange(value.filter((x) => x !== tag))} className="text-ink-4 hover:text-ink cursor-pointer">
             <X className="w-3 h-3" />
           </button>
         </span>

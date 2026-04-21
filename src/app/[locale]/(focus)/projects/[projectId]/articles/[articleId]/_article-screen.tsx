@@ -252,7 +252,7 @@ function CornerRight({
         onClick={onOpenDrawer}
         title={t('open_settings')}
         aria-label={t('open_settings')}
-        className="text-ink-3 hover:text-ink transition-colors p-1"
+        className="text-ink-3 hover:text-ink transition-colors p-1 cursor-pointer"
       >
         <Settings2 className="w-4 h-4" />
       </button>
@@ -282,7 +282,7 @@ function TextAction({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'text-[13px] transition-colors',
+        'text-[13px] transition-colors cursor-pointer',
         'disabled:opacity-40 disabled:cursor-not-allowed',
         emphasis
           ? 'text-ink font-medium hover:underline underline-offset-4'

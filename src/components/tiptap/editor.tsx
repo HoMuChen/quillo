@@ -311,7 +311,7 @@ function CustomInstructionButton({
       <button type="submit" className="text-[11px] font-mono uppercase px-2 py-1 rounded bg-ink text-bg">
         ✦
       </button>
-      <button type="button" onClick={() => setOpen(false)} className="text-[11px] text-ink-4 px-1">×</button>
+      <button type="button" onClick={() => setOpen(false)} className="text-[11px] text-ink-4 px-1 cursor-pointer">×</button>
     </form>
   )
 }
@@ -320,7 +320,7 @@ function Toolbar({ editor, onUploadImage }: { editor: Editor; onUploadImage?: (f
   const t = useTranslations('articles')
   const btn = (active: boolean, extra = '') =>
     cn(
-      'h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors',
+      'h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors cursor-pointer',
       active ? 'bg-ink text-bg' : 'text-ink-3 hover:bg-mist hover:text-ink',
       extra,
     )
