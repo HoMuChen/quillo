@@ -117,7 +117,7 @@ export function EditorTab({
         )}
 
         {streamedText && (
-          <article className="rounded-xl border border-rule bg-bg p-5 shadow-sh-1 whitespace-pre-wrap font-mono text-[12px] text-ink leading-[1.65]">
+          <article className="rounded-xl border border-rule paper-grain p-5 shadow-sh-1 whitespace-pre-wrap font-mono text-[12px] text-ink leading-[1.65]">
             {streamedText}
           </article>
         )}

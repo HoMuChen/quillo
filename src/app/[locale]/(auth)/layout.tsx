@@ -11,7 +11,7 @@ export default async function AuthLayout({
   setRequestLocale(locale)
 
   return (
-    <main className="relative z-10 min-h-screen flex items-center justify-center p-6">
+    <main className="relative z-10 min-h-screen flex items-center justify-center p-6 paper-grain">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
           <h1 className="font-serif italic text-[40px] leading-none text-ink">Quillo</h1>

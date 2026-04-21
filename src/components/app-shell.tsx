@@ -38,7 +38,7 @@ export function AppShell({
           </div>
         )}
       </aside>
-      <main className="p-8 min-w-0 paper-grain">{children}</main>
+      <main className="p-8 min-w-0">{children}</main>
     </div>
   )
 }

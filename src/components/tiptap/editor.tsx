@@ -239,7 +239,7 @@ export function TiptapEditor({
       </BubbleMenu>
 
       <Toolbar editor={editor} onUploadImage={onUploadImage} />
-      <div className="rounded-xl border border-rule bg-bg p-6 min-h-[400px] shadow-sh-1">
+      <div className="rounded-xl border border-rule paper-grain p-6 min-h-[400px] shadow-sh-1">
         <EditorContent editor={editor} />
       </div>
       <StatusLine status={status} t={t} wordCount={wordCount} />

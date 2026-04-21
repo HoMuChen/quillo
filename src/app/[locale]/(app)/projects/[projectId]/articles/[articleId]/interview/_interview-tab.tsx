@@ -233,7 +233,7 @@ function QuestionRow({
   return (
     <li
       className={cn(
-        'rounded-lg border bg-bg p-4 shadow-sh-1 space-y-2',
+        'rounded-lg border paper-grain p-4 shadow-sh-1 space-y-2',
         question.status === 'skipped' ? 'border-rule opacity-60' :
         question.status === 'answered' ? 'border-sage' : 'border-rule',
       )}
