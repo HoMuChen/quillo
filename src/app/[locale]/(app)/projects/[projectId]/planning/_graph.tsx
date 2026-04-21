@@ -388,7 +388,7 @@ export function PlanningGraph({
     const rect = canvasRef.current!.getBoundingClientRect()
     const cx = e.clientX - rect.left
     const cy = e.clientY - rect.top
-    const factor = e.deltaY < 0 ? 1.06 : 0.95
+    const factor = e.deltaY < 0 ? 1.03 : 0.97
     const newZoom = Math.max(0.2, Math.min(4, zoom * factor))
     setPan(p => ({
       x: cx - (cx - p.x) * (newZoom / zoom),
