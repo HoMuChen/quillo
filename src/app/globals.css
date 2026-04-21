@@ -8,10 +8,10 @@
   - Paper grain via .paper-grain class, not body::before (chrome stays flat).
 */
 @theme {
-  /* surfaces */
-  --color-bg: #faf7f0;
-  --color-bg-2: #efeadc;
-  --color-bg-3: #f5efdf;
+  /* surfaces — option A: slightly cooler, less yellow cast */
+  --color-bg: #f8f8f5;
+  --color-bg-2: #ece9e5;
+  --color-bg-3: #f0eeea;
 
   /* ink scale */
   --color-ink: #12221c;
@@ -21,8 +21,8 @@
   --color-ink-shade: rgba(18, 34, 28, 0.4);
 
   /* structure */
-  --color-rule: #d9d2bf;
-  --color-rule-strong: #bfb6a0;
+  --color-rule: #dddbd7;
+  --color-rule-strong: #c8c5c0;
   --color-mist: rgba(18, 34, 28, 0.06);
 
   /* accents — fills */

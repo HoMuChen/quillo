@@ -18,7 +18,7 @@ export function AppShell({
 }) {
   return (
     <div className="relative z-10 min-h-screen grid grid-cols-[260px_1fr] bg-bg">
-      <aside className="border-r border-rule bg-[rgba(239,234,220,0.45)] p-5 flex flex-col justify-between min-h-screen">
+      <aside className="border-r border-rule bg-bg-2/60 p-5 flex flex-col justify-between min-h-screen">
         <div className="space-y-5">
           <Link href="/projects" className="block">
             <div className="font-serif italic text-[26px] leading-none text-ink tracking-tight">Quillo</div>
