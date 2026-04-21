@@ -5,6 +5,10 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { clusterArticlesSchema, type ClusterArticles } from '@/lib/ai/schemas'
 import { ghostClientFromRow } from '@/lib/ghost/client'
+import { generateJSON } from '@tiptap/html'
+import StarterKit from '@tiptap/starter-kit'
+import TiptapImage from '@tiptap/extension-image'
+import TiptapLink from '@tiptap/extension-link'
 
 const intent = z.enum(['informational', 'commercial', 'transactional'])
 const role = z.enum(['hub', 'supporting', 'comparison'])
@@ -287,7 +291,9 @@ export async function syncGhostArticlesAction(projectId: string) {
         meta_title: post.meta_title ?? null,
         meta_description: post.meta_description ?? null,
         excerpt: post.excerpt ?? null,
-        body_markdown: post.html ?? null,
+        body_tiptap: post.html
+          ? generateJSON(post.html, [StarterKit, TiptapImage, TiptapLink])
+          : null,
         tags: tagNames,
         status: 'editing',
         position: nextPos++,
