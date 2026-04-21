@@ -125,6 +125,13 @@ export default async function PlanningPage({ params }: Props) {
         </h1>
         <div className="flex items-center gap-3">
           {ghostConn && <SyncGhostButton projectId={projectId} />}
+          {orphanArticles.length >= 3 && (
+            <OrganizeOrphansButton
+              projectId={projectId}
+              orphanArticles={orphanArticles}
+              pillars={pillars ?? []}
+            />
+          )}
           <Link href={`/projects/${projectId}/planning/new`}>
             <Button variant="default">{t('plan_new_button')}</Button>
           </Link>
