@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { clusterArticlesSchema, type ClusterArticles } from '@/lib/ai/schemas'
+import { clusterArticlesSchema, type ClusterArticles, type OrganizePlan } from '@/lib/ai/schemas'
 import { ghostClientFromRow } from '@/lib/ghost/client'
 import { generateJSON } from '@tiptap/html'
 import StarterKit from '@tiptap/starter-kit'
@@ -390,4 +390,47 @@ export async function createPillarAndAssignAction(
 
   revalidatePath(`/projects/${projectId}/planning`)
   return { pillarId: pillar.id }
+}
+
+// --- Organize orphans ---
+
+export async function applyOrganizeAction(projectId: string, plan: OrganizePlan) {
+  const supabase = await sb()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data: membership } = await supabase
+    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
+  if (!membership) throw new Error('No tenant')
+
+  const { data: lastPillar } = await supabase
+    .from('pillars').select('position').eq('project_id', projectId)
+    .order('position', { ascending: false }).limit(1).maybeSingle()
+  let nextPos = (lastPillar?.position ?? -1) + 1
+
+  // Create new pillars and assign their articles
+  for (const np of plan.new_pillars ?? []) {
+    if (np.article_ids.length < 3) continue
+    const { data: pillar } = await supabase.from('pillars').insert({
+      project_id: projectId,
+      tenant_id: membership.tenant_id,
+      title: np.title,
+      target_keyword: np.target_keyword ?? null,
+      position: nextPos++,
+    }).select('id').single()
+    if (!pillar) continue
+    for (const aid of np.article_ids) {
+      await supabase.from('articles')
+        .update({ pillar_id: pillar.id })
+        .eq('id', aid).eq('project_id', projectId).is('pillar_id', null)
+    }
+  }
+
+  // Assign to existing pillars
+  for (const ea of plan.existing_assignments ?? []) {
+    await supabase.from('articles')
+      .update({ pillar_id: ea.pillar_id })
+      .eq('id', ea.article_id).eq('project_id', projectId).is('pillar_id', null)
+  }
+
+  revalidatePath(`/projects/${projectId}/planning`)
 }

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { PlanningGraph } from './_graph'
 import { SyncGhostButton } from './_sync-button'
+import { OrganizeOrphansButton } from './_organize-button'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
 
@@ -91,6 +92,13 @@ export default async function PlanningPage({ params }: Props) {
           </h1>
           <div className="flex items-center gap-3">
             {ghostConn && <SyncGhostButton projectId={projectId} />}
+            {orphanArticles.length >= 3 && (
+              <OrganizeOrphansButton
+                projectId={projectId}
+                orphanArticles={orphanArticles}
+                pillars={pillars ?? []}
+              />
+            )}
             <Link href={`/projects/${projectId}/planning/new`}>
               <Button variant="default">{t('plan_new_button')}</Button>
             </Link>

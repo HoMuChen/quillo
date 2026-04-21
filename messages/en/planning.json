@@ -57,5 +57,12 @@
   "orphan_include_existing_help": "Assign to a pillar, or leave as standalone",
   "orphan_no_assign": "No pillar",
   "open_editor": "Open editor",
-  "orphan_assign": "Add to Pillar"
+  "orphan_assign": "Add to Pillar",
+  "organize_orphans": "AI Cluster",
+  "organize_orphans_subtitle": "AI groups standalone articles into existing or new pillars",
+  "organize_new_pillars": "New pillars",
+  "organize_existing_pillars": "Assign to existing pillars",
+  "organize_nothing": "Not enough similar articles to form groups",
+  "organize_summary": "Will assign {count} articles",
+  "organize_apply": "Apply"
 }

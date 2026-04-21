@@ -57,5 +57,12 @@
   "orphan_include_existing_help": "選擇要加入哪個 Pillar，不選則保持獨立",
   "orphan_no_assign": "不分配",
   "open_editor": "開啟編輯器",
-  "orphan_assign": "加入 Pillar"
+  "orphan_assign": "加入 Pillar",
+  "organize_orphans": "AI 分群",
+  "organize_orphans_subtitle": "AI 分析獨立文章，自動歸屬到現有或新建的 Pillar",
+  "organize_new_pillars": "新建 Pillar",
+  "organize_existing_pillars": "歸屬到現有 Pillar",
+  "organize_nothing": "沒有足夠相似的文章可以分群",
+  "organize_summary": "將歸屬 {count} 篇文章",
+  "organize_apply": "套用"
 }
