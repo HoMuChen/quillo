@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import type { ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
-import { PublishStatusChip } from '@/components/ui/chip'
 import { cn } from '@/lib/utils'
-import { ArrowLeft, Settings2, ChevronDown, X, ExternalLink } from 'lucide-react'
+import { ChevronLeft, Settings2, X } from 'lucide-react'
 
 type Connection = {
   id: string
@@ -73,22 +72,27 @@ export function ArticleScreen({
 
   return (
     <div className="min-h-screen">
-      {/* TOP BAR — full-width sticky bar across the viewport */}
-      <div className="sticky top-0 z-30 bg-bg/90 backdrop-blur border-b border-rule">
-        <div className="max-w-5xl mx-auto h-14 px-6 flex items-center">
-          <TopBar
-            projectId={projectId}
-            articleId={articleId}
-            article={article}
-            connection={connection}
-            target={target}
-            onOpenDrawer={() => setDrawerOpen(true)}
-          />
-        </div>
+      {/* FLOATING CONTROLS — fixed to the viewport corners. No bar, no
+          background; controls sit in whitespace like Ghost. The wrapper
+          is pointer-events-none so clicks pass through to content
+          underneath; only the groups opt back in. */}
+      <div className="fixed inset-x-0 top-0 z-30 flex items-start justify-between px-7 py-5 pointer-events-none">
+        <CornerLeft
+          projectId={projectId}
+          target={target}
+        />
+        <CornerRight
+          projectId={projectId}
+          articleId={articleId}
+          article={article}
+          connection={connection}
+          target={target}
+          onOpenDrawer={() => setDrawerOpen(true)}
+        />
       </div>
 
-      {/* CENTERED CONTENT COLUMN */}
-      <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
+      {/* CENTERED CONTENT COLUMN — leaves room at top for the floating controls */}
+      <div className="max-w-3xl mx-auto px-6 pt-24 pb-16 space-y-8">
         {/* FEATURE IMAGE — same position as Ghost: above title */}
         {featureImageSlot}
 
@@ -132,16 +136,52 @@ export function ArticleScreen({
 }
 
 /* ========================================================================== */
-/* TOP BAR                                                                    */
+/* CORNER CONTROLS — Ghost-style floating buttons, no bar, no background      */
 /* ========================================================================== */
 
-function TopBar({
+function CornerLeft({
   projectId,
+  target,
+}: {
+  projectId: string
+  target: Target
+}) {
+  const t = useTranslations('articles')
+  const tp = useTranslations('publish')
+
+  return (
+    <div className="flex items-center gap-5 pointer-events-auto">
+      <Link
+        href={`/projects/${projectId}/planning`}
+        className="inline-flex items-center gap-1 text-[13px] text-ink-3 hover:text-ink transition-colors"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        {t('back_to_planning')}
+      </Link>
+
+      {target?.remote_url ? (
+        <a
+          href={target.remote_url}
+          target="_blank"
+          rel="noopener"
+          className="text-[13px] text-ink-3 hover:text-ink transition-colors"
+        >
+          {tp('view_live')} ↗
+        </a>
+      ) : target?.remote_status === 'draft' ? (
+        <span className="text-[13px] text-ink-4">{tp('save_as_draft')}</span>
+      ) : null}
+    </div>
+  )
+}
+
+function CornerRight({
   articleId,
   article,
   connection,
   target,
   onOpenDrawer,
+  projectId,
 }: {
   projectId: string
   articleId: string
@@ -152,173 +192,88 @@ function TopBar({
 }) {
   const t = useTranslations('articles')
   const tp = useTranslations('publish')
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+
   const contentReady = article.status === 'editing' || article.status === 'draft_ready'
   const hasRemote = Boolean(target?.remote_post_id && target.remote_status !== 'unpublished')
 
-  return (
-    <div className="flex items-center justify-between gap-3 w-full">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <Link
-          href={`/projects/${projectId}/planning`}
-          className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 hover:text-ink transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span className="uppercase tracking-[0.14em]">{t('back_to_planning')}</span>
-        </Link>
-
-        {target?.remote_status && (
-          <div className="ml-2">
-            <PublishStatusChip
-              status={target.remote_status}
-              unpublishedLabel={tp('status_not_published')}
-            />
-          </div>
-        )}
-
-        {target?.remote_url && (
-          <a
-            href={target.remote_url}
-            target="_blank"
-            rel="noopener"
-            className="inline-flex items-center gap-1 text-[12px] text-indigo-ink hover:underline underline-offset-2"
-          >
-            {tp('view_live')} <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2 flex-none">
-        <Button variant="ghost" size="icon" onClick={onOpenDrawer} title={t('open_settings')}>
-          <Settings2 className="w-4 h-4" />
-        </Button>
-
-        {connection ? (
-          <PublishMenu
-            articleId={articleId}
-            connectionId={connection.id}
-            hasRemote={hasRemote}
-            contentReady={contentReady}
-          />
-        ) : (
-          <Link href={`/projects/${projectId}/settings`}>
-            <Button variant="default" size="sm">{tp('no_connection_cta')}</Button>
-          </Link>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/* ========================================================================== */
-/* PUBLISH MENU — always-visible dropdown                                     */
-/* ========================================================================== */
-
-function PublishMenu({
-  articleId,
-  connectionId,
-  hasRemote,
-  contentReady,
-}: {
-  articleId: string
-  connectionId: string
-  hasRemote: boolean
-  contentReady: boolean
-}) {
-  const t = useTranslations('publish')
-  const router = useRouter()
-  const [pending, startTransition] = useTransition()
-  const [open, setOpen] = useState(false)
-  const wrapRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (!wrapRef.current) return
-      if (!wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
-    if (open) {
-      document.addEventListener('mousedown', onClick)
-      document.addEventListener('keydown', onKey)
-      return () => {
-        document.removeEventListener('mousedown', onClick)
-        document.removeEventListener('keydown', onKey)
-      }
-    }
-  }, [open])
-
   function run(action: 'publish' | 'draft' | 'unpublish') {
-    setOpen(false)
+    if (!connection) return
     startTransition(async () => {
       try {
         const res = await fetch('/api/publish/ghost', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ articleId, connectionId, action }),
+          body: JSON.stringify({ articleId, connectionId: connection.id, action }),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error ?? 'publish failed')
         router.refresh()
       } catch (err) {
         console.error(err)
-        // error surfaces via publish logs in drawer
       }
     })
   }
 
-  const primaryLabel = hasRemote ? t('republish') : t('publish')
-
   return (
-    <div ref={wrapRef} className="relative inline-flex">
-      {/* Primary publish button — drops its right border/radius so the chevron
-          button sits flush beside it; a single divider line (chevron's left
-          border) keeps them visually distinct. */}
-      <Button
-        variant="ochre"
-        onClick={() => run('publish')}
-        disabled={!contentReady || pending}
-        className="rounded-r-none border-r-0"
-      >
-        {pending ? '...' : primaryLabel}
-      </Button>
-      <Button
-        variant="ochre"
-        onClick={() => setOpen((v) => !v)}
-        disabled={pending}
-        title={t('more_actions')}
-        className="rounded-l-none w-9 px-0 border-l-[#7a4e16]"
-      >
-        <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', open && 'rotate-180')} />
-      </Button>
+    <div className="flex items-center gap-5 pointer-events-auto">
+      {connection ? (
+        <>
+          <TextAction
+            onClick={() => run('publish')}
+            disabled={!contentReady || pending}
+            emphasis
+          >
+            {pending ? '…' : hasRemote ? tp('republish') : tp('publish')}
+          </TextAction>
 
-      {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-40 w-56 rounded-lg border border-rule bg-bg shadow-sh-2 overflow-hidden py-1">
-          <MenuItem disabled={!contentReady} onClick={() => run('draft')}>
-            {t('save_as_draft')}
-          </MenuItem>
-          <MenuItem disabled title={t('schedule_coming_m2')}>
-            {t('schedule')} <span className="ml-auto font-mono text-[10px] text-ink-4">M2</span>
-          </MenuItem>
-          {hasRemote && (
-            <>
-              <div className="h-px bg-rule my-1 mx-2" />
-              <MenuItem onClick={() => run('unpublish')} danger>
-                {t('unpublish')}
-              </MenuItem>
-            </>
+          {hasRemote ? (
+            <TextAction onClick={() => run('unpublish')} disabled={pending}>
+              {tp('unpublish')}
+            </TextAction>
+          ) : (
+            <TextAction onClick={() => run('draft')} disabled={!contentReady || pending}>
+              {tp('save_as_draft')}
+            </TextAction>
           )}
-        </div>
+        </>
+      ) : (
+        <Link
+          href={`/projects/${projectId}/settings`}
+          className="text-[13px] text-ink-3 hover:text-ink transition-colors"
+        >
+          {tp('no_connection_cta')}
+        </Link>
       )}
+
+      <button
+        type="button"
+        onClick={onOpenDrawer}
+        title={t('open_settings')}
+        aria-label={t('open_settings')}
+        className="text-ink-3 hover:text-ink transition-colors p-1"
+      >
+        <Settings2 className="w-4 h-4" />
+      </button>
     </div>
   )
 }
 
-function MenuItem({
-  onClick, disabled, danger, title, children,
+/**
+ * Text-only action button. Primary one uses font-medium + ink color;
+ * secondary uses ink-3 with ink on hover. No border, no background —
+ * consistent with the frameless corner controls.
+ */
+function TextAction({
+  onClick,
+  disabled,
+  emphasis,
+  children,
 }: {
   onClick?: () => void
   disabled?: boolean
-  danger?: boolean
-  title?: string
+  emphasis?: boolean
   children: ReactNode
 }) {
   return (
@@ -326,11 +281,12 @@ function MenuItem({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      title={title}
       className={cn(
-        'w-full flex items-center gap-2 px-3 py-2 text-[13px] transition-colors text-left',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        danger ? 'text-rust hover:bg-rust/10' : 'text-ink hover:bg-mist',
+        'text-[13px] transition-colors',
+        'disabled:opacity-40 disabled:cursor-not-allowed',
+        emphasis
+          ? 'text-ink font-medium hover:underline underline-offset-4'
+          : 'text-ink-3 hover:text-ink',
       )}
     >
       {children}
