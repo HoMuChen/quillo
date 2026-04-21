@@ -158,10 +158,15 @@ export async function POST(req: NextRequest) {
     bodyMd = replaceUrlInMarkdown(bodyMd, from, to)
   }
 
-  // 3. Convert markdown to HTML
-  const html = (await marked.parse(bodyMd, { async: true })) as string
+  // 3. Normalize headings: demote any H1 (# ...) to H2 so the Ghost post
+  //    title remains the only H1 on the page.  The AI draft occasionally
+  //    opens with a "# Title" line despite the system prompt saying "##".
+  const normalizedMd = bodyMd.replace(/^# /gm, '## ')
 
-  // 4. Compose Ghost post payload
+  // 4. Convert markdown to HTML
+  const html = (await marked.parse(normalizedMd, { async: true })) as string
+
+  // 5. Compose Ghost post payload
   const statusValue: GhostPost['status'] = parsed.scheduledFor
     ? 'scheduled'
     : parsed.action === 'publish'
@@ -182,7 +187,7 @@ export async function POST(req: NextRequest) {
     published_at: parsed.scheduledFor ?? (parsed.action === 'publish' ? new Date().toISOString() : undefined),
   }
 
-  // 5. Call Ghost: add or edit.
+  // 6. Call Ghost: add or edit.
   // - Ghost Admin API rejects edits without a matching updated_at — read the
   //   current post first to get it.
   // - If the stored remote_post_id no longer exists on Ghost (deleted there,

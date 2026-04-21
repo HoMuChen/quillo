@@ -78,6 +78,7 @@ Section order must match the outline exactly. For each section:
 - If skipped or unanswered, use general knowledge.
 Follow brand_context: tone, preferred_terms, and absolutely NEVER use forbidden_terms.
 Use ## as heading level 2 for each section; use the section's title verbatim.
+NEVER use # (H1) — the platform renders the article title as H1 automatically.
 Start the article with a short intro paragraph before the first ##.
 Write in the project's content_locale.
 
