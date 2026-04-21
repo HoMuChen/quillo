@@ -64,7 +64,7 @@ export function PlanStep2({
       </div>
 
       {isLoading && (
-        <div className="flex items-center gap-2 text-[12px] text-ochre-2">
+        <div className="flex items-center gap-2 text-[12px] text-ochre-ink">
           <span className="w-2 h-2 rounded-full bg-ochre animate-pulse" />
           {t('generating')}
         </div>

@@ -30,7 +30,7 @@ export default function Home() {
         <span className="absolute top-2.5 right-3 text-ochre not-italic">
           ✦
         </span>
-        <div className="font-sans not-italic text-[10px] font-medium tracking-[0.14em] uppercase text-ochre-2 mb-1.5">
+        <div className="font-sans not-italic text-[10px] font-medium tracking-[0.14em] uppercase text-ochre-ink mb-1.5">
           AI Suggestion
         </div>
         <p>這是一個 AI 建議的樣式範例，用來確認字級、顏色與紙感背景都正確套用。</p>

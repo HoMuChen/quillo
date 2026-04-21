@@ -84,7 +84,7 @@ export function InterviewTab({
     <section className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-serif italic text-[22px] text-ink">{t('interview_title')}</h2>
+          <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('interview_title')}</h2>
           <p className="text-[12px] text-ink-3">{t('interview_subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ export function InterviewTab({
       </div>
 
       {isLoading && (
-        <div className="flex items-center gap-2 text-[12px] text-ochre-2">
+        <div className="flex items-center gap-2 text-[12px] text-ochre-ink">
           <span className="w-2 h-2 rounded-full bg-ochre animate-pulse" />
           {t('generating')}
         </div>

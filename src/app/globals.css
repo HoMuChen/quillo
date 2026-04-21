@@ -1,32 +1,51 @@
 @import "tailwindcss";
 
+/*
+  Editorial design system v2 — see docs/DESIGN.md
+  - Italic serif is reserved for primary content (article title, AI,
+    brand, KPI numbers). Panel headings use sans 600.
+  - ochre is FILL only; use ochre-ink for text (AA compliant on paper).
+  - Paper grain via .paper-grain class, not body::before (chrome stays flat).
+*/
 @theme {
   /* surfaces */
   --color-bg: #faf7f0;
   --color-bg-2: #efeadc;
+  --color-bg-3: #f5efdf;
 
   /* ink scale */
   --color-ink: #12221c;
   --color-ink-2: #2b3f36;
   --color-ink-3: #5a6b62;
   --color-ink-4: #8a9891;
+  --color-ink-shade: rgba(18, 34, 28, 0.4);
 
   /* structure */
   --color-rule: #d9d2bf;
+  --color-rule-strong: #bfb6a0;
   --color-mist: rgba(18, 34, 28, 0.06);
 
-  /* accents */
+  /* accents — fills */
   --color-ochre: #c28c3c;
   --color-ochre-2: #a0722c;
+  --color-ochre-tint: #f7efd8;
   --color-rust: #9c4a30;
   --color-sage: #6a8466;
 
-  /* pillar group colors */
+  /* accents — text variants (AA/AAA on paper bg) */
+  --color-ochre-ink: #8a5a1c;
+  --color-sage-ink: #4a5e47;
+  --color-indigo-ink: #2d4a66;
+
+  /* pillar group colors — deep (large), mid (small), tint (bg) */
   --color-p1: #2b3f36;
+  --color-p1-mid: #4a6b5c;
   --color-p1-tint: #e6ede6;
   --color-p2: #2d4a66;
+  --color-p2-mid: #4c6f91;
   --color-p2-tint: #e4eaf0;
   --color-p3: #6e3a2f;
+  --color-p3-mid: #9a5d4f;
   --color-p3-tint: #efe2dc;
 
   /* fonts — reference next/font CSS variables */
@@ -37,6 +56,7 @@
   /* shadows */
   --shadow-sh-1: 0 1px 0 rgba(18, 34, 28, 0.05), 0 2px 8px rgba(18, 34, 28, 0.04);
   --shadow-sh-2: 0 2px 0 rgba(18, 34, 28, 0.06), 0 8px 24px rgba(18, 34, 28, 0.08);
+  --shadow-sh-3: 0 4px 0 rgba(18, 34, 28, 0.06), 0 16px 48px rgba(18, 34, 28, 0.12);
 }
 
 html,
@@ -48,8 +68,10 @@ body {
 }
 
 /* Paper-grain — apply as a class to the element that should feel like
-   paper. Components with a solid bg-bg (cards, inputs, selects, tables)
-   naturally cover the dots underneath, so they sit ON TOP of the paper. */
+   paper (writing canvas, empty states, onboarding). Chrome (sidebar,
+   topbar, tables, modals) stays flat. Components with a solid bg-bg
+   (cards, inputs, selects, tables) naturally cover the dots underneath,
+   so they sit ON TOP of the paper. */
 .paper-grain {
   background-color: var(--color-bg);
   background-image:
@@ -57,4 +79,13 @@ body {
     radial-gradient(rgba(18, 34, 28, 0.025) 1px, transparent 1.2px);
   background-size: 3px 3px, 7px 7px;
   background-position: 0 0, 1px 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

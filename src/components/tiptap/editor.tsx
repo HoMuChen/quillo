@@ -71,7 +71,7 @@ export function TiptapEditor({
           'prose max-w-none focus:outline-none text-[15px] leading-[1.8] text-ink ' +
           '[&_h2]:font-serif [&_h2]:italic [&_h2]:text-[28px] [&_h2]:text-ink [&_h2]:mt-8 [&_h2]:mb-3 ' +
           '[&_h3]:font-serif [&_h3]:italic [&_h3]:text-[22px] [&_h3]:text-ink [&_h3]:mt-6 [&_h3]:mb-2 ' +
-          '[&_p]:my-3 [&_a]:text-ochre-2 [&_a]:underline [&_a]:decoration-rule ' +
+          '[&_p]:my-3 [&_a]:text-ochre-ink [&_a]:underline [&_a]:decoration-rule ' +
           '[&_code]:font-mono [&_code]:text-[13px] [&_code]:bg-bg-2 [&_code]:px-1 [&_code]:rounded ' +
           '[&_pre]:bg-bg-2 [&_pre]:border [&_pre]:border-rule [&_pre]:rounded-lg [&_pre]:p-3 [&_pre]:my-4 ' +
           '[&_blockquote]:border-l-2 [&_blockquote]:border-ochre [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-ink-2 ' +

@@ -53,11 +53,11 @@ export function ArticleTabs({
 function StatusChip({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     planned:       { label: 'planned',       cls: 'bg-bg border-rule text-ink-3' },
-    outlining:     { label: 'outlining',     cls: 'bg-bg-2 border-rule text-ochre-2' },
-    outline_ready: { label: 'outline ready', cls: 'bg-bg border-ochre text-ochre-2' },
-    interviewing:  { label: 'interviewing',  cls: 'bg-bg-2 border-rule text-ochre-2' },
-    drafting:      { label: 'drafting',      cls: 'bg-bg-2 border-rule text-ochre-2' },
-    draft_ready:   { label: 'draft ready',   cls: 'bg-bg border-ochre text-ochre-2' },
+    outlining:     { label: 'outlining',     cls: 'bg-bg-2 border-rule text-ochre-ink' },
+    outline_ready: { label: 'outline ready', cls: 'bg-bg border-ochre text-ochre-ink' },
+    interviewing:  { label: 'interviewing',  cls: 'bg-bg-2 border-rule text-ochre-ink' },
+    drafting:      { label: 'drafting',      cls: 'bg-bg-2 border-rule text-ochre-ink' },
+    draft_ready:   { label: 'draft ready',   cls: 'bg-bg border-ochre text-ochre-ink' },
     editing:       { label: 'editing',       cls: 'bg-bg border-ink text-ink' },
   }
   const v = map[status] ?? map.planned

@@ -108,7 +108,7 @@ export function PlanWizard({ projectId, locale }: { projectId: string; locale: '
           )}
           {streaming && (
             <>
-              <span className="inline-flex items-center gap-2 text-[12px] text-ochre-2">
+              <span className="inline-flex items-center gap-2 text-[12px] text-ochre-ink">
                 <span className="w-2 h-2 rounded-full bg-ochre animate-pulse" />
                 {t('generating')}
               </span>

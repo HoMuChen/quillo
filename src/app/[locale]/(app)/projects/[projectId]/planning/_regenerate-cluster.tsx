@@ -65,7 +65,7 @@ export function RegenerateClusterOverlay({
         </header>
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-[12px] text-ochre-2 mb-3">
+          <div className="flex items-center gap-2 text-[12px] text-ochre-ink mb-3">
             <span className="w-2 h-2 rounded-full bg-ochre animate-pulse" />
             {t('generating')}
           </div>

@@ -124,7 +124,7 @@ function ArticleRow({ projectId, row }: { projectId: string; row: Row }) {
       <td className="px-4 py-2.5">
         <Link
           href={`/projects/${projectId}/articles/${row.id}`}
-          className="block hover:text-ochre-2"
+          className="block hover:text-ochre-ink"
         >
           <div className="text-ink font-medium truncate max-w-[360px]">{row.title}</div>
           {row.target_keyword && (
@@ -165,11 +165,11 @@ function ArticleRow({ projectId, row }: { projectId: string; row: Row }) {
 function StatusPill({ status }: { status: string }) {
   const cls: Record<string, string> = {
     planned:       'bg-bg border-rule text-ink-3',
-    outlining:     'bg-bg-2 border-rule text-ochre-2',
-    outline_ready: 'bg-bg border-ochre text-ochre-2',
-    interviewing:  'bg-bg-2 border-rule text-ochre-2',
-    drafting:      'bg-bg-2 border-rule text-ochre-2',
-    draft_ready:   'bg-bg border-ochre text-ochre-2',
+    outlining:     'bg-bg-2 border-rule text-ochre-ink',
+    outline_ready: 'bg-bg border-ochre text-ochre-ink',
+    interviewing:  'bg-bg-2 border-rule text-ochre-ink',
+    drafting:      'bg-bg-2 border-rule text-ochre-ink',
+    draft_ready:   'bg-bg border-ochre text-ochre-ink',
     editing:       'bg-bg border-ink text-ink',
   }
   return (

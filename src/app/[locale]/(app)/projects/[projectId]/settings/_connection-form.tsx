@@ -79,7 +79,7 @@ export function ConnectionForm({
 
   return (
     <section className="space-y-4">
-      <h2 className="font-serif italic text-[22px] text-ink">{t('ghost_title')}</h2>
+      <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('ghost_title')}</h2>
 
       {initial && !editing ? (
         <div className="rounded-xl border border-rule bg-bg p-5 shadow-sh-1 space-y-3">

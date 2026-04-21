@@ -79,7 +79,7 @@ export function PublishPanel({
   return (
     <section className="space-y-6 max-w-3xl">
       <div>
-        <h2 className="font-serif italic text-[22px] text-ink">{t('tab_title')}</h2>
+        <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('tab_title')}</h2>
         <p className="text-[12px] text-ink-3">{t('tab_subtitle')}</p>
       </div>
 
@@ -106,7 +106,7 @@ export function PublishPanel({
               href={target.remote_url}
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center gap-1.5 text-[12px] text-ochre-2 hover:underline"
+              className="inline-flex items-center gap-1.5 text-[12px] text-ochre-ink hover:underline"
             >
               {t('view_live')} <ExternalLink className="w-3 h-3" />
             </a>
@@ -199,9 +199,9 @@ function RemoteStatusChip({ target }: { target: Target }) {
     )
   }
   const cls = {
-    draft:     'bg-bg-2 border-rule text-ochre-2',
+    draft:     'bg-bg-2 border-rule text-ochre-ink',
     published: 'bg-ink text-bg border-ink',
-    scheduled: 'bg-bg border-ochre text-ochre-2',
+    scheduled: 'bg-bg border-ochre text-ochre-ink',
   }[target.remote_status] ?? 'bg-bg border-rule text-ink-3'
   const dot = target.remote_status === 'published' ? 'bg-ochre' : 'bg-ochre'
   return (

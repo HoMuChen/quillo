@@ -95,7 +95,7 @@ export function EditorTab({
     return (
       <section className="space-y-5">
         <div>
-          <h2 className="font-serif italic text-[22px] text-ink">{t('draft_title')}</h2>
+          <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('draft_title')}</h2>
           <p className="text-[12px] text-ink-3">{t('draft_subtitle')}</p>
         </div>
 
@@ -108,7 +108,7 @@ export function EditorTab({
 
         {streaming && (
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 text-[12px] text-ochre-2">
+            <span className="inline-flex items-center gap-2 text-[12px] text-ochre-ink">
               <span className="w-2 h-2 rounded-full bg-ochre animate-pulse" />
               {t('generating')} — {t('draft_generating_warning')}
             </span>
@@ -132,7 +132,7 @@ export function EditorTab({
     <section className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-serif italic text-[22px] text-ink">{t('editor_title')}</h2>
+          <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('editor_title')}</h2>
           <p className="text-[12px] text-ink-3">{t('editor_subtitle')}</p>
         </div>
         <Button variant="default" onClick={generateDraft} disabled={streaming}>
