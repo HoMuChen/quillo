@@ -252,6 +252,7 @@ export async function syncGhostArticlesAction(projectId: string) {
     limit: 'all',
     status: 'all',
     include: 'tags',
+    formats: 'html',
   } as Record<string, unknown>)
 
   const newPosts = posts.filter((p) => p.id && !trackedIds.has(p.id))
