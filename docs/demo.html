@@ -8,27 +8,47 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /*
+    DESIGN TWEAKS (see docs/DESIGN.md):
+    1. Italic serif reserved for primary content (article title, AI, brand, KPI numbers).
+       Panel headings → sans 600.
+    2. Text-version of ochre: --ochre-ink (7.0:1 on bg) for text/labels.
+       Original --ochre kept for fill (chips, buttons, icons, focus ring).
+    3. Paper grain moved from body::before to main::before so chrome (sidebar, topbar,
+       right panel, footer) renders flat — better for data density.
+    Also: added p*-mid for small nodes; added --indigo-ink as data/link accent.
+  */
   :root{
     /* Editorial / ink-on-off-white palette */
     --bg: #faf7f0;              /* soft off-white */
     --bg-2: #efeadc;
+    --bg-3: #f5efdf;            /* button hover, subtle chip bg */
     --ink: #12221c;             /* deep midnight green */
     --ink-2: #2b3f36;
     --ink-3: #5a6b62;
     --ink-4: #8a9891;
     --rule: #d9d2bf;            /* hairline */
-    --ochre: #c28c3c;           /* accent */
-    --ochre-2: #a0722c;
+    --rule-strong: #bfb6a0;
+    --ochre: #c28c3c;           /* accent — FILL only */
+    --ochre-2: #a0722c;         /* legacy — retained for hover on fills */
+    --ochre-ink: #8a5a1c;       /* accent — TEXT variant (7.0:1 on bg) */
+    --ochre-tint: #f7efd8;      /* ai-note bg, selected bg */
     --rust: #9c4a30;            /* attention / unpublish */
-    --sage: #6a8466;            /* secondary accent */
+    --sage: #6a8466;            /* secondary accent — FILL */
+    --sage-ink: #4a5e47;        /* sage TEXT variant */
+    --indigo-ink: #2d4a66;      /* data / link accent (= p2 deep, reused) */
     --mist: rgba(18,34,28,0.06);
+    --ink-shade: rgba(18,34,28,0.40);  /* modal backdrop */
 
-    /* Pillar group colors — tinted but deep enough to feel like ink */
+    /* Pillar group colors — deep (pillar), mid (sub-cluster), tint (bg) */
     --p1: #2b3f36;              /* deep sage-ink (AI 寫作) */
+    --p1-mid: #4a6b5c;
     --p1-tint: #e6ede6;
     --p2: #2d4a66;              /* deep blue-ink (SEO 基礎) */
+    --p2-mid: #4c6f91;
     --p2-tint: #e4eaf0;
     --p3: #6e3a2f;              /* deep rust-ink (內容策略) */
+    --p3-mid: #9a5d4f;
     --p3-tint: #efe2dc;
 
     --serif: "Instrument Serif", "Noto Serif TC", Georgia, serif;
@@ -47,15 +67,19 @@
     overflow:hidden;height:100%;
   }
 
-  /* subtle paper grain overlay */
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+  /* Paper grain — scoped to main (the writing/planning canvas) only.
+     Chrome (sidebar, topbar, right panel, footer) renders flat. */
+  .app > main::before{
+    content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
     background-image:
       radial-gradient(rgba(18,34,28,0.035) 1px, transparent 1.2px),
       radial-gradient(rgba(18,34,28,0.025) 1px, transparent 1.2px);
     background-size: 3px 3px, 7px 7px;
     background-position: 0 0, 1px 2px;
     mix-blend-mode:multiply;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .app > main::before{display:none;}
   }
 
   /* ========== LAYOUT ========== */
@@ -166,9 +190,10 @@
   .sparkle{display:inline-block;width:14px;height:14px;vertical-align:-2px}
 
   /* ========== LEFT PANEL ========== */
+  /* Panel heading — sans, not serif italic. Keeps italic reserved for content. */
   .left h3{
-    font-family:var(--serif);font-style:italic;font-size:22px;font-weight:400;
-    margin:0 0 2px;letter-spacing:-0.01em;
+    font-family:var(--sans);font-size:18px;font-weight:600;
+    margin:0 0 2px;letter-spacing:-0.01em;color:var(--ink);
   }
   .left .tagline{font-size:12px;color:var(--ink-3);margin-bottom:18px}
   .left .section-label{
@@ -289,10 +314,11 @@
   .filter-bar .chip-btn.on .n{color:rgba(244,236,217,0.6)}
 
   /* ========== NODES ========== */
-  /* pillar color is read from data-pillar via per-node CSS vars */
-  .node[data-pillar="p1"]{--pc:var(--p1); --pc-tint:var(--p1-tint)}
-  .node[data-pillar="p2"]{--pc:var(--p2); --pc-tint:var(--p2-tint)}
-  .node[data-pillar="p3"]{--pc:var(--p3); --pc-tint:var(--p3-tint)}
+  /* pillar color is read from data-pillar via per-node CSS vars.
+     --pc = deep (large nodes); --pc-mid = brighter (small nodes). */
+  .node[data-pillar="p1"]{--pc:var(--p1); --pc-mid:var(--p1-mid); --pc-tint:var(--p1-tint)}
+  .node[data-pillar="p2"]{--pc:var(--p2); --pc-mid:var(--p2-mid); --pc-tint:var(--p2-tint)}
+  .node[data-pillar="p3"]{--pc:var(--p3); --pc-mid:var(--p3-mid); --pc-tint:var(--p3-tint)}
 
   .node{
     position:absolute;transform:translate(-50%,-50%);
@@ -353,8 +379,11 @@
     letter-spacing:0.04em;
   }
 
-  /* SUB-CLUSTER (level 2+) */
-  .node.sub .bubble{border-width:1.25px}
+  /* SUB-CLUSTER (level 2+) — use pc-mid for brighter border at small size */
+  .node.sub .bubble{
+    border-width:1.25px;
+    border-color: var(--pc-mid, var(--ink));
+  }
   .node.sub .kw{
     font-family:var(--sans);font-style:normal;font-size:11.5px;font-weight:500;
     margin-top:5px;max-width:110px;
@@ -507,8 +536,13 @@
     background:var(--bg);padding:12px 14px;
   }
   .stat .k{font-size:10px;color:var(--ink-4);letter-spacing:0.12em;text-transform:uppercase}
-  .stat .v{font-family:var(--mono);font-size:22px;font-weight:500;margin-top:2px;color:var(--ink)}
-  .stat .sub{font-size:11px;color:var(--ink-3);margin-top:1px}
+  /* KPI numbers — serif italic (editorial dashboard feel). Tabular-nums keeps columns aligned. */
+  .stat .v{
+    font-family:var(--serif);font-style:italic;font-weight:400;
+    font-size:28px;line-height:1.05;margin-top:4px;color:var(--ink);
+    font-variant-numeric:tabular-nums;letter-spacing:-0.01em;
+  }
+  .stat .sub{font-size:11px;color:var(--ink-3);margin-top:2px}
 
   .kw-tags{margin-bottom:22px}
   .kw-tag{
@@ -546,16 +580,17 @@
     background: linear-gradient(180deg, #f7f0d8 0%, #f1e7c6 100%);
     border:1px solid var(--rule);border-radius:10px;
     padding:14px 16px;
-    font-family:var(--serif);font-style:italic;font-size:15px;line-height:1.4;
+    font-family:var(--serif);font-style:italic;font-size:15px;line-height:1.5;
     color:var(--ink-2);
     position:relative;
   }
   .ai-note::before{
     content:"✦";position:absolute;top:10px;right:14px;color:var(--ochre);font-size:14px;
   }
+  /* Label uses ochre-ink (AA) not ochre-2 (fails AA on paper). See design tweak 2. */
   .ai-note .label{
-    font-family:var(--sans);font-style:normal;font-size:10px;font-weight:500;
-    letter-spacing:0.14em;text-transform:uppercase;color:var(--ochre-2);
+    font-family:var(--sans);font-style:normal;font-size:10px;font-weight:600;
+    letter-spacing:0.14em;text-transform:uppercase;color:var(--ochre-ink);
     display:block;margin-bottom:6px;
   }
 
@@ -640,8 +675,10 @@
     display:none;
   }
   .tweaks.show{display:block}
+  /* Panel heading — sans (was serif italic, see design tweak 1). */
   .tweaks h5{
-    font-family:var(--serif);font-style:italic;font-size:18px;margin:0 0 10px;font-weight:400;
+    font-family:var(--sans);font-size:15px;margin:0 0 10px;font-weight:600;color:var(--ink);
+    letter-spacing:-0.005em;
   }
   .tweaks label{display:flex;align-items:center;gap:8px;margin:7px 0;cursor:pointer}
   .tweaks .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;margin-bottom:8px}
@@ -782,7 +819,7 @@
 
   <!-- FOOTER -->
   <footer>
-    <div style="font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink-2)">進度</div>
+    <div style="font-family:var(--sans);font-weight:600;font-size:13px;color:var(--ink-2)">進度</div>
     <div class="footer-progress">
       <div class="bar">
         <div class="fill ochre" style="width:62%"></div>
