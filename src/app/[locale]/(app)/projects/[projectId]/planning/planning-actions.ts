@@ -301,7 +301,7 @@ export async function syncGhostArticlesAction(projectId: string) {
       connection_id: conn.id,
       tenant_id: membership.tenant_id,
       remote_post_id: post.id ?? null,
-      remote_url: (post as Record<string, unknown>).url as string ?? null,
+      remote_url: (typeof post.url === 'string' ? post.url : null),
       remote_status: post.status ?? null,
       published_at: post.published_at ?? null,
     })
@@ -337,6 +337,8 @@ export async function assignOrphanToPillarAction(
     .update({ pillar_id: pillarId })
     .eq('id', articleId)
     .eq('project_id', projectId)
+    .eq('source', 'ghost')
+    .is('pillar_id', null)
   if (error) throw error
   revalidatePath(`/projects/${projectId}/planning`)
 }
