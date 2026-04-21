@@ -85,7 +85,7 @@ export default async function PlanningPage({ params }: Props) {
 
   if (!hasPillars && orphanArticles.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 overflow-hidden">
         <header className="flex items-start justify-between gap-6">
           <h1 className="font-serif italic text-[32px] text-ink leading-tight">
             {tp('nav_planning')}
@@ -118,7 +118,7 @@ export default async function PlanningPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-hidden">
       <header className="flex items-start justify-between gap-6">
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">
           {tp('nav_planning')}
