@@ -1,10 +1,10 @@
 'use client'
 
 import {
-  useCallback, useLayoutEffect, useMemo, useRef, useState, useTransition,
+  useCallback, useLayoutEffect, useMemo, useRef, useState, useTransition, useEffect,
 } from 'react'
 import { useTranslations } from 'next-intl'
-import { useRouter } from '@/i18n/routing'
+import { Link, useRouter } from '@/i18n/routing'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, RefreshCw, Plus, X } from 'lucide-react'
@@ -372,16 +372,23 @@ export function PlanningGraph({
 }) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedPillarId, setSelectedPillarId] = useState<string | null>(null)
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
   const [hoveredPillarId, setHoveredPillarId] = useState<string | null>(null)
-  const [selectedOrphanId, setSelectedOrphanId] = useState<string | null>(null)
-  const selectedOrphan = orphanArticles.find((o) => o.id === selectedOrphanId) ?? null
+  const [assignPending, startAssign] = useTransition()
+  const router = useRouter()
 
   // Pan & zoom
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
-  const dragRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
+  const panDragRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null)
+  const [isPanning, setIsPanning] = useState(false)
+
+  // Orphan drag-to-assign
+  const DRAG_THRESHOLD = 8
+  const orphanDragRef = useRef<{ orphanId: string; startX: number; startY: number } | null>(null)
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
+  const [dragTargetPillarId, setDragTargetPillarId] = useState<string | null>(null)
 
   function onWheel(e: React.WheelEvent) {
     e.preventDefault()
@@ -399,21 +406,57 @@ export function PlanningGraph({
 
   function onMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return
-    dragRef.current = { startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y }
-    setIsDragging(true)
+    panDragRef.current = { startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y }
+    setIsPanning(true)
   }
 
   function onMouseMove(e: React.MouseEvent) {
-    if (!dragRef.current) return
+    // Orphan drag takes priority
+    if (orphanDragRef.current) {
+      const dx = e.clientX - orphanDragRef.current.startX
+      const dy = e.clientY - orphanDragRef.current.startY
+      if (Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+        setDragPos({ x: e.clientX, y: e.clientY })
+        const rect = canvasRef.current!.getBoundingClientRect()
+        const cx = (e.clientX - rect.left - pan.x) / zoom
+        const cy = (e.clientY - rect.top - pan.y) / zoom
+        let nearest: string | null = null
+        let nearestD = 80 / zoom
+        for (const n of nodes) {
+          if (n.kind !== 'pillar') continue
+          const d = Math.hypot(cx - n.x, cy - n.y)
+          if (d < nearestD) { nearestD = d; nearest = n.id }
+        }
+        setDragTargetPillarId(nearest)
+      }
+      return
+    }
+    if (!panDragRef.current) return
     setPan({
-      x: dragRef.current.panX + e.clientX - dragRef.current.startX,
-      y: dragRef.current.panY + e.clientY - dragRef.current.startY,
+      x: panDragRef.current.panX + e.clientX - panDragRef.current.startX,
+      y: panDragRef.current.panY + e.clientY - panDragRef.current.startY,
     })
   }
 
-  function onMouseUp() {
-    dragRef.current = null
-    setIsDragging(false)
+  function onMouseUp(e: React.MouseEvent) {
+    if (orphanDragRef.current) {
+      const { orphanId, startX, startY } = orphanDragRef.current
+      const moved = Math.hypot(e.clientX - startX, e.clientY - startY) > DRAG_THRESHOLD
+      if (moved && dragTargetPillarId) {
+        startAssign(async () => {
+          await assignOrphanToPillarAction(projectId, orphanId, dragTargetPillarId)
+          router.refresh()
+        })
+      } else if (!moved) {
+        setSelectedArticleId(orphanId === selectedArticleId ? null : orphanId)
+      }
+      orphanDragRef.current = null
+      setDragPos(null)
+      setDragTargetPillarId(null)
+      return
+    }
+    panDragRef.current = null
+    setIsPanning(false)
   }
 
   function resetView() {
@@ -455,13 +498,13 @@ export function PlanningGraph({
     [pillars, articlesByPillar, targetsByArticle, size.w, size.h, orphanArticles],
   )
 
-  const selectedNode = selectedId ? nodes.find((n) => n.id === selectedId) ?? null : null
-  const selectedPillar = selectedNode?.kind === 'pillar'
-    ? pillars.find((p) => p.id === selectedNode.id) ?? null
+  const selectedPillar = selectedPillarId ? (pillars.find((p) => p.id === selectedPillarId) ?? null) : null
+  const selectedPillarArticles = selectedPillar ? (articlesByPillar.get(selectedPillar.id) ?? []) : []
+
+  const selectedArticle = selectedArticleId
+    ? (articles.find((a) => a.id === selectedArticleId) ?? orphanArticles.find((o) => o.id === selectedArticleId) ?? null)
     : null
-  const selectedArticles = selectedPillar
-    ? articlesByPillar.get(selectedPillar.id) ?? []
-    : []
+  const isOrphanSelected = selectedArticleId ? orphanArticles.some((o) => o.id === selectedArticleId) : false
 
   const t = useTranslations('planning')
 
@@ -470,14 +513,14 @@ export function PlanningGraph({
       <div
         ref={canvasRef}
         className="relative w-full h-[calc(100vh-180px)] min-h-[560px] overflow-hidden"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        style={{ cursor: dragPos ? 'grabbing' : isPanning ? 'grabbing' : 'grab' }}
         onWheel={onWheel}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
         onClick={(e) => {
-          if (e.target === e.currentTarget) { setSelectedId(null); setSelectedOrphanId(null) }
+          if (e.target === e.currentTarget) { setSelectedPillarId(null); setSelectedArticleId(null) }
         }}
       >
         {/* Transform wrapper — pan & zoom applied here */}
@@ -491,7 +534,7 @@ export function PlanningGraph({
             height: size.h,
           }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) { setSelectedId(null); setSelectedOrphanId(null) }
+            if (e.target === e.currentTarget) { setSelectedPillarId(null); setSelectedArticleId(null) }
           }}
         >
         {/* Edges — SVG */}
@@ -526,16 +569,17 @@ export function PlanningGraph({
           const hex = COLOR_HEX[n.colorIdx as 0 | 1 | 2]
           const isInGroup = hoveredPillarId && hoveredPillarId === n.pillarId
           const isDimmed = hoveredPillarId && hoveredPillarId !== n.pillarId
-          const isSelected = selectedId === n.id
+          const isSelected = selectedPillarId === n.id
 
           if (n.kind === 'pillar') {
+            const isDragTarget = dragTargetPillarId === n.id
             return (
               <button
                 key={n.id}
                 type="button"
                 onMouseEnter={() => setHoveredPillarId(n.id)}
                 onMouseLeave={() => setHoveredPillarId(null)}
-                onClick={() => setSelectedId(n.id === selectedId ? null : n.id)}
+                onClick={() => setSelectedPillarId(n.id === selectedPillarId ? null : n.id)}
                 className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
                 style={{
                   left: n.x,
@@ -565,9 +609,11 @@ export function PlanningGraph({
                       : n.status === 'empty'
                         ? `2px dashed ${hex.main}`
                         : `2px solid ${hex.main}`,
-                    boxShadow: isSelected
-                      ? `0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)`
-                      : '0 1px 0 rgba(18,34,28,0.05), 0 2px 8px rgba(18,34,28,0.04)',
+                    boxShadow: isDragTarget
+                      ? `0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-ochre), 0 0 16px var(--color-ochre)`
+                      : isSelected
+                        ? `0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)`
+                        : '0 1px 0 rgba(18,34,28,0.05), 0 2px 8px rgba(18,34,28,0.04)',
                   }}
                 >
                   {/* Draft hatching overlay */}
@@ -591,20 +637,23 @@ export function PlanningGraph({
           }
 
           if (n.kind === 'orphan') {
-            const isOrphanSelected = selectedOrphanId === n.id
+            const isArticleSelected = selectedArticleId === n.id
             return (
               <button
                 key={n.id}
                 type="button"
-                onClick={() => setSelectedOrphanId(n.id === selectedOrphanId ? null : n.id)}
-                className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
+                onMouseDown={(e) => {
+                  e.stopPropagation()
+                  orphanDragRef.current = { orphanId: n.id, startX: e.clientX, startY: e.clientY }
+                }}
+                className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-grab active:cursor-grabbing"
                 style={{
                   left: n.x,
                   top: n.y,
                   transform: 'translate(-50%, -50%)',
                   maxWidth: n.size + 80,
-                  zIndex: isOrphanSelected ? 3 : 1,
-                  opacity: isOrphanSelected ? 1 : 0.65,
+                  zIndex: isArticleSelected ? 3 : 1,
+                  opacity: isArticleSelected ? 1 : 0.65,
                   transition: 'opacity 150ms ease',
                 }}
               >
@@ -614,7 +663,7 @@ export function PlanningGraph({
                     width: n.size,
                     height: n.size,
                     background: 'var(--color-ink-3)',
-                    boxShadow: isOrphanSelected
+                    boxShadow: isArticleSelected
                       ? '0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)'
                       : '0 1px 0 rgba(18,34,28,0.06), 0 2px 8px rgba(18,34,28,0.08)',
                   }}
@@ -627,15 +676,14 @@ export function PlanningGraph({
           }
 
           // Cluster
+          const isClusterSelected = selectedArticleId === n.id
           return (
             <button
               key={n.id}
               type="button"
               onMouseEnter={() => setHoveredPillarId(n.pillarId)}
               onMouseLeave={() => setHoveredPillarId(null)}
-              onClick={() => {
-                window.location.href = `/projects/${projectId}/articles/${n.id}`
-              }}
+              onClick={() => setSelectedArticleId(n.id === selectedArticleId ? null : n.id)}
               className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
               style={{
                 left: n.x,
@@ -644,7 +692,7 @@ export function PlanningGraph({
                 opacity: isDimmed ? 0.22 : 1,
                 filter: isDimmed ? 'saturate(0.55)' : undefined,
                 transition: 'opacity 150ms ease',
-                zIndex: isInGroup ? 2 : 1,
+                zIndex: isClusterSelected ? 3 : isInGroup ? 2 : 1,
                 maxWidth: n.size + 80,
               }}
             >
@@ -688,6 +736,21 @@ export function PlanningGraph({
 
         </div>{/* end transform wrapper */}
 
+        {/* Drag ghost — follows cursor when dragging an orphan */}
+        {dragPos && (
+          <div
+            className="fixed rounded-full pointer-events-none z-50"
+            style={{
+              width: 40, height: 40,
+              left: dragPos.x - 20, top: dragPos.y - 20,
+              background: dragTargetPillarId ? 'var(--color-ochre)' : 'var(--color-ink-3)',
+              opacity: 0.85,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
+              transition: 'background 120ms',
+            }}
+          />
+        )}
+
         {/* Legend — bottom-left, outside transform */}
         <div className="absolute left-4 bottom-4 rounded-lg border border-rule bg-bg/90 backdrop-blur-sm shadow-sh-1 p-3 text-[11px] text-ink-3 space-y-1.5 pointer-events-none">
           <LegendItem dot="published" label="published" />
@@ -718,22 +781,22 @@ export function PlanningGraph({
         </div>
       </div>
 
-      {/* Selected-pillar floating panel */}
       {selectedPillar && (
         <PillarDetail
           projectId={projectId}
           pillar={selectedPillar}
-          articles={selectedArticles}
-          onClose={() => setSelectedId(null)}
+          articles={selectedPillarArticles}
+          onClose={() => setSelectedPillarId(null)}
         />
       )}
 
-      {selectedOrphan && (
-        <OrphanPanel
+      {selectedArticle && (
+        <ArticlePanel
           projectId={projectId}
-          orphan={selectedOrphan}
+          article={selectedArticle}
+          isOrphan={isOrphanSelected}
           pillars={pillars}
-          onClose={() => setSelectedOrphanId(null)}
+          onClose={() => setSelectedArticleId(null)}
         />
       )}
     </div>
@@ -1048,32 +1111,37 @@ function ArticleAddInline({
   )
 }
 
-function OrphanPanel({
+function ArticlePanel({
   projectId,
-  orphan,
+  article,
+  isOrphan,
   pillars,
   onClose,
 }: {
   projectId: string
-  orphan: OrphanArticle
+  article: Article | OrphanArticle
+  isOrphan: boolean
   pillars: Pillar[]
   onClose: () => void
 }) {
   const t = useTranslations('planning')
   const router = useRouter()
   const [mode, setMode] = useState<'assign' | 'new-pillar'>('assign')
-  const [selectedPillarId, setSelectedPillarId] = useState(pillars[0]?.id ?? '')
+  const [assignPillarId, setAssignPillarId] = useState(pillars[0]?.id ?? '')
   const [newTitle, setNewTitle] = useState('')
-  const [newKeyword, setNewKeyword] = useState(orphan.target_keyword ?? '')
+  const [newKeyword, setNewKeyword] = useState(article.target_keyword ?? '')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
+  const tags = 'tags' in article ? (article as OrphanArticle).tags : []
+  const role = 'role' in article ? (article as Article).role : null
+
   function assign() {
-    if (!selectedPillarId) return
+    if (!assignPillarId) return
     setError(null)
     startTransition(async () => {
       try {
-        await assignOrphanToPillarAction(projectId, orphan.id, selectedPillarId)
+        await assignOrphanToPillarAction(projectId, article.id, assignPillarId)
         onClose()
         router.refresh()
       } catch (err) {
@@ -1088,7 +1156,7 @@ function OrphanPanel({
     setError(null)
     startTransition(async () => {
       try {
-        await createPillarAndAssignAction(projectId, orphan.id, {
+        await createPillarAndAssignAction(projectId, article.id, {
           title: newTitle.trim(),
           target_keyword: newKeyword || null,
         })
@@ -1104,21 +1172,24 @@ function OrphanPanel({
     <aside className="fixed right-6 bottom-6 top-24 w-[320px] z-40 flex flex-col rounded-xl border border-rule bg-bg shadow-sh-2 overflow-hidden">
       <header className="flex items-start justify-between gap-2 p-4 border-b border-rule">
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4">Ghost</div>
-          <h3 className="font-serif italic text-[20px] text-ink leading-tight truncate">{orphan.title}</h3>
-          {orphan.target_keyword && (
-            <p className="font-mono text-[11px] text-ink-3 mt-0.5 truncate">{orphan.target_keyword}</p>
+          <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4 flex items-center gap-2">
+            {isOrphan ? 'Ghost' : 'Cluster'}
+            {role && <span className="px-1.5 py-0.5 rounded border border-rule bg-bg-2">{role}</span>}
+          </div>
+          <h3 className="font-serif italic text-[20px] text-ink leading-tight">{article.title}</h3>
+          {article.target_keyword && (
+            <p className="font-mono text-[11px] text-ink-3 mt-0.5 truncate">{article.target_keyword}</p>
           )}
         </div>
-        <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink cursor-pointer">
+        <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink cursor-pointer shrink-0">
           <X className="w-4 h-4" />
         </button>
       </header>
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
-        {orphan.tags.length > 0 && (
+        {tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {orphan.tags.map((tag) => (
+            {tags.map((tag) => (
               <span key={tag} className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-rule bg-bg-2 text-ink-3">
                 {tag}
               </span>
@@ -1126,73 +1197,61 @@ function OrphanPanel({
           </div>
         )}
 
-        <div className="flex gap-1 rounded-lg border border-rule overflow-hidden text-[11px]">
-          {(['assign', 'new-pillar'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={cn(
-                'flex-1 px-3 py-1.5 transition-colors cursor-pointer',
-                mode === m ? 'bg-ink text-bg' : 'text-ink-3 hover:bg-mist',
+        <Link
+          href={`/projects/${projectId}/articles/${article.id}`}
+          className="flex items-center justify-center gap-2 w-full rounded-lg border border-rule bg-bg-2 px-4 py-2.5 text-[13px] text-ink hover:bg-mist transition-colors"
+        >
+          {t('open_editor')}
+        </Link>
+
+        {isOrphan && (
+          <>
+            <div className="border-t border-rule/60 pt-3">
+              <p className="text-[11px] text-ink-4 mb-3">{t('orphan_assign')}</p>
+              <div className="flex gap-1 rounded-lg border border-rule overflow-hidden text-[11px] mb-3">
+                {(['assign', 'new-pillar'] as const).map((m) => (
+                  <button key={m} type="button" onClick={() => setMode(m)}
+                    className={cn('flex-1 px-3 py-1.5 transition-colors cursor-pointer',
+                      mode === m ? 'bg-ink text-bg' : 'text-ink-3 hover:bg-mist')}
+                  >
+                    {m === 'assign' ? t('orphan_assign_existing') : t('orphan_new_pillar')}
+                  </button>
+                ))}
+              </div>
+
+              {mode === 'assign' && (
+                <div className="space-y-2">
+                  {pillars.length === 0 ? (
+                    <p className="text-[12px] text-ink-4">{t('orphan_no_pillars')}</p>
+                  ) : (
+                    <>
+                      <select value={assignPillarId} onChange={(e) => setAssignPillarId(e.target.value)}
+                        className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3">
+                        {pillars.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                      </select>
+                      <Button variant="primary" disabled={!assignPillarId || pending} onClick={assign} className="w-full">
+                        {pending ? '…' : t('orphan_assign_confirm')}
+                      </Button>
+                    </>
+                  )}
+                </div>
               )}
-            >
-              {m === 'assign' ? t('orphan_assign_existing') : t('orphan_new_pillar')}
-            </button>
-          ))}
-        </div>
 
-        {mode === 'assign' && (
-          <div className="space-y-3">
-            {pillars.length === 0 ? (
-              <p className="text-[12px] text-ink-4">{t('orphan_no_pillars')}</p>
-            ) : (
-              <>
-                <select
-                  value={selectedPillarId}
-                  onChange={(e) => setSelectedPillarId(e.target.value)}
-                  className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3"
-                >
-                  {pillars.map((p) => (
-                    <option key={p.id} value={p.id}>{p.title}</option>
-                  ))}
-                </select>
-                <Button
-                  variant="primary"
-                  disabled={!selectedPillarId || pending}
-                  onClick={assign}
-                  className="w-full"
-                >
-                  {pending ? '…' : t('orphan_assign_confirm')}
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-
-        {mode === 'new-pillar' && (
-          <form onSubmit={createAndAssign} className="space-y-3">
-            <div className="space-y-1.5">
-              <label className="text-[11px] uppercase tracking-[0.12em] text-ink-3">{t('orphan_pillar_title')}</label>
-              <input
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                required
-                className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3"
-              />
+              {mode === 'new-pillar' && (
+                <form onSubmit={createAndAssign} className="space-y-2">
+                  <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required
+                    placeholder={t('orphan_pillar_title')}
+                    className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3" />
+                  <input value={newKeyword} onChange={(e) => setNewKeyword(e.target.value)}
+                    placeholder={t('orphan_pillar_keyword')}
+                    className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3" />
+                  <Button type="submit" variant="primary" disabled={!newTitle.trim() || pending} className="w-full">
+                    {pending ? '…' : t('orphan_assign_confirm')}
+                  </Button>
+                </form>
+              )}
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[11px] uppercase tracking-[0.12em] text-ink-3">{t('orphan_pillar_keyword')}</label>
-              <input
-                value={newKeyword}
-                onChange={(e) => setNewKeyword(e.target.value)}
-                className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3"
-              />
-            </div>
-            <Button type="submit" variant="primary" disabled={!newTitle.trim() || pending} className="w-full">
-              {pending ? '…' : t('orphan_assign_confirm')}
-            </Button>
-          </form>
+          </>
         )}
 
         {error && <p className="text-[12px] text-rust">{error}</p>}
