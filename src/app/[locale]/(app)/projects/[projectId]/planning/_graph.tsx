@@ -564,6 +564,51 @@ export function PlanningGraph({
           )
         })}
 
+        {/* Orphan nodes — Ghost-imported articles not yet assigned to a pillar */}
+        {orphanArticles.map((o, i) => {
+          const total = orphanArticles.length
+          const nodeSize = 42
+          const spacing = Math.min(120, (size.w - 80) / Math.max(total, 1))
+          const totalW = spacing * (total - 1)
+          const x = size.w / 2 - totalW / 2 + i * spacing
+          const y = size.h - 72
+          const isSelected = selectedOrphanId === o.id
+          const isPublished = o.status === 'draft_ready'
+          return (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => setSelectedOrphanId(o.id === selectedOrphanId ? null : o.id)}
+              className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
+              style={{
+                left: x,
+                top: y,
+                transform: 'translate(-50%, -50%)',
+                maxWidth: nodeSize + 80,
+                zIndex: isSelected ? 3 : 1,
+              }}
+            >
+              <span
+                className="relative rounded-full transition-all duration-150 group-hover:scale-105"
+                style={{
+                  width: nodeSize,
+                  height: nodeSize,
+                  background: isPublished ? 'var(--color-ink-3)' : 'var(--color-bg)',
+                  border: isSelected
+                    ? '2px solid var(--color-ink)'
+                    : '1.5px dashed var(--color-ink-3)',
+                  boxShadow: isSelected
+                    ? '0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)'
+                    : undefined,
+                }}
+              />
+              <span className="font-serif italic text-[11px] text-ink-3 leading-tight whitespace-normal" style={{ maxWidth: nodeSize + 80 }}>
+                {o.target_keyword || o.title}
+              </span>
+            </button>
+          )
+        })}
+
         {/* Legend — bottom-left */}
         <div className="absolute left-4 bottom-4 rounded-lg border border-rule bg-bg/90 backdrop-blur-sm shadow-sh-1 p-3 text-[11px] text-ink-3 space-y-1.5 pointer-events-none">
           <LegendItem dot="published" label="published" />
@@ -571,34 +616,6 @@ export function PlanningGraph({
           <LegendItem dot="empty" label="planning" />
         </div>
       </div>
-
-      {orphanArticles.length > 0 && (
-        <div className="border-t border-rule pt-3 space-y-2">
-          <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4 px-1">
-            {t('orphan_label')} ({orphanArticles.length})
-          </div>
-          <div className="flex flex-wrap gap-2 px-1">
-            {orphanArticles.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => setSelectedOrphanId(o.id === selectedOrphanId ? null : o.id)}
-                className={cn(
-                  'inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[12px] transition-colors cursor-pointer',
-                  selectedOrphanId === o.id
-                    ? 'bg-ink text-bg border-ink'
-                    : 'bg-bg border-rule text-ink-2 hover:border-ink-3 hover:text-ink',
-                )}
-              >
-                <span className="w-2 h-2 rounded-full border border-current opacity-60 shrink-0" />
-                <span className="font-serif italic truncate max-w-[180px]">
-                  {o.target_keyword || o.title}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Selected-pillar floating panel */}
       {selectedPillar && (
