@@ -4,6 +4,7 @@ import { Link } from '@/i18n/routing'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { PlanningGraph } from './_graph'
+import { SyncGhostButton } from './_sync-button'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
 
@@ -83,9 +84,17 @@ export default async function PlanningPage({ params }: Props) {
   if (!pillars || pillars.length === 0) {
     return (
       <div className="space-y-6 max-w-3xl">
-        <h1 className="font-serif italic text-[32px] text-ink leading-tight">
-          {tp('nav_planning')}
-        </h1>
+        <header className="flex items-start justify-between gap-6">
+          <h1 className="font-serif italic text-[32px] text-ink leading-tight">
+            {tp('nav_planning')}
+          </h1>
+          <div className="flex items-center gap-3">
+            {ghostConn && <SyncGhostButton projectId={projectId} />}
+            <Link href={`/projects/${projectId}/planning/new`}>
+              <Button variant="default">{t('plan_new_button')}</Button>
+            </Link>
+          </div>
+        </header>
         <div className="rounded-xl border border-rule border-dashed bg-bg/60 p-10 text-center shadow-sh-1 space-y-4">
           <p className="font-serif italic text-[22px] text-ink">{t('empty_title')}</p>
           <p className="text-[13px] text-ink-3 max-w-md mx-auto">{t('empty_body')}</p>
@@ -105,9 +114,12 @@ export default async function PlanningPage({ params }: Props) {
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">
           {tp('nav_planning')}
         </h1>
-        <Link href={`/projects/${projectId}/planning/new`}>
-          <Button variant="default">{t('plan_new_button')}</Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          {ghostConn && <SyncGhostButton projectId={projectId} />}
+          <Link href={`/projects/${projectId}/planning/new`}>
+            <Button variant="default">{t('plan_new_button')}</Button>
+          </Link>
+        </div>
       </header>
       <PlanningGraph
         projectId={projectId}
