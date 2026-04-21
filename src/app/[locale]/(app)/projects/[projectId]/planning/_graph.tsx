@@ -680,7 +680,7 @@ export function PlanningGraph({
                 )}
               </span>
               <span className="font-serif italic text-[13px] text-ink leading-tight whitespace-normal" style={{ maxWidth: n.size + 80 }}>
-                {n.subtitle || n.title}
+                {n.subtitle || n.title.slice(0, 12)}
               </span>
             </button>
           )
