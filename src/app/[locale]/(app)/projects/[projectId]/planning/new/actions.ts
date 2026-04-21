@@ -9,6 +9,7 @@ export async function savePlanAction(
   locale: 'zh-TW' | 'en',
   projectId: string,
   plan: PillarPlan,
+  orphanAssignments: Record<string, number> = {},
 ) {
   const parsed = pillarPlanSchema.parse(plan)
 
@@ -23,6 +24,30 @@ export async function savePlanAction(
     p_plan: parsed,
   })
   if (error) throw error
+
+  // Assign orphan articles to the newly created pillars
+  const assignEntries = Object.entries(orphanAssignments)
+  if (assignEntries.length > 0) {
+    // Fetch newly created pillars ordered by position to map by index
+    const { data: pillars } = await supabase
+      .from('pillars')
+      .select('id,position')
+      .eq('project_id', projectId)
+      .order('position')
+
+    if (pillars && pillars.length > 0) {
+      for (const [articleId, pillarIndex] of assignEntries) {
+        const pillar = pillars[pillarIndex]
+        if (!pillar) continue
+        await supabase
+          .from('articles')
+          .update({ pillar_id: pillar.id })
+          .eq('id', articleId)
+          .eq('project_id', projectId)
+          .is('pillar_id', null)
+      }
+    }
+  }
 
   revalidatePath(`/projects/${projectId}/planning`)
   redirect({ href: `/projects/${projectId}/planning`, locale })

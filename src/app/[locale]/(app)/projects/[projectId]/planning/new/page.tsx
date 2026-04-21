@@ -14,12 +14,23 @@ export default async function NewPlanPage({ params }: Props) {
   const { data: project } = await supabase.from('projects').select('id').eq('id', projectId).single()
   if (!project) notFound()
 
+  const { data: orphanArticlesRaw } = await supabase
+    .from('articles')
+    .select('id,title,target_keyword,slug')
+    .eq('project_id', projectId)
+    .is('pillar_id', null)
+    .order('created_at', { ascending: false })
+
+  const orphanArticles = (orphanArticlesRaw ?? []) as Array<{
+    id: string; title: string; target_keyword: string | null; slug: string | null
+  }>
+
   return (
     <div className="space-y-6 max-w-3xl">
       <header>
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">{t('new_title')}</h1>
       </header>
-      <PlanWizard projectId={projectId} locale={locale as 'zh-TW' | 'en'} />
+      <PlanWizard projectId={projectId} locale={locale as 'zh-TW' | 'en'} orphanArticles={orphanArticles} />
     </div>
   )
 }

@@ -9,14 +9,18 @@ import { Button } from '@/components/ui/button'
 import { pillarPlanSchema, type PillarPlan } from '@/lib/ai/schemas'
 import { savePlanAction } from './actions'
 
+type OrphanArticle = { id: string; title: string; target_keyword: string | null; slug: string | null }
+
 export function PlanStep2({
   projectId,
   locale,
   direction,
+  orphanArticles,
 }: {
   projectId: string
   locale: 'zh-TW' | 'en'
   direction: string
+  orphanArticles: OrphanArticle[]
 }) {
   const t = useTranslations('planning')
   const router = useRouter()
@@ -27,6 +31,18 @@ export function PlanStep2({
     api: '/api/ai/plan/step2',
     schema: pillarPlanSchema,
   })
+
+  // orphanAssignments: articleId → pillarIndex (0-based)
+  const [orphanAssignments, setOrphanAssignments] = useState<Record<string, number>>({})
+
+  function toggleOrphan(articleId: string, pillarIndex: number) {
+    setOrphanAssignments(prev => {
+      if (prev[articleId] === pillarIndex) {
+        const next = { ...prev }; delete next[articleId]; return next
+      }
+      return { ...prev, [articleId]: pillarIndex }
+    })
+  }
 
   // Kick off generation once on mount
   useEffect(() => {
@@ -41,9 +57,8 @@ export function PlanStep2({
     setActionError(null)
     startSaving(async () => {
       try {
-        // Validate strictly before saving
         const parsed = pillarPlanSchema.parse(object)
-        await savePlanAction(locale, projectId, parsed)
+        await savePlanAction(locale, projectId, parsed, orphanAssignments)
         router.replace(`/projects/${projectId}/planning`)
       } catch (err) {
         console.error(err)
@@ -70,7 +85,14 @@ export function PlanStep2({
 
       <div className="space-y-4">
         {pillars.map((p, i) => (
-          <PillarCard key={i} index={i} pillar={p} />
+          <PillarCard
+            key={i}
+            index={i}
+            pillar={p}
+            orphanArticles={orphanArticles}
+            orphanAssignments={orphanAssignments}
+            onToggleOrphan={toggleOrphan}
+          />
         ))}
       </div>
 
@@ -92,10 +114,17 @@ const PILLAR_COLORS = ['p1', 'p2', 'p3'] as const
 function PillarCard({
   index,
   pillar,
+  orphanArticles,
+  orphanAssignments,
+  onToggleOrphan,
 }: {
   index: number
   pillar: DeepPartial<PillarPlan['pillars'][number]> | undefined
+  orphanArticles: OrphanArticle[]
+  orphanAssignments: Record<string, number>
+  onToggleOrphan: (articleId: string, pillarIndex: number) => void
 }) {
+  const t = useTranslations('planning')
   const color = PILLAR_COLORS[index % PILLAR_COLORS.length]
   const bgMap = { p1: 'bg-p1-tint border-p1', p2: 'bg-p2-tint border-p2', p3: 'bg-p3-tint border-p3' }
   const textMap = { p1: 'text-p1', p2: 'text-p2', p3: 'text-p3' }
@@ -103,8 +132,8 @@ function PillarCard({
   if (!pillar) return null
 
   return (
-    <article className={`rounded-xl border ${bgMap[color]} p-5 shadow-sh-1`}>
-      <header className="flex items-start justify-between gap-3 mb-3">
+    <article className={`rounded-xl border ${bgMap[color]} p-5 shadow-sh-1 space-y-3`}>
+      <header className="flex items-start justify-between gap-3">
         <div>
           <h3 className={`font-serif italic text-[22px] leading-tight ${textMap[color]}`}>
             {pillar.title ?? '…'}
@@ -121,16 +150,13 @@ function PillarCard({
       </header>
 
       {pillar.description && (
-        <p className="text-[13px] text-ink-2 leading-[1.55] mb-3">{pillar.description}</p>
+        <p className="text-[13px] text-ink-2 leading-[1.55]">{pillar.description}</p>
       )}
 
       {pillar.articles && pillar.articles.length > 0 && (
         <ul className="space-y-1.5 border-t border-rule/60 pt-3">
           {pillar.articles.map((a, i) => (
-            <li
-              key={i}
-              className="flex items-start justify-between gap-3 text-[13px]"
-            >
+            <li key={i} className="flex items-start justify-between gap-3 text-[13px]">
               <div className="min-w-0 flex-1">
                 <div className="text-ink font-medium truncate">{a?.title ?? '…'}</div>
                 {a?.target_keyword && (
@@ -138,19 +164,47 @@ function PillarCard({
                 )}
               </div>
               {a?.role && (
-                <span
-                  className={`font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded border ${
-                    a.role === 'hub'
-                      ? 'bg-ink text-bg border-ink'
-                      : 'bg-bg border-rule text-ink-3'
-                  }`}
-                >
-                  {a.role}
-                </span>
+                <span className={`font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded border ${
+                  a.role === 'hub' ? 'bg-ink text-bg border-ink' : 'bg-bg border-rule text-ink-3'
+                }`}>{a.role}</span>
               )}
             </li>
           ))}
         </ul>
+      )}
+
+      {orphanArticles.length > 0 && (
+        <div className="border-t border-rule/60 pt-3 space-y-2">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-ink-4">{t('orphan_include_existing')}</p>
+          <div className="space-y-1">
+            {orphanArticles.map((o) => {
+              const checked = orphanAssignments[o.id] === index
+              const assignedElsewhere = o.id in orphanAssignments && orphanAssignments[o.id] !== index
+              return (
+                <label
+                  key={o.id}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 cursor-pointer transition-colors ${
+                    checked ? 'bg-bg/70' : assignedElsewhere ? 'opacity-30' : 'hover:bg-bg/50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={assignedElsewhere}
+                    onChange={() => onToggleOrphan(o.id, index)}
+                    className="rounded accent-current cursor-pointer"
+                  />
+                  <span className="text-[13px] text-ink truncate flex-1">
+                    {o.target_keyword || o.title}
+                  </span>
+                  {o.target_keyword && (
+                    <span className="font-mono text-[10px] text-ink-4 truncate max-w-[120px]">{o.title}</span>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+        </div>
       )}
     </article>
   )

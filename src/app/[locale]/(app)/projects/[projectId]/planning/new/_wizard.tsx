@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PlanStep2 } from './_step2'
 
-export function PlanWizard({ projectId, locale }: { projectId: string; locale: 'zh-TW' | 'en' }) {
+type OrphanArticle = { id: string; title: string; target_keyword: string | null; slug: string | null }
+
+export function PlanWizard({ projectId, locale, orphanArticles }: { projectId: string; locale: 'zh-TW' | 'en'; orphanArticles: OrphanArticle[] }) {
   const t = useTranslations('planning')
   const [step, setStep] = useState<1 | 2>(1)
   const [topic, setTopic] = useState('')
@@ -120,5 +122,5 @@ export function PlanWizard({ projectId, locale }: { projectId: string; locale: '
     )
   }
 
-  return <PlanStep2 projectId={projectId} locale={locale} direction={direction} />
+  return <PlanStep2 projectId={projectId} locale={locale} direction={direction} orphanArticles={orphanArticles} />
 }
