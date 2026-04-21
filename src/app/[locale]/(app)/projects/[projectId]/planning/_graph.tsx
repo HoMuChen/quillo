@@ -566,12 +566,17 @@ export function PlanningGraph({
 
         {/* Orphan nodes — Ghost-imported articles not yet assigned to a pillar */}
         {orphanArticles.map((o, i) => {
-          const total = orphanArticles.length
           const nodeSize = 42
-          const spacing = Math.min(120, (size.w - 80) / Math.max(total, 1))
-          const totalW = spacing * (total - 1)
-          const x = size.w / 2 - totalW / 2 + i * spacing
-          const y = size.h - 72
+          const colSpacing = 100
+          const rowSpacing = 80
+          const nodesPerRow = Math.max(1, Math.floor((size.w - 80) / colSpacing))
+          const col = i % nodesPerRow
+          const row = Math.floor(i / nodesPerRow)
+          const totalRows = Math.ceil(orphanArticles.length / nodesPerRow)
+          const rowCount = Math.min(nodesPerRow, orphanArticles.length - row * nodesPerRow)
+          const rowW = colSpacing * (rowCount - 1)
+          const x = size.w / 2 - rowW / 2 + col * colSpacing
+          const y = size.h - 56 - (totalRows - 1 - row) * rowSpacing
           const isSelected = selectedOrphanId === o.id
           const isPublished = o.status === 'draft_ready'
           return (
