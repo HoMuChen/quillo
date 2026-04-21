@@ -49,7 +49,6 @@ export default async function PlanningPage({ params }: Props) {
         .from('articles')
         .select('id,title,target_keyword,slug,tags,status,source')
         .eq('project_id', projectId)
-        .eq('source', 'ghost')
         .is('pillar_id', null)
         .order('created_at', { ascending: false }),
     ])

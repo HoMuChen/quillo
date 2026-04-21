@@ -654,8 +654,6 @@ export function PlanningGraph({
           const hy = hashId(o.id + 'y')
           const x = baseX + ((hx % 200) - 100) * 0.18
           const y = baseY + ((hy % 200) - 100) * 0.18
-          const tints = ['#3d5c4e', '#2d4a66', '#6e3a2f', '#4a5568', '#5a4a6e']
-          const nodeFill = tints[hx % tints.length]
           const isSelected = selectedOrphanId === o.id
           return (
             <button
@@ -669,7 +667,7 @@ export function PlanningGraph({
                 transform: 'translate(-50%, -50%)',
                 maxWidth: nodeSize + 80,
                 zIndex: isSelected ? 3 : 1,
-                opacity: isSelected ? 1 : 0.72,
+                opacity: isSelected ? 1 : 0.65,
               }}
             >
               <span
@@ -677,7 +675,7 @@ export function PlanningGraph({
                 style={{
                   width: nodeSize,
                   height: nodeSize,
-                  background: nodeFill,
+                  background: 'var(--color-ink-3)',
                   boxShadow: isSelected
                     ? '0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)'
                     : '0 1px 0 rgba(18,34,28,0.06), 0 2px 8px rgba(18,34,28,0.08)',
