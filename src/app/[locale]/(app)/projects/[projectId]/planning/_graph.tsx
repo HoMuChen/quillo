@@ -304,6 +304,12 @@ function computeLayout(
   return { nodes, edges }
 }
 
+function hashId(s: string): number {
+  let h = 5381
+  for (let i = 0; i < s.length; i++) h = (((h * 33) ^ s.charCodeAt(i)) >>> 0)
+  return h
+}
+
 function curvePath(ax: number, ay: number, bx: number, by: number): string {
   const dx = bx - ax
   const dy = by - ay
@@ -642,10 +648,15 @@ export function PlanningGraph({
           const totalRows = Math.ceil(orphanArticles.length / nodesPerRow)
           const rowCount = Math.min(nodesPerRow, orphanArticles.length - row * nodesPerRow)
           const rowW = colSpacing * (rowCount - 1)
-          const x = size.w / 2 - rowW / 2 + col * colSpacing
-          const y = size.h - 56 - (totalRows - 1 - row) * rowSpacing
+          const baseX = size.w / 2 - rowW / 2 + col * colSpacing
+          const baseY = size.h - 56 - (totalRows - 1 - row) * rowSpacing
+          const hx = hashId(o.id)
+          const hy = hashId(o.id + 'y')
+          const x = baseX + ((hx % 200) - 100) * 0.18
+          const y = baseY + ((hy % 200) - 100) * 0.18
+          const tints = ['#3d5c4e', '#2d4a66', '#6e3a2f', '#4a5568', '#5a4a6e']
+          const nodeFill = tints[hx % tints.length]
           const isSelected = selectedOrphanId === o.id
-          const isPublished = o.status === 'draft_ready'
           return (
             <button
               key={o.id}
@@ -658,20 +669,18 @@ export function PlanningGraph({
                 transform: 'translate(-50%, -50%)',
                 maxWidth: nodeSize + 80,
                 zIndex: isSelected ? 3 : 1,
+                opacity: isSelected ? 1 : 0.72,
               }}
             >
               <span
-                className="relative rounded-full transition-all duration-150 group-hover:scale-105"
+                className="relative rounded-full transition-all duration-150 group-hover:scale-105 group-hover:opacity-100"
                 style={{
                   width: nodeSize,
                   height: nodeSize,
-                  background: isPublished ? 'var(--color-ink-3)' : 'var(--color-bg)',
-                  border: isSelected
-                    ? '2px solid var(--color-ink)'
-                    : '1.5px dashed var(--color-ink-3)',
+                  background: nodeFill,
                   boxShadow: isSelected
                     ? '0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)'
-                    : undefined,
+                    : '0 1px 0 rgba(18,34,28,0.06), 0 2px 8px rgba(18,34,28,0.08)',
                 }}
               />
               <span className="font-serif italic text-[11px] text-ink-3 leading-tight whitespace-normal" style={{ maxWidth: nodeSize + 80 }}>
