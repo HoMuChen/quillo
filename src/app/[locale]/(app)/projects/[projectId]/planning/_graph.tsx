@@ -566,8 +566,10 @@ export function PlanningGraph({
 
         {/* Orphan nodes — Ghost-imported articles not yet assigned to a pillar */}
         {orphanArticles.map((o, i) => {
-          const nodeSize = 42
-          const colSpacing = 100
+          const S = Math.min(size.w, size.h)
+          const scale = Math.max(0.6, Math.min(1, S / 700))
+          const nodeSize = Math.round(46 * scale)
+          const colSpacing = nodeSize + 58
           const rowSpacing = 80
           const nodesPerRow = Math.max(1, Math.floor((size.w - 80) / colSpacing))
           const col = i % nodesPerRow
