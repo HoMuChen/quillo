@@ -72,43 +72,50 @@ export function ArticleScreen({
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
-      {/* TOP BAR */}
-      <TopBar
-        projectId={projectId}
-        articleId={articleId}
-        article={article}
-        connection={connection}
-        target={target}
-        onOpenDrawer={() => setDrawerOpen(true)}
-      />
+    <div className="min-h-screen">
+      {/* TOP BAR — full-width sticky bar across the viewport */}
+      <div className="sticky top-0 z-30 bg-bg/90 backdrop-blur border-b border-rule">
+        <div className="max-w-5xl mx-auto h-14 px-6 flex items-center">
+          <TopBar
+            projectId={projectId}
+            articleId={articleId}
+            article={article}
+            connection={connection}
+            target={target}
+            onOpenDrawer={() => setDrawerOpen(true)}
+          />
+        </div>
+      </div>
 
-      {/* FEATURE IMAGE — same position as Ghost: above title */}
-      {featureImageSlot}
+      {/* CENTERED CONTENT COLUMN */}
+      <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
+        {/* FEATURE IMAGE — same position as Ghost: above title */}
+        {featureImageSlot}
 
-      {/* TITLE + META */}
-      <header className="space-y-2">
-        {pillar && (
-          <div className="text-[12px] text-ink-3">
-            <span className="text-ink-4">{tpl('pillar_label')}</span>
-            {' · '}
-            <Link href={pillar.href} className="hover:text-ink-2 transition-colors">{pillar.title}</Link>
-          </div>
-        )}
-        <h1 className="font-serif italic text-[44px] text-ink leading-tight">{article.title}</h1>
-        {(article.target_keyword || article.word_count_target || article.role) && (
-          <div className="flex items-center gap-3 text-[12px] text-ink-3">
-            {article.target_keyword && <span className="font-mono">{article.target_keyword}</span>}
-            {article.word_count_target && <span>·  {article.word_count_target} {t('words')}</span>}
-            {article.role && <span>·  {article.role}</span>}
-          </div>
-        )}
-      </header>
+        {/* TITLE + META */}
+        <header className="space-y-2">
+          {pillar && (
+            <div className="text-[12px] text-ink-3">
+              <span className="text-ink-4">{tpl('pillar_label')}</span>
+              {' · '}
+              <Link href={pillar.href} className="hover:text-ink-2 transition-colors">{pillar.title}</Link>
+            </div>
+          )}
+          <h1 className="font-serif italic text-[44px] text-ink leading-tight">{article.title}</h1>
+          {(article.target_keyword || article.word_count_target || article.role) && (
+            <div className="flex items-center gap-3 text-[12px] text-ink-3">
+              {article.target_keyword && <span className="font-mono">{article.target_keyword}</span>}
+              {article.word_count_target && <span>·  {article.word_count_target} {t('words')}</span>}
+              {article.role && <span>·  {article.role}</span>}
+            </div>
+          )}
+        </header>
 
-      {/* MAIN CONTENT (InterviewTab or EditorTab) */}
-      <div>{children}</div>
+        {/* MAIN CONTENT (InterviewTab or EditorTab) */}
+        <div>{children}</div>
+      </div>
 
-      {/* SETTINGS DRAWER */}
+      {/* SETTINGS DRAWER — fixed positioning, covers full viewport */}
       <SettingsDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -149,7 +156,7 @@ function TopBar({
   const hasRemote = Boolean(target?.remote_post_id && target.remote_status !== 'unpublished')
 
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center justify-between gap-3 w-full">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <Link
           href={`/projects/${projectId}/planning`}
