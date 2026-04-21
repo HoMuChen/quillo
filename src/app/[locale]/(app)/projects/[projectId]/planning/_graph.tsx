@@ -518,8 +518,7 @@ export function PlanningGraph({
       <div
         ref={canvasRef}
         className="relative w-full overflow-hidden"
-        style={{ height: 'calc(100vh - 130px)' }}
-        style={{ cursor: dragPos ? 'grabbing' : isPanning ? 'grabbing' : 'grab' }}
+        style={{ height: 'calc(100vh - 130px)', cursor: dragPos ? 'grabbing' : isPanning ? 'grabbing' : 'grab' }}
         onWheel={onWheel}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
