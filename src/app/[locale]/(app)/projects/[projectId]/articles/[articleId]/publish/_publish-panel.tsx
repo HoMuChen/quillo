@@ -106,7 +106,7 @@ export function PublishPanel({
               href={target.remote_url}
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center gap-1.5 text-[12px] text-ochre-ink hover:underline"
+              className="inline-flex items-center gap-1.5 text-[12px] text-indigo-ink hover:underline underline-offset-2"
             >
               {t('view_live')} <ExternalLink className="w-3 h-3" />
             </a>
