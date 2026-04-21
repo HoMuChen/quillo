@@ -104,6 +104,7 @@ function computeLayout(
   const scale = Math.max(0.6, Math.min(1, S / 700))
   const pillarSize = 96 * scale
   const clusterSize = 46 * scale
+  const baseR = Math.max(pillarSize / 2 + clusterSize / 2 + 36, 130 * scale)
 
   type Placed = {
     id: string
@@ -127,8 +128,13 @@ function computeLayout(
   const rows = Math.ceil(Math.max(n, 1) / cols)
   const padX = W * 0.12
   const padY = H * 0.12
-  const cellW = (W - 2 * padX) / cols
-  const cellH = (H - 2 * padY) / rows
+  // Each cell must be large enough for the pillar + its cluster orbit.
+  // If there are many pillars, cells expand beyond the viewport — that's fine
+  // because the canvas is pannable/zoomable.
+  const minCellW = Math.max(360, baseR * 2.4)
+  const minCellH = Math.max(300, baseR * 2.0)
+  const cellW = Math.max((W - 2 * padX) / cols, minCellW)
+  const cellH = Math.max((H - 2 * padY) / rows, minCellH)
 
   const pillarInfo = pillars.map((pillar, i) => {
     const colorIdx = COLOR_IDX[i % COLOR_IDX.length]
@@ -175,7 +181,6 @@ function computeLayout(
 
   // Place clusters in a full ring around each pillar.
   // No wedge constraint — collision relaxation + territorial pull handle separation.
-  const baseR = Math.max(pillarSize / 2 + clusterSize / 2 + 36, 130 * scale)
 
   for (const info of pillarInfo) {
     const articles = articlesByPillar.get(info.pillar.id) ?? []
@@ -512,7 +517,7 @@ export function PlanningGraph({
     <div className="space-y-3">
       <div
         ref={canvasRef}
-        className="relative w-full h-[calc(100vh-180px)] min-h-[560px] overflow-hidden"
+        className="relative w-full h-[calc(100vh-56px)] min-h-[560px] overflow-hidden"
         style={{ cursor: dragPos ? 'grabbing' : isPanning ? 'grabbing' : 'grab' }}
         onWheel={onWheel}
         onMouseDown={onMouseDown}
@@ -530,8 +535,8 @@ export function PlanningGraph({
             inset: 0,
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
-            width: size.w,
-            height: size.h,
+            width: Math.max(size.w, nodes.reduce((m, n) => Math.max(m, n.x + 120), 0)),
+            height: Math.max(size.h, nodes.reduce((m, n) => Math.max(m, n.y + 120), 0)),
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) { setSelectedPillarId(null); setSelectedArticleId(null) }
@@ -557,7 +562,7 @@ export function PlanningGraph({
                 strokeWidth={active ? 1.75 : 1.25}
                 strokeLinecap="round"
                 strokeDasharray={dashed ? '3 5' : undefined}
-                opacity={dim ? 0.08 : dashed ? 0.4 : active ? 0.8 : 0.55}
+                opacity={!hoveredPillarId ? 0 : dim ? 0 : dashed ? 0.4 : active ? 0.8 : 0.55}
                 style={{ transition: 'opacity 150ms ease, stroke-width 150ms ease' }}
               />
             )
@@ -675,8 +680,10 @@ export function PlanningGraph({
             )
           }
 
-          // Cluster
+          // Cluster — hidden by default, revealed on pillar hover
           const isClusterSelected = selectedArticleId === n.id
+          const isRevealed = !!hoveredPillarId && hoveredPillarId === n.pillarId
+          const clusterOpacity = isClusterSelected ? 1 : isRevealed ? 1 : hoveredPillarId ? 0 : 0.1
           return (
             <button
               key={n.id}
@@ -689,11 +696,11 @@ export function PlanningGraph({
                 left: n.x,
                 top: n.y,
                 transform: 'translate(-50%, -50%)',
-                opacity: isDimmed ? 0.22 : 1,
-                filter: isDimmed ? 'saturate(0.55)' : undefined,
-                transition: 'opacity 150ms ease',
-                zIndex: isClusterSelected ? 3 : isInGroup ? 2 : 1,
+                opacity: clusterOpacity,
+                transition: 'opacity 180ms ease',
+                zIndex: isClusterSelected ? 3 : isRevealed ? 2 : 1,
                 maxWidth: n.size + 80,
+                pointerEvents: isRevealed || isClusterSelected ? 'auto' : 'none',
               }}
             >
               <span
@@ -727,7 +734,14 @@ export function PlanningGraph({
                     style={{ color: `color-mix(in oklab, ${hex.main} 60%, var(--color-ink-4))` }}>+</span>
                 )}
               </span>
-              <span className="font-serif italic text-[13px] text-ink leading-tight whitespace-normal" style={{ maxWidth: n.size + 80 }}>
+              <span
+                className="font-serif italic text-[13px] text-ink leading-tight whitespace-normal"
+                style={{
+                  maxWidth: n.size + 80,
+                  opacity: isRevealed || isClusterSelected ? 1 : 0,
+                  transition: 'opacity 180ms ease',
+                }}
+              >
                 {n.subtitle || n.title.slice(0, 12)}
               </span>
             </button>
