@@ -68,7 +68,7 @@ function pillarVisualStatus(statuses: VisualStatus[]): VisualStatus {
 
 type LaidOutNode = {
   id: string
-  kind: 'pillar' | 'cluster'
+  kind: 'pillar' | 'cluster' | 'orphan'
   x: number
   y: number
   size: number
@@ -96,8 +96,9 @@ function computeLayout(
   targetsByArticle: Map<string, PublishTarget>,
   W: number,
   H: number,
+  orphans: OrphanArticle[] = [],
 ): { nodes: LaidOutNode[]; edges: LaidOutEdge[] } {
-  if (pillars.length === 0 || W === 0 || H === 0) return { nodes: [], edges: [] }
+  if ((pillars.length === 0 && orphans.length === 0) || W === 0 || H === 0) return { nodes: [], edges: [] }
 
   const cx = W / 2
   const cy = H / 2
@@ -113,7 +114,7 @@ function computeLayout(
     y: number
     r: number // collision radius
     size: number
-    kind: 'pillar' | 'cluster'
+    kind: 'pillar' | 'cluster' | 'orphan'
     pillarId: string
     pinned: boolean
     parentX?: number
@@ -214,6 +215,34 @@ function computeLayout(
       })
     })
   }
+
+  // ---- Place orphan nodes around the periphery ----
+  const outerR = sep * 1.65
+  orphans.forEach((o, i) => {
+    const ang = -Math.PI / 2 + (i / Math.max(orphans.length, 1)) * Math.PI * 2
+    const x = cx + Math.cos(ang) * outerR
+    const y = cy + Math.sin(ang) * outerR
+    nodes.push({
+      id: o.id,
+      kind: 'orphan',
+      x, y,
+      size: clusterSize,
+      pillarId: '',
+      colorIdx: 0,
+      status: (o.status === 'draft_ready' ? 'draft' : 'empty') as VisualStatus,
+      title: o.title,
+      subtitle: o.target_keyword,
+    })
+    placed.push({
+      id: o.id,
+      x, y,
+      r: clusterSize / 2 + 26,
+      size: clusterSize,
+      kind: 'orphan',
+      pillarId: '',
+      pinned: false,
+    })
+  })
 
   // ---- Collision relaxation + parent tether + territorial pull ----
   const pillarCentroids = new Map<string, { x: number; y: number }>()
@@ -422,8 +451,8 @@ export function PlanningGraph({
   }, [publishTargets])
 
   const { nodes, edges } = useMemo(
-    () => computeLayout(pillars, articlesByPillar, targetsByArticle, size.w, size.h),
-    [pillars, articlesByPillar, targetsByArticle, size.w, size.h],
+    () => computeLayout(pillars, articlesByPillar, targetsByArticle, size.w, size.h, orphanArticles),
+    [pillars, articlesByPillar, targetsByArticle, size.w, size.h, orphanArticles],
   )
 
   const selectedNode = selectedId ? nodes.find((n) => n.id === selectedId) ?? null : null
@@ -561,6 +590,42 @@ export function PlanningGraph({
             )
           }
 
+          if (n.kind === 'orphan') {
+            const isOrphanSelected = selectedOrphanId === n.id
+            return (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => setSelectedOrphanId(n.id === selectedOrphanId ? null : n.id)}
+                className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
+                style={{
+                  left: n.x,
+                  top: n.y,
+                  transform: 'translate(-50%, -50%)',
+                  maxWidth: n.size + 80,
+                  zIndex: isOrphanSelected ? 3 : 1,
+                  opacity: isOrphanSelected ? 1 : 0.65,
+                  transition: 'opacity 150ms ease',
+                }}
+              >
+                <span
+                  className="relative rounded-full transition-all duration-150 group-hover:scale-105"
+                  style={{
+                    width: n.size,
+                    height: n.size,
+                    background: 'var(--color-ink-3)',
+                    boxShadow: isOrphanSelected
+                      ? '0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)'
+                      : '0 1px 0 rgba(18,34,28,0.06), 0 2px 8px rgba(18,34,28,0.08)',
+                  }}
+                />
+                <span className="font-serif italic text-[11px] text-ink-3 leading-tight whitespace-normal" style={{ maxWidth: n.size + 80 }}>
+                  {n.subtitle || n.title.slice(0, 12)}
+                </span>
+              </button>
+            )
+          }
+
           // Cluster
           return (
             <button
@@ -584,9 +649,7 @@ export function PlanningGraph({
               }}
             >
               <span
-                className={cn(
-                  'relative rounded-full transition-all duration-150 group-hover:scale-105',
-                )}
+                className={cn('relative rounded-full transition-all duration-150 group-hover:scale-105')}
                 style={{
                   width: n.size,
                   height: n.size,
@@ -606,83 +669,18 @@ export function PlanningGraph({
                     : '0 1px 0 rgba(18,34,28,0.05), 0 2px 8px rgba(18,34,28,0.04)',
                 }}
               >
-                {/* Draft hatching */}
                 {n.status === 'draft' && (
-                  <span
-                    className="absolute inset-0 rounded-full pointer-events-none"
-                    style={{
-                      background: `repeating-linear-gradient(135deg, color-mix(in oklab, ${hex.main} 35%, transparent) 0 1.5px, transparent 1.5px 6px)`,
-                    }}
-                  />
+                  <span className="absolute inset-0 rounded-full pointer-events-none" style={{
+                    background: `repeating-linear-gradient(135deg, color-mix(in oklab, ${hex.main} 35%, transparent) 0 1.5px, transparent 1.5px 6px)`,
+                  }} />
                 )}
-                {/* Empty "+" */}
                 {n.status === 'empty' && (
-                  <span
-                    className="absolute inset-0 flex items-center justify-center font-serif text-[22px] leading-none pointer-events-none"
-                    style={{ color: `color-mix(in oklab, ${hex.main} 60%, var(--color-ink-4))` }}
-                  >
-                    +
-                  </span>
+                  <span className="absolute inset-0 flex items-center justify-center font-serif text-[22px] leading-none pointer-events-none"
+                    style={{ color: `color-mix(in oklab, ${hex.main} 60%, var(--color-ink-4))` }}>+</span>
                 )}
               </span>
-              <span
-                className="font-serif italic text-[13px] text-ink leading-tight whitespace-normal"
-                style={{ maxWidth: n.size + 80 }}
-              >
+              <span className="font-serif italic text-[13px] text-ink leading-tight whitespace-normal" style={{ maxWidth: n.size + 80 }}>
                 {n.subtitle || n.title}
-              </span>
-            </button>
-          )
-        })}
-
-        {/* Orphan nodes — Ghost-imported articles not yet assigned to a pillar */}
-        {orphanArticles.map((o, i) => {
-          const S = Math.min(size.w, size.h)
-          const scale = Math.max(0.6, Math.min(1, S / 700))
-          const nodeSize = Math.round(46 * scale)
-          const colSpacing = nodeSize + 58
-          const rowSpacing = 80
-          const nodesPerRow = Math.max(1, Math.floor((size.w - 80) / colSpacing))
-          const col = i % nodesPerRow
-          const row = Math.floor(i / nodesPerRow)
-          const totalRows = Math.ceil(orphanArticles.length / nodesPerRow)
-          const rowCount = Math.min(nodesPerRow, orphanArticles.length - row * nodesPerRow)
-          const rowW = colSpacing * (rowCount - 1)
-          const baseX = size.w / 2 - rowW / 2 + col * colSpacing
-          const baseY = size.h - 56 - (totalRows - 1 - row) * rowSpacing
-          const hx = hashId(o.id)
-          const hy = hashId(o.id + 'y')
-          const x = baseX + ((hx % 200) - 100) * 0.18
-          const y = baseY + ((hy % 200) - 100) * 0.18
-          const isSelected = selectedOrphanId === o.id
-          return (
-            <button
-              key={o.id}
-              type="button"
-              onClick={() => setSelectedOrphanId(o.id === selectedOrphanId ? null : o.id)}
-              className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
-              style={{
-                left: x,
-                top: y,
-                transform: 'translate(-50%, -50%)',
-                maxWidth: nodeSize + 80,
-                zIndex: isSelected ? 3 : 1,
-                opacity: isSelected ? 1 : 0.65,
-              }}
-            >
-              <span
-                className="relative rounded-full transition-all duration-150 group-hover:scale-105 group-hover:opacity-100"
-                style={{
-                  width: nodeSize,
-                  height: nodeSize,
-                  background: 'var(--color-ink-3)',
-                  boxShadow: isSelected
-                    ? '0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)'
-                    : '0 1px 0 rgba(18,34,28,0.06), 0 2px 8px rgba(18,34,28,0.08)',
-                }}
-              />
-              <span className="font-serif italic text-[11px] text-ink-3 leading-tight whitespace-normal" style={{ maxWidth: nodeSize + 80 }}>
-                {o.target_keyword || o.title.slice(0, 12)}
               </span>
             </button>
           )
