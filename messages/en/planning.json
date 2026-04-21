@@ -42,5 +42,15 @@
   "regenerate_tooltip": "Regenerate this Pillar's Cluster articles",
   "regenerate_blocked": "Some articles are beyond planning — cannot regenerate",
   "regenerate_title": "Regenerate cluster articles",
-  "accept_regenerate": "Replace existing articles"
+  "accept_regenerate": "Replace existing articles",
+  "sync_ghost": "Sync from Ghost",
+  "syncing": "Syncing…",
+  "sync_done": "Imported {count}",
+  "orphan_label": "Unassigned Ghost articles",
+  "orphan_assign_existing": "Choose existing pillar",
+  "orphan_new_pillar": "Create new pillar",
+  "orphan_pillar_title": "Pillar title",
+  "orphan_pillar_keyword": "Target keyword",
+  "orphan_assign_confirm": "Assign",
+  "orphan_no_pillars": "No pillars yet — create one first"
 }

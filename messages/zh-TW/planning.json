@@ -42,5 +42,15 @@
   "regenerate_tooltip": "重新生成此 Pillar 的 Cluster 文章",
   "regenerate_blocked": "已有文章進入撰寫階段，無法重生成",
   "regenerate_title": "重新生成 Cluster 文章",
-  "accept_regenerate": "以此替換現有文章"
+  "accept_regenerate": "以此替換現有文章",
+  "sync_ghost": "從 Ghost 同步",
+  "syncing": "同步中…",
+  "sync_done": "已匯入 {count} 篇",
+  "orphan_label": "未分類 Ghost 文章",
+  "orphan_assign_existing": "選擇現有 Pillar",
+  "orphan_new_pillar": "建立新 Pillar",
+  "orphan_pillar_title": "Pillar 標題",
+  "orphan_pillar_keyword": "目標關鍵字",
+  "orphan_assign_confirm": "指定",
+  "orphan_no_pillars": "尚無 Pillar，請先建立"
 }
