@@ -81,7 +81,9 @@ export default async function PlanningPage({ params }: Props) {
         .in('article_id', articleIds)
     : { data: [] as Array<{ article_id: string; remote_status: string | null }> }
 
-  if (!pillars || pillars.length === 0) {
+  const hasPillars = (pillars ?? []).length > 0
+
+  if (!hasPillars && orphanArticles.length === 0) {
     return (
       <div className="space-y-6 max-w-3xl">
         <header className="flex items-start justify-between gap-6">
@@ -123,7 +125,7 @@ export default async function PlanningPage({ params }: Props) {
       </header>
       <PlanningGraph
         projectId={projectId}
-        pillars={pillars}
+        pillars={pillars ?? []}
         articles={articles ?? []}
         publishTargets={publishTargets ?? []}
         orphanArticles={orphanArticles}
