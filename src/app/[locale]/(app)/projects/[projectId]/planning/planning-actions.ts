@@ -251,7 +251,6 @@ export async function syncGhostArticlesAction(projectId: string) {
   const posts = await ghost.posts.browse({
     limit: 'all',
     status: 'all',
-    fields: 'id,title,slug,meta_title,meta_description,excerpt,html,published_at,url,status',
     include: 'tags',
   } as Record<string, unknown>)
 
