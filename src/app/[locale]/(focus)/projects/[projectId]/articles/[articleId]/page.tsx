@@ -18,7 +18,7 @@ export default async function ArticlePage({ params }: Props) {
   // Article core — title, status, body, SEO fields, feature image, meta
   const { data: article, error } = await supabase
     .from('articles')
-    .select('id,title,status,body_markdown,body_tiptap,feature_image_url,target_keyword,word_count_target,role,pillar_id,meta_title,meta_description,slug,excerpt,canonical_url,focus_keyword,tags,pillars(title)')
+    .select('id,title,status,source,body_markdown,body_tiptap,feature_image_url,target_keyword,word_count_target,role,pillar_id,meta_title,meta_description,slug,excerpt,canonical_url,focus_keyword,tags,pillars(title)')
     .eq('id', articleId)
     .single()
   if (error || !article) notFound()
@@ -27,7 +27,8 @@ export default async function ArticlePage({ params }: Props) {
 
   // Interview data — only needed when body is empty but we always load;
   // cost is tiny and avoids a second page load transition.
-  const hasBody = Boolean(article.body_markdown || article.body_tiptap)
+  const isGhostImport = article.source === 'ghost'
+  const hasBody = isGhostImport || Boolean(article.body_markdown || article.body_tiptap)
 
   const [outlineResult, questionsResult] = await Promise.all([
     supabase
