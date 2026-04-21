@@ -261,22 +261,24 @@ function PublishMenu({
   const primaryLabel = hasRemote ? t('republish') : t('publish')
 
   return (
-    <div ref={wrapRef} className="relative flex items-center">
+    <div ref={wrapRef} className="relative inline-flex">
+      {/* Primary publish button — drops its right border/radius so the chevron
+          button sits flush beside it; a single divider line (chevron's left
+          border) keeps them visually distinct. */}
       <Button
         variant="ochre"
         onClick={() => run('publish')}
         disabled={!contentReady || pending}
-        className="rounded-r-none pr-3"
+        className="rounded-r-none border-r-0"
       >
         {pending ? '...' : primaryLabel}
       </Button>
       <Button
         variant="ochre"
-        size="icon"
         onClick={() => setOpen((v) => !v)}
         disabled={pending}
         title={t('more_actions')}
-        className="rounded-l-none border-l border-[#8a5f1c]/40 px-2"
+        className="rounded-l-none w-9 px-0 border-l-[#7a4e16]"
       >
         <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', open && 'rotate-180')} />
       </Button>

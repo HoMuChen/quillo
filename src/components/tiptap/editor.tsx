@@ -239,7 +239,9 @@ export function TiptapEditor({
       </BubbleMenu>
 
       <Toolbar editor={editor} onUploadImage={onUploadImage} />
-      <div className="rounded-xl border border-rule paper-grain p-6 min-h-[400px] shadow-sh-1">
+      {/* No frame — text boundaries come from the parent container's max-width.
+          The editor content styles already provide vertical rhythm (my-3, etc.). */}
+      <div className="min-h-[400px]">
         <EditorContent editor={editor} />
       </div>
       <StatusLine status={status} t={t} wordCount={wordCount} />
