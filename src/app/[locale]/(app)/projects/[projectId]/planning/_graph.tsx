@@ -100,19 +100,16 @@ function computeLayout(
 ): { nodes: LaidOutNode[]; edges: LaidOutEdge[] } {
   if ((pillars.length === 0 && orphans.length === 0) || W === 0 || H === 0) return { nodes: [], edges: [] }
 
-  const cx = W / 2
-  const cy = H / 2
   const S = Math.min(W, H)
   const scale = Math.max(0.6, Math.min(1, S / 700))
   const pillarSize = 96 * scale
   const clusterSize = 46 * scale
-  const sep = S * (S < 520 ? 0.3 : 0.34)
 
   type Placed = {
     id: string
     x: number
     y: number
-    r: number // collision radius
+    r: number
     size: number
     kind: 'pillar' | 'cluster' | 'orphan'
     pillarId: string
@@ -123,19 +120,29 @@ function computeLayout(
   }
   const placed: Placed[] = []
 
+  // ---- Grid layout for pillars ----
+  // Pillars fill the canvas in a grid so they don't crowd around a central ring.
+  const n = pillars.length
+  const cols = n === 0 ? 1 : Math.max(1, Math.ceil(Math.sqrt(n * (W / H))))
+  const rows = Math.ceil(Math.max(n, 1) / cols)
+  const padX = W * 0.12
+  const padY = H * 0.12
+  const cellW = (W - 2 * padX) / cols
+  const cellH = (H - 2 * padY) / rows
+
   const pillarInfo = pillars.map((pillar, i) => {
     const colorIdx = COLOR_IDX[i % COLOR_IDX.length]
-    // Distribute pillars evenly on a circle, starting from the top
-    const ang = -Math.PI / 2 + (i / Math.max(pillars.length, 1)) * Math.PI * 2
-    const x = cx + Math.cos(ang) * sep
-    const y = cy + Math.sin(ang) * sep
-    return { pillar, x, y, ang, colorIdx }
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    const x = padX + cellW * (col + 0.5)
+    const y = padY + cellH * (row + 0.5)
+    return { pillar, x, y, colorIdx }
   })
 
   const nodes: LaidOutNode[] = []
   const pillarStatusMap = new Map<string, VisualStatus>()
 
-  // Place pillars (pinned)
+  // Place pillars (pinned at grid positions)
   for (const info of pillarInfo) {
     const articles = articlesByPillar.get(info.pillar.id) ?? []
     const childStatuses = articles.map((a) => articleVisualStatus(a, targetsByArticle.get(a.id)))
@@ -166,24 +173,17 @@ function computeLayout(
     })
   }
 
-  // Place clusters in an outward-facing wedge around each pillar
+  // Place clusters in a full ring around each pillar.
+  // No wedge constraint — collision relaxation + territorial pull handle separation.
   const baseR = Math.max(pillarSize / 2 + clusterSize / 2 + 36, 130 * scale)
-  const wedge = Math.PI * (S < 520 ? 1.1 : 1.45)
 
   for (const info of pillarInfo) {
     const articles = articlesByPillar.get(info.pillar.id) ?? []
     if (articles.length === 0) continue
 
-    // outward = angle pointing away from center (same as info.ang)
-    const outward = info.ang
-    const angMin = outward - wedge / 2
-    const angMax = outward + wedge / 2
-
     articles.forEach((article, idx) => {
       const N = articles.length
-      const pad = 0.12
-      const t = N === 1 ? 0.5 : pad + (idx / (N - 1)) * (1 - 2 * pad)
-      const ang = angMin + (angMax - angMin) * t
+      const ang = -Math.PI / 2 + (idx / N) * Math.PI * 2
       const x = info.x + Math.cos(ang) * baseR
       const y = info.y + Math.sin(ang) * baseR
 
@@ -204,7 +204,7 @@ function computeLayout(
       placed.push({
         id: article.id,
         x, y,
-        r: clusterSize / 2 + 22, // label breathing room (keyword only)
+        r: clusterSize / 2 + 22,
         size: clusterSize,
         kind: 'cluster',
         pillarId: info.pillar.id,
@@ -216,12 +216,12 @@ function computeLayout(
     })
   }
 
-  // ---- Place orphan nodes around the periphery ----
-  const outerR = sep * 1.65
+  // ---- Place orphan nodes along the bottom edge ----
+  const outerR = Math.max(W, H) * 0.55
   orphans.forEach((o, i) => {
     const ang = -Math.PI / 2 + (i / Math.max(orphans.length, 1)) * Math.PI * 2
-    const x = cx + Math.cos(ang) * outerR
-    const y = cy + Math.sin(ang) * outerR
+    const x = W / 2 + Math.cos(ang) * outerR
+    const y = H / 2 + Math.sin(ang) * outerR
     nodes.push({
       id: o.id,
       kind: 'orphan',
