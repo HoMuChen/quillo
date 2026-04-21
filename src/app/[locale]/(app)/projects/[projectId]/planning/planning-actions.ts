@@ -269,6 +269,7 @@ export async function syncGhostArticlesAction(projectId: string) {
     .maybeSingle()
   let nextPos = (lastArticle?.position ?? -1) + 1
 
+  let imported = 0
   for (const post of newPosts) {
     const tagNames = ((post.tags ?? []) as Array<{ name?: string } | string>)
       .map((t) => (typeof t === 'string' ? t : (t.name ?? '')))
@@ -294,6 +295,7 @@ export async function syncGhostArticlesAction(projectId: string) {
       .select('id')
       .single()
     if (artErr || !article) continue
+    imported++
 
     await supabase.from('publish_targets').insert({
       article_id: article.id,
@@ -307,7 +309,7 @@ export async function syncGhostArticlesAction(projectId: string) {
   }
 
   revalidatePath(`/projects/${projectId}/planning`)
-  return { imported: newPosts.length }
+  return { imported }
 }
 
 // --- Orphan assign ---

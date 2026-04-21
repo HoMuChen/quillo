@@ -11,7 +11,7 @@ declare module '@tryghost/admin-api' {
     title?: string
     slug?: string
     html?: string
-    url?: string
+    url?: string | null
     status?: 'draft' | 'published' | 'scheduled'
     published_at?: string | null
     meta_title?: string | null
