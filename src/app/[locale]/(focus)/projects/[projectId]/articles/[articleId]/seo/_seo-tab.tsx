@@ -239,7 +239,7 @@ function TagsField({ value, onChange }: { value: string[]; onChange: (v: string[
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext id="tags-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={value} strategy={horizontalListSortingStrategy}>
         <div className="rounded-lg border border-rule bg-bg p-2 flex flex-wrap gap-1.5">
           {value.map((tag) => (
