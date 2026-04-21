@@ -7,6 +7,16 @@ import { PlanningGraph } from './_graph'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
 
+type OrphanArticle = {
+  id: string
+  title: string
+  target_keyword: string | null
+  slug: string | null
+  tags: string[]
+  status: string
+  source: string
+}
+
 export default async function PlanningPage({ params }: Props) {
   const { locale, projectId } = await params
   setRequestLocale(locale)
@@ -53,6 +63,25 @@ export default async function PlanningPage({ params }: Props) {
         .in('article_id', articleIds)
     : { data: [] as Array<{ article_id: string; remote_status: string | null }> }
 
+  // Ghost connection — determines whether to show sync button
+  const { data: ghostConn } = await supabase
+    .from('site_connections')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('platform', 'ghost')
+    .maybeSingle()
+
+  // Orphan articles — Ghost-imported, not yet assigned to a pillar
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: orphanArticlesRaw } = await (supabase as any)
+    .from('articles')
+    .select('id,title,target_keyword,slug,tags,status,source')
+    .eq('project_id', projectId)
+    .eq('source', 'ghost')
+    .is('pillar_id', null)
+    .order('created_at', { ascending: false })
+  const orphanArticles = (orphanArticlesRaw ?? []) as OrphanArticle[]
+
   if (!pillars || pillars.length === 0) {
     return (
       <div className="space-y-6 max-w-3xl">
@@ -87,6 +116,8 @@ export default async function PlanningPage({ params }: Props) {
         pillars={pillars}
         articles={articles ?? []}
         publishTargets={publishTargets ?? []}
+        orphanArticles={orphanArticles}
+        hasGhostConnection={!!ghostConn}
       />
     </div>
   )
