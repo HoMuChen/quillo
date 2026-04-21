@@ -7,7 +7,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Sparkles, X } from 'lucide-react'
+import { Sparkles, X, GripVertical } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { seoSuggestionSchema } from '@/lib/ai/schemas'
 import { saveSeoAction } from './actions'
 
@@ -205,34 +220,73 @@ function Field({
 
 function TagsField({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const [draft, setDraft] = useState('')
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
+
   function add() {
     const v = draft.trim()
     if (!v) return
     if (value.includes(v)) { setDraft(''); return }
     onChange([...value, v]); setDraft('')
   }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const from = value.indexOf(active.id as string)
+    const to = value.indexOf(over.id as string)
+    if (from !== -1 && to !== -1) onChange(arrayMove(value, from, to))
+  }
+
   return (
-    <div className="rounded-lg border border-rule bg-bg p-2 flex flex-wrap gap-1.5">
-      {value.map((tag) => (
-        <span key={tag} className="inline-flex items-center gap-1.5 font-mono text-[11px] px-2 py-0.5 rounded-md border border-rule bg-bg-2 text-ink-2">
-          {tag}
-          <button type="button" onClick={() => onChange(value.filter((x) => x !== tag))} className="text-ink-4 hover:text-ink cursor-pointer">
-            <X className="w-3 h-3" />
-          </button>
-        </span>
-      ))}
-      <input
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') { e.preventDefault(); add() }
-          if (e.key === ',') { e.preventDefault(); add() }
-          if (e.key === 'Backspace' && !draft && value.length) onChange(value.slice(0, -1))
-        }}
-        onBlur={add}
-        placeholder="+"
-        className="flex-1 min-w-[100px] bg-transparent outline-none text-[13px] text-ink placeholder:text-ink-4"
-      />
-    </div>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={value} strategy={horizontalListSortingStrategy}>
+        <div className="rounded-lg border border-rule bg-bg p-2 flex flex-wrap gap-1.5">
+          {value.map((tag) => (
+            <SortableTag key={tag} tag={tag} onRemove={() => onChange(value.filter((x) => x !== tag))} />
+          ))}
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); add() }
+              if (e.key === ',') { e.preventDefault(); add() }
+              if (e.key === 'Backspace' && !draft && value.length) onChange(value.slice(0, -1))
+            }}
+            onBlur={add}
+            placeholder="+"
+            className="flex-1 min-w-[60px] bg-transparent outline-none text-[13px] text-ink placeholder:text-ink-4"
+          />
+        </div>
+      </SortableContext>
+    </DndContext>
+  )
+}
+
+function SortableTag({ tag, onRemove }: { tag: string; onRemove: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tag })
+  return (
+    <span
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn(
+        'inline-flex items-center gap-1 font-mono text-[11px] px-1.5 py-0.5 rounded-md border border-rule bg-bg-2 text-ink-2',
+        isDragging && 'opacity-50 shadow-sh-2',
+      )}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="text-ink-4 hover:text-ink-2 cursor-grab active:cursor-grabbing touch-none"
+        tabIndex={-1}
+      >
+        <GripVertical className="w-3 h-3" />
+      </button>
+      {tag}
+      <button type="button" onClick={onRemove} className="text-ink-4 hover:text-ink cursor-pointer">
+        <X className="w-3 h-3" />
+      </button>
+    </span>
   )
 }
