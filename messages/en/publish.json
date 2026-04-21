@@ -31,6 +31,8 @@
   "save_as_draft": "Save as draft",
   "unpublish": "Unpublish",
   "schedule": "Schedule",
+  "schedule_coming_m2": "Scheduling arrives in M2",
+  "more_actions": "More actions",
   "logs_title": "Activity",
   "msg_published": "Published successfully",
   "msg_unpublished": "Unpublished",

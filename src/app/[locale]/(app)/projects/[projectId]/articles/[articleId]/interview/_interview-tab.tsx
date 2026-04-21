@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useTransition } from 'react'
 import { experimental_useObject as useObject } from '@ai-sdk/react'
 import { useTranslations } from 'next-intl'
-import { Link, useRouter } from '@/i18n/routing'
+import { useRouter } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Sparkles, SkipForward } from 'lucide-react'
@@ -41,6 +41,52 @@ export function InterviewTab({
   const [questions, setQuestions] = useState<Question[]>(initialQuestions)
   const [syncedFrom, setSyncedFrom] = useState(initialQuestions)
   const [pending, startTransition] = useTransition()
+
+  // Draft generation — triggered from the footer when the interview is
+  // either all-answered-or-skipped, or confirmed to have no questions.
+  // Streams the markdown draft into a preview card, then router.refresh()
+  // makes the body non-null so the parent page flips to the Tiptap phase.
+  const [draftStreaming, setDraftStreaming] = useState(false)
+  const [draftText, setDraftText] = useState('')
+  const [draftError, setDraftError] = useState<string | null>(null)
+  const draftAbortRef = useRef<AbortController | null>(null)
+
+  async function generateDraft() {
+    setDraftError(null)
+    setDraftStreaming(true)
+    setDraftText('')
+    const controller = new AbortController()
+    draftAbortRef.current = controller
+    try {
+      const res = await fetch('/api/ai/draft', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ articleId }),
+        signal: controller.signal,
+      })
+      if (!res.ok || !res.body) throw new Error(await res.text())
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      for (;;) {
+        const { value, done } = await reader.read()
+        if (done) break
+        setDraftText((prev) => prev + decoder.decode(value, { stream: true }))
+      }
+      router.refresh()
+    } catch (err) {
+      if ((err as { name?: string }).name !== 'AbortError') {
+        console.error(err)
+        setDraftError(t('error_generic'))
+      }
+    } finally {
+      setDraftStreaming(false)
+      draftAbortRef.current = null
+    }
+  }
+
+  function cancelDraft() {
+    draftAbortRef.current?.abort()
+  }
 
   // Adopt the server snapshot whenever props change (e.g. after router.refresh()
   // delivers freshly generated questions). React's recommended pattern for
@@ -141,9 +187,10 @@ export function InterviewTab({
             <p className="font-serif italic text-[18px] text-ink">{t('interview_no_questions_title')}</p>
             <p className="text-[12px] text-ink-2 mt-1">{t('interview_no_questions_body')}</p>
           </div>
-          <Link href={`/projects/${projectId}/articles/${articleId}/editor`}>
-            <Button variant="primary">{t('interview_continue_no_q')}</Button>
-          </Link>
+          <Button variant="primary" onClick={generateDraft} disabled={draftStreaming}>
+            <Sparkles className="w-3.5 h-3.5 mr-1" />
+            {t('interview_continue_no_q')}
+          </Button>
         </div>
       )}
 
@@ -165,14 +212,34 @@ export function InterviewTab({
         </ol>
       )}
 
-      {allNonPending && (
+      {allNonPending && !draftStreaming && !draftText && (
         <div className="rounded-xl border border-ochre bg-[linear-gradient(180deg,#f7f0d8_0%,#f1e7c6_100%)] p-5 flex items-center justify-between">
           <p className="text-[13px] text-ink-2">{t('interview_ready')}</p>
-          <Link href={`/projects/${projectId}/articles/${articleId}/editor`}>
-            <Button variant="primary">{t('interview_to_draft')}</Button>
-          </Link>
+          <Button variant="primary" onClick={generateDraft} disabled={draftStreaming}>
+            <Sparkles className="w-3.5 h-3.5 mr-1" />
+            {t('interview_to_draft')}
+          </Button>
         </div>
       )}
+
+      {/* Draft generation streaming UI — shown after the user triggers generate */}
+      {draftStreaming && (
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-2 text-[12px] text-ochre-ink">
+            <span className="w-2 h-2 rounded-full bg-ochre animate-pulse" />
+            {t('generating')} — {t('draft_generating_warning')}
+          </span>
+          <Button variant="ghost" size="sm" onClick={cancelDraft}>{t('cancel')}</Button>
+        </div>
+      )}
+
+      {draftText && (
+        <article className="rounded-xl border border-rule paper-grain p-5 shadow-sh-1 whitespace-pre-wrap font-mono text-[12px] text-ink leading-[1.65]">
+          {draftText}
+        </article>
+      )}
+
+      {draftError && <p className="text-[12px] text-rust" role="alert">{draftError}</p>}
     </section>
   )
 }

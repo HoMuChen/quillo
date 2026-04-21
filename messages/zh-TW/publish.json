@@ -31,6 +31,8 @@
   "save_as_draft": "存為草稿",
   "unpublish": "取消發布",
   "schedule": "排程發布",
+  "schedule_coming_m2": "排程發布於 M2 開放",
+  "more_actions": "更多動作",
   "logs_title": "操作紀錄",
   "msg_published": "發布成功",
   "msg_unpublished": "已取消發布",
