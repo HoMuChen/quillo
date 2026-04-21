@@ -221,12 +221,21 @@ function computeLayout(
     })
   }
 
-  // ---- Place orphan nodes along the bottom edge ----
-  const outerR = Math.max(W, H) * 0.55
+  // ---- Place orphan nodes in a grid below the pillar area ----
+  // They start after the pillar grid ends, so they don't overlap pillars
+  // and don't form a ring.
+  const orphanStartY = padY + rows * cellH + 80
+  const orphanSpacing = clusterSize + 70
+  const orphanCols = Math.max(1, Math.floor((cols * cellW) / orphanSpacing))
   orphans.forEach((o, i) => {
-    const ang = -Math.PI / 2 + (i / Math.max(orphans.length, 1)) * Math.PI * 2
-    const x = W / 2 + Math.cos(ang) * outerR
-    const y = H / 2 + Math.sin(ang) * outerR
+    const oc = i % orphanCols
+    const or = Math.floor(i / orphanCols)
+    const baseX = padX + oc * orphanSpacing + clusterSize / 2
+    const baseY = orphanStartY + or * orphanSpacing
+    const hx = hashId(o.id)
+    const hy = hashId(o.id + 'y')
+    const x = baseX + ((hx % 60) - 30) * 0.4
+    const y = baseY + ((hy % 60) - 30) * 0.4
     nodes.push({
       id: o.id,
       kind: 'orphan',
