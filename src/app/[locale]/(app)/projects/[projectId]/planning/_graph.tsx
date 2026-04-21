@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, RefreshCw, Plus, X } from 'lucide-react'
 import {
   updatePillar, deletePillar, addArticle,
+  assignOrphanToPillarAction, createPillarAndAssignAction,
 } from './planning-actions'
 import { RegenerateClusterOverlay } from './_regenerate-cluster'
 
@@ -31,6 +32,16 @@ type Article = {
   status: string
   position: number
   pillar_id: string | null
+}
+
+type OrphanArticle = {
+  id: string
+  title: string
+  target_keyword: string | null
+  slug: string | null
+  tags: string[]
+  status: string
+  source: string
 }
 
 type PublishTarget = {
@@ -314,16 +325,22 @@ export function PlanningGraph({
   pillars,
   articles,
   publishTargets,
+  orphanArticles,
+  hasGhostConnection,
 }: {
   projectId: string
   pillars: Pillar[]
   articles: Article[]
   publishTargets: PublishTarget[]
+  orphanArticles: OrphanArticle[]
+  hasGhostConnection: boolean
 }) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoveredPillarId, setHoveredPillarId] = useState<string | null>(null)
+  const [selectedOrphanId, setSelectedOrphanId] = useState<string | null>(null)
+  const selectedOrphan = orphanArticles.find((o) => o.id === selectedOrphanId) ?? null
 
   useLayoutEffect(() => {
     const el = canvasRef.current
@@ -367,13 +384,15 @@ export function PlanningGraph({
     ? articlesByPillar.get(selectedPillar.id) ?? []
     : []
 
+  const t = useTranslations('planning')
+
   return (
     <div className="space-y-3">
       <div
         ref={canvasRef}
         className="relative w-full h-[calc(100vh-180px)] min-h-[560px] overflow-hidden"
         onClick={(e) => {
-          if (e.target === e.currentTarget) setSelectedId(null)
+          if (e.target === e.currentTarget) { setSelectedId(null); setSelectedOrphanId(null) }
         }}
       >
         {/* Edges — SVG */}
@@ -553,6 +572,34 @@ export function PlanningGraph({
         </div>
       </div>
 
+      {orphanArticles.length > 0 && (
+        <div className="border-t border-rule pt-3 space-y-2">
+          <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4 px-1">
+            {t('orphan_label')} ({orphanArticles.length})
+          </div>
+          <div className="flex flex-wrap gap-2 px-1">
+            {orphanArticles.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setSelectedOrphanId(o.id === selectedOrphanId ? null : o.id)}
+                className={cn(
+                  'inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[12px] transition-colors cursor-pointer',
+                  selectedOrphanId === o.id
+                    ? 'bg-ink text-bg border-ink'
+                    : 'bg-bg border-rule text-ink-2 hover:border-ink-3 hover:text-ink',
+                )}
+              >
+                <span className="w-2 h-2 rounded-full border border-current opacity-60 shrink-0" />
+                <span className="font-serif italic truncate max-w-[180px]">
+                  {o.target_keyword || o.title}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Selected-pillar floating panel */}
       {selectedPillar && (
         <PillarDetail
@@ -560,6 +607,15 @@ export function PlanningGraph({
           pillar={selectedPillar}
           articles={selectedArticles}
           onClose={() => setSelectedId(null)}
+        />
+      )}
+
+      {selectedOrphan && (
+        <OrphanPanel
+          projectId={projectId}
+          orphan={selectedOrphan}
+          pillars={pillars}
+          onClose={() => setSelectedOrphanId(null)}
         />
       )}
     </div>
@@ -871,6 +927,159 @@ function ArticleAddInline({
 
       <style>{`.inp{width:100%;padding:6px 10px;border:1px solid var(--color-rule);border-radius:8px;background:var(--color-bg);font-size:13px;color:var(--color-ink);outline:none}`}</style>
     </form>
+  )
+}
+
+function OrphanPanel({
+  projectId,
+  orphan,
+  pillars,
+  onClose,
+}: {
+  projectId: string
+  orphan: OrphanArticle
+  pillars: Pillar[]
+  onClose: () => void
+}) {
+  const t = useTranslations('planning')
+  const router = useRouter()
+  const [mode, setMode] = useState<'assign' | 'new-pillar'>('assign')
+  const [selectedPillarId, setSelectedPillarId] = useState(pillars[0]?.id ?? '')
+  const [newTitle, setNewTitle] = useState('')
+  const [newKeyword, setNewKeyword] = useState(orphan.target_keyword ?? '')
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  function assign() {
+    if (!selectedPillarId) return
+    setError(null)
+    startTransition(async () => {
+      try {
+        await assignOrphanToPillarAction(projectId, orphan.id, selectedPillarId)
+        onClose()
+        router.refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error')
+      }
+    })
+  }
+
+  function createAndAssign(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newTitle.trim()) return
+    setError(null)
+    startTransition(async () => {
+      try {
+        await createPillarAndAssignAction(projectId, orphan.id, {
+          title: newTitle.trim(),
+          target_keyword: newKeyword || null,
+        })
+        onClose()
+        router.refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error')
+      }
+    })
+  }
+
+  return (
+    <aside className="fixed right-6 bottom-6 top-24 w-[320px] z-40 flex flex-col rounded-xl border border-rule bg-bg shadow-sh-2 overflow-hidden">
+      <header className="flex items-start justify-between gap-2 p-4 border-b border-rule">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4">Ghost</div>
+          <h3 className="font-serif italic text-[20px] text-ink leading-tight truncate">{orphan.title}</h3>
+          {orphan.target_keyword && (
+            <p className="font-mono text-[11px] text-ink-3 mt-0.5 truncate">{orphan.target_keyword}</p>
+          )}
+        </div>
+        <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink cursor-pointer">
+          <X className="w-4 h-4" />
+        </button>
+      </header>
+
+      <div className="flex-1 overflow-auto p-4 space-y-4">
+        {orphan.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {orphan.tags.map((tag) => (
+              <span key={tag} className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-rule bg-bg-2 text-ink-3">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-1 rounded-lg border border-rule overflow-hidden text-[11px]">
+          {(['assign', 'new-pillar'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={cn(
+                'flex-1 px-3 py-1.5 transition-colors cursor-pointer',
+                mode === m ? 'bg-ink text-bg' : 'text-ink-3 hover:bg-mist',
+              )}
+            >
+              {m === 'assign' ? t('orphan_assign_existing') : t('orphan_new_pillar')}
+            </button>
+          ))}
+        </div>
+
+        {mode === 'assign' && (
+          <div className="space-y-3">
+            {pillars.length === 0 ? (
+              <p className="text-[12px] text-ink-4">{t('orphan_no_pillars')}</p>
+            ) : (
+              <>
+                <select
+                  value={selectedPillarId}
+                  onChange={(e) => setSelectedPillarId(e.target.value)}
+                  className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3"
+                >
+                  {pillars.map((p) => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </select>
+                <Button
+                  variant="primary"
+                  disabled={!selectedPillarId || pending}
+                  onClick={assign}
+                  className="w-full"
+                >
+                  {pending ? '…' : t('orphan_assign_confirm')}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
+        {mode === 'new-pillar' && (
+          <form onSubmit={createAndAssign} className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-[11px] uppercase tracking-[0.12em] text-ink-3">{t('orphan_pillar_title')}</label>
+              <input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                required
+                className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] uppercase tracking-[0.12em] text-ink-3">{t('orphan_pillar_keyword')}</label>
+              <input
+                value={newKeyword}
+                onChange={(e) => setNewKeyword(e.target.value)}
+                className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3"
+              />
+            </div>
+            <Button type="submit" variant="primary" disabled={!newTitle.trim() || pending} className="w-full">
+              {pending ? '…' : t('orphan_assign_confirm')}
+            </Button>
+          </form>
+        )}
+
+        {error && <p className="text-[12px] text-rust">{error}</p>}
+      </div>
+    </aside>
   )
 }
 
