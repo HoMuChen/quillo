@@ -674,9 +674,11 @@ export function PlanningGraph({
                     : undefined,
                 }}
               />
-              <span className="font-serif italic text-[11px] text-ink-3 leading-tight whitespace-normal" style={{ maxWidth: nodeSize + 80 }}>
-                {o.target_keyword || o.title}
-              </span>
+              {o.target_keyword && (
+                <span className="font-serif italic text-[11px] text-ink-3 leading-tight whitespace-normal" style={{ maxWidth: nodeSize + 80 }}>
+                  {o.target_keyword}
+                </span>
+              )}
             </button>
           )
         })}
