@@ -56,5 +56,6 @@
   "orphan_include_existing": "加入現有文章",
   "orphan_include_existing_help": "選擇要加入哪個 Pillar，不選則保持獨立",
   "orphan_no_assign": "不分配",
-  "open_editor": "開啟編輯器"
+  "open_editor": "開啟編輯器",
+  "orphan_assign": "加入 Pillar"
 }

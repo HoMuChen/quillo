@@ -56,5 +56,6 @@
   "orphan_include_existing": "Include existing articles",
   "orphan_include_existing_help": "Assign to a pillar, or leave as standalone",
   "orphan_no_assign": "No pillar",
-  "open_editor": "Open editor"
+  "open_editor": "Open editor",
+  "orphan_assign": "Add to Pillar"
 }
