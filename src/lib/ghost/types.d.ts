@@ -18,7 +18,7 @@ declare module '@tryghost/admin-api' {
     meta_description?: string | null
     canonical_url?: string | null
     feature_image?: string | null
-    tags?: Array<string | { name: string }>
+    tags?: Array<string | { id?: string; name?: string; slug?: string }>
     excerpt?: string | null
     updated_at?: string
     [k: string]: unknown

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { clusterArticlesSchema, type ClusterArticles } from '@/lib/ai/schemas'
+import { ghostClientFromRow } from '@/lib/ghost/client'
 
 const intent = z.enum(['informational', 'commercial', 'transactional'])
 const role = z.enum(['hub', 'supporting', 'comparison'])
@@ -216,4 +217,152 @@ export async function regenerateClusterAction(
   if (insError) throw insError
 
   revalidatePath(`/projects/${projectId}/planning`)
+}
+
+// --- Ghost sync ---
+
+export async function syncGhostArticlesAction(projectId: string) {
+  const supabase = await sb()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data: membership } = await supabase
+    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
+  if (!membership) throw new Error('No tenant')
+
+  const { data: conn } = await supabase
+    .from('site_connections')
+    .select('id,config_encrypted')
+    .eq('project_id', projectId)
+    .eq('platform', 'ghost')
+    .maybeSingle()
+  if (!conn) throw new Error('No Ghost connection configured')
+
+  // IDs already tracked (published by us OR previously imported)
+  const { data: existingTargets } = await supabase
+    .from('publish_targets')
+    .select('remote_post_id')
+    .eq('connection_id', conn.id)
+  const trackedIds = new Set(
+    (existingTargets ?? []).map((t) => t.remote_post_id).filter(Boolean),
+  )
+
+  const ghost = ghostClientFromRow({ config_encrypted: conn.config_encrypted })
+  const posts = await ghost.posts.browse({
+    limit: 'all',
+    status: 'all',
+    fields: 'id,title,slug,meta_title,meta_description,excerpt,tags,published_at,url,status',
+  } as Record<string, unknown>)
+
+  const newPosts = posts.filter((p) => p.id && !trackedIds.has(p.id))
+  if (newPosts.length === 0) {
+    revalidatePath(`/projects/${projectId}/planning`)
+    return { imported: 0 }
+  }
+
+  const { data: lastArticle } = await supabase
+    .from('articles')
+    .select('position')
+    .eq('project_id', projectId)
+    .order('position', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  let nextPos = (lastArticle?.position ?? -1) + 1
+
+  for (const post of newPosts) {
+    const tagNames = ((post.tags ?? []) as Array<{ name?: string } | string>)
+      .map((t) => (typeof t === 'string' ? t : (t.name ?? '')))
+      .filter(Boolean)
+
+    const { data: article, error: artErr } = await supabase
+      .from('articles')
+      .insert({
+        project_id: projectId,
+        tenant_id: membership.tenant_id,
+        pillar_id: null,
+        title: post.title ?? '(untitled)',
+        slug: post.slug ?? null,
+        meta_title: post.meta_title ?? null,
+        meta_description: post.meta_description ?? null,
+        excerpt: post.excerpt ?? null,
+        tags: tagNames,
+        status: 'editing',
+        position: nextPos++,
+        // source is not in generated types yet but exists in DB
+        ...({ source: 'ghost' } as Record<string, unknown>),
+      })
+      .select('id')
+      .single()
+    if (artErr || !article) continue
+
+    await supabase.from('publish_targets').insert({
+      article_id: article.id,
+      connection_id: conn.id,
+      tenant_id: membership.tenant_id,
+      remote_post_id: post.id ?? null,
+      remote_url: (post as Record<string, unknown>).url as string ?? null,
+      remote_status: post.status ?? null,
+      published_at: post.published_at ?? null,
+    })
+  }
+
+  revalidatePath(`/projects/${projectId}/planning`)
+  return { imported: newPosts.length }
+}
+
+// --- Orphan assign ---
+
+export async function assignOrphanToPillarAction(
+  projectId: string,
+  articleId: string,
+  pillarId: string,
+) {
+  const supabase = await sb()
+  const { error } = await supabase
+    .from('articles')
+    .update({ pillar_id: pillarId })
+    .eq('id', articleId)
+    .eq('project_id', projectId)
+  if (error) throw error
+  revalidatePath(`/projects/${projectId}/planning`)
+}
+
+export async function createPillarAndAssignAction(
+  projectId: string,
+  articleId: string,
+  pillarInput: { title: string; target_keyword?: string | null },
+) {
+  const supabase = await sb()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data: membership } = await supabase
+    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
+  if (!membership) throw new Error('No tenant')
+
+  const { data: last } = await supabase
+    .from('pillars').select('position').eq('project_id', projectId)
+    .order('position', { ascending: false }).limit(1).maybeSingle()
+  const nextPos = (last?.position ?? -1) + 1
+
+  const { data: pillar, error: pillarErr } = await supabase
+    .from('pillars')
+    .insert({
+      project_id: projectId,
+      tenant_id: membership.tenant_id,
+      title: pillarInput.title,
+      target_keyword: pillarInput.target_keyword ?? null,
+      position: nextPos,
+    })
+    .select('id')
+    .single()
+  if (pillarErr || !pillar) throw pillarErr ?? new Error('Failed to create pillar')
+
+  const { error: assignErr } = await supabase
+    .from('articles')
+    .update({ pillar_id: pillar.id })
+    .eq('id', articleId)
+  if (assignErr) throw assignErr
+
+  revalidatePath(`/projects/${projectId}/planning`)
+  return { pillarId: pillar.id }
 }
