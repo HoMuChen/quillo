@@ -342,6 +342,50 @@ export function PlanningGraph({
   const [selectedOrphanId, setSelectedOrphanId] = useState<string | null>(null)
   const selectedOrphan = orphanArticles.find((o) => o.id === selectedOrphanId) ?? null
 
+  // Pan & zoom
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const dragRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  function onWheel(e: React.WheelEvent) {
+    e.preventDefault()
+    const rect = canvasRef.current!.getBoundingClientRect()
+    const cx = e.clientX - rect.left
+    const cy = e.clientY - rect.top
+    const factor = e.deltaY < 0 ? 1.12 : 0.9
+    const newZoom = Math.max(0.2, Math.min(4, zoom * factor))
+    setPan(p => ({
+      x: cx - (cx - p.x) * (newZoom / zoom),
+      y: cy - (cy - p.y) * (newZoom / zoom),
+    }))
+    setZoom(newZoom)
+  }
+
+  function onMouseDown(e: React.MouseEvent) {
+    if (e.button !== 0) return
+    dragRef.current = { startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y }
+    setIsDragging(true)
+  }
+
+  function onMouseMove(e: React.MouseEvent) {
+    if (!dragRef.current) return
+    setPan({
+      x: dragRef.current.panX + e.clientX - dragRef.current.startX,
+      y: dragRef.current.panY + e.clientY - dragRef.current.startY,
+    })
+  }
+
+  function onMouseUp() {
+    dragRef.current = null
+    setIsDragging(false)
+  }
+
+  function resetView() {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }
+
   useLayoutEffect(() => {
     const el = canvasRef.current
     if (!el) return
@@ -391,13 +435,34 @@ export function PlanningGraph({
       <div
         ref={canvasRef}
         className="relative w-full h-[calc(100vh-180px)] min-h-[560px] overflow-hidden"
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        onWheel={onWheel}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
         onClick={(e) => {
           if (e.target === e.currentTarget) { setSelectedId(null); setSelectedOrphanId(null) }
         }}
       >
+        {/* Transform wrapper — pan & zoom applied here */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: '0 0',
+            width: size.w,
+            height: size.h,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) { setSelectedId(null); setSelectedOrphanId(null) }
+          }}
+        >
         {/* Edges — SVG */}
         <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
+          className="absolute inset-0 pointer-events-none"
+          style={{ width: size.w, height: size.h }}
           viewBox={`0 0 ${size.w} ${size.h}`}
           preserveAspectRatio="xMidYMid meet"
         >
@@ -616,11 +681,35 @@ export function PlanningGraph({
           )
         })}
 
-        {/* Legend — bottom-left */}
+        </div>{/* end transform wrapper */}
+
+        {/* Legend — bottom-left, outside transform */}
         <div className="absolute left-4 bottom-4 rounded-lg border border-rule bg-bg/90 backdrop-blur-sm shadow-sh-1 p-3 text-[11px] text-ink-3 space-y-1.5 pointer-events-none">
           <LegendItem dot="published" label="published" />
           <LegendItem dot="draft" label="draft" />
           <LegendItem dot="empty" label="planning" />
+        </div>
+
+        {/* Zoom controls — bottom-right, outside transform */}
+        <div className="absolute right-4 bottom-4 flex items-center gap-1 rounded-lg border border-rule bg-bg/90 backdrop-blur-sm shadow-sh-1 p-1 pointer-events-auto">
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setZoom(z => Math.min(4, +(z * 1.25).toFixed(2))) }}
+            className="w-7 h-7 flex items-center justify-center rounded text-[16px] text-ink-3 hover:bg-mist hover:text-ink transition-colors cursor-pointer"
+          >+</button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); resetView() }}
+            className="font-mono text-[10px] px-1.5 h-7 flex items-center text-ink-4 hover:bg-mist hover:text-ink transition-colors rounded cursor-pointer"
+          >{Math.round(zoom * 100)}%</button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setZoom(z => Math.max(0.2, +(z / 1.25).toFixed(2))) }}
+            className="w-7 h-7 flex items-center justify-center rounded text-[16px] text-ink-3 hover:bg-mist hover:text-ink transition-colors cursor-pointer"
+          >−</button>
         </div>
       </div>
 
