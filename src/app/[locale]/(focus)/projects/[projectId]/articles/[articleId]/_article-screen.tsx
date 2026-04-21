@@ -354,7 +354,7 @@ function SettingsDrawer({
         aria-modal="true"
         aria-label={t('open_settings')}
         className={cn(
-          'fixed top-0 right-0 bottom-0 z-50 w-[420px] max-w-[92vw] bg-bg border-l border-rule shadow-sh-3 flex flex-col',
+          'fixed top-0 right-0 bottom-0 z-50 w-[520px] max-w-[92vw] bg-bg border-l border-rule shadow-sh-3 flex flex-col',
           'transition-transform duration-300 ease-out',
           open ? 'translate-x-0' : 'translate-x-full',
         )}

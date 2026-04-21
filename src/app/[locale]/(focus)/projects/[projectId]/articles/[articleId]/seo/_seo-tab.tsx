@@ -129,7 +129,7 @@ export function SeoTab({
           <textarea
             value={form.meta_description}
             onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
-            className="w-full min-h-[80px] py-2 px-3 rounded-lg border border-rule bg-bg text-[14px] text-ink focus:outline-none focus:border-ink-3"
+            className="w-full min-h-[120px] py-2 px-3 rounded-lg border border-rule bg-bg text-[14px] text-ink focus:outline-none focus:border-ink-3"
             maxLength={320}
           />
         </Field>
@@ -154,7 +154,7 @@ export function SeoTab({
           <textarea
             value={form.excerpt}
             onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-            className="w-full min-h-[60px] py-2 px-3 rounded-lg border border-rule bg-bg text-[14px] text-ink focus:outline-none focus:border-ink-3"
+            className="w-full min-h-[120px] py-2 px-3 rounded-lg border border-rule bg-bg text-[14px] text-ink focus:outline-none focus:border-ink-3"
             maxLength={500}
           />
         </Field>
