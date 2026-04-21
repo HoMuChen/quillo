@@ -295,7 +295,7 @@ export async function syncGhostArticlesAction(projectId: string) {
           ? generateJSON(post.html, [StarterKit, TiptapImage, TiptapLink])
           : null,
         tags: tagNames,
-        status: 'editing',
+        status: 'draft_ready',
         position: nextPos++,
         // source is not in generated types yet but exists in DB
         ...({ source: 'ghost' } as Record<string, unknown>),
