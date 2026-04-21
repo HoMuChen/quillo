@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/routing'
+import { ArticleStatusChip } from '@/components/ui/chip'
 import { cn } from '@/lib/utils'
 
 const TABS = [
@@ -44,27 +45,8 @@ export function ArticleTabs({
         )
       })}
       <div className="ml-auto pb-2 flex items-center gap-2">
-        <StatusChip status={status} />
+        <ArticleStatusChip status={status} />
       </div>
     </nav>
-  )
-}
-
-function StatusChip({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    planned:       { label: 'planned',       cls: 'bg-bg border-rule text-ink-3' },
-    outlining:     { label: 'outlining',     cls: 'bg-bg-2 border-rule text-ochre-ink' },
-    outline_ready: { label: 'outline ready', cls: 'bg-bg border-ochre text-ochre-ink' },
-    interviewing:  { label: 'interviewing',  cls: 'bg-bg-2 border-rule text-ochre-ink' },
-    drafting:      { label: 'drafting',      cls: 'bg-bg-2 border-rule text-ochre-ink' },
-    draft_ready:   { label: 'draft ready',   cls: 'bg-bg border-ochre text-ochre-ink' },
-    editing:       { label: 'editing',       cls: 'bg-bg border-ink text-ink' },
-  }
-  const v = map[status] ?? map.planned
-  return (
-    <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded border ${v.cls}`}>
-      <span className="w-1 h-1 rounded-full bg-current opacity-60" />
-      {v.label}
-    </span>
   )
 }

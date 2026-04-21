@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { PublishStatusChip } from '@/components/ui/chip'
 import { Check, X, ExternalLink } from 'lucide-react'
 
 type Connection = {
@@ -190,27 +190,10 @@ export function PublishPanel({
 
 function RemoteStatusChip({ target }: { target: Target }) {
   const t = useTranslations('publish')
-  if (!target || !target.remote_status || target.remote_status === 'unpublished') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.14em] px-2 py-0.5 rounded-full border border-rule bg-bg text-ink-3">
-        <span className="w-1.5 h-1.5 rounded-full bg-ink-3" />
-        {t('status_not_published')}
-      </span>
-    )
-  }
-  const cls = {
-    draft:     'bg-bg-2 border-rule text-ochre-ink',
-    published: 'bg-ink text-bg border-ink',
-    scheduled: 'bg-bg border-ochre text-ochre-ink',
-  }[target.remote_status] ?? 'bg-bg border-rule text-ink-3'
-  const dot = target.remote_status === 'published' ? 'bg-ochre' : 'bg-ochre'
   return (
-    <span className={cn(
-      'inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.14em] px-2 py-0.5 rounded-full border',
-      cls,
-    )}>
-      <span className={cn('w-1.5 h-1.5 rounded-full', dot)} />
-      {target.remote_status}
-    </span>
+    <PublishStatusChip
+      status={target?.remote_status}
+      unpublishedLabel={t('status_not_published')}
+    />
   )
 }

@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { ArticleStatusChip } from '@/components/ui/chip'
 import { Trash2 } from 'lucide-react'
 import { deleteArticleAction } from './articles-actions'
 
@@ -134,7 +134,7 @@ function ArticleRow({ projectId, row }: { projectId: string; row: Row }) {
       </td>
       <td className="px-4 py-2.5 text-ink-2 text-[12px]">{row.pillar_title ?? '—'}</td>
       <td className="px-4 py-2.5">
-        <StatusPill status={row.status} />
+        <ArticleStatusChip status={row.status} />
       </td>
       <td className="px-4 py-2.5 font-mono text-[11px] text-ink-3 whitespace-nowrap">
         {new Date(row.updated_at).toISOString().slice(0, 10)}
@@ -159,27 +159,6 @@ function ArticleRow({ projectId, row }: { projectId: string; row: Row }) {
         )}
       </td>
     </tr>
-  )
-}
-
-function StatusPill({ status }: { status: string }) {
-  const cls: Record<string, string> = {
-    planned:       'bg-bg border-rule text-ink-3',
-    outlining:     'bg-bg-2 border-rule text-ochre-ink',
-    outline_ready: 'bg-bg border-ochre text-ochre-ink',
-    interviewing:  'bg-bg-2 border-rule text-ochre-ink',
-    drafting:      'bg-bg-2 border-rule text-ochre-ink',
-    draft_ready:   'bg-bg border-ochre text-ochre-ink',
-    editing:       'bg-bg border-ink text-ink',
-  }
-  return (
-    <span className={cn(
-      'inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded border',
-      cls[status] ?? cls.planned,
-    )}>
-      <span className="w-1 h-1 rounded-full bg-current opacity-60" />
-      {status}
-    </span>
   )
 }
 
