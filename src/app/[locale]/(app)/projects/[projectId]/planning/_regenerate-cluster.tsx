@@ -20,7 +20,7 @@ export function RegenerateClusterOverlay({
 }) {
   const t = useTranslations('planning')
   const [saving, startSaving] = useTransition()
-  const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const { object, submit, isLoading, error: streamError } = useObject({
     api: '/api/ai/plan/regenerate-cluster',
@@ -32,13 +32,11 @@ export function RegenerateClusterOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    if (streamError) setError(t('error_generic'))
-  }, [streamError, t])
+  const error = actionError ?? (streamError ? t('error_generic') : null)
 
   function onAccept() {
     if (!object) return
-    setError(null)
+    setActionError(null)
     startSaving(async () => {
       try {
         const parsed = clusterArticlesSchema.parse(object)
@@ -46,7 +44,7 @@ export function RegenerateClusterOverlay({
         onClose()
       } catch (err) {
         console.error(err)
-        setError(t('error_generic'))
+        setActionError(t('error_generic'))
       }
     })
   }

@@ -18,7 +18,15 @@ export function ProjectsSidebar({ projects }: { projects: Project[] }) {
   const current = currentId ? projects.find((p) => p.id === currentId) ?? null : null
 
   const [open, setOpen] = useState(false)
+  const [lastPathname, setLastPathname] = useState(pathname)
   const wrapRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown on pathname change — adjust state during render instead of
+  // in an effect to satisfy react-hooks/set-state-in-effect.
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname)
+    if (open) setOpen(false)
+  }
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -37,9 +45,6 @@ export function ProjectsSidebar({ projects }: { projects: Project[] }) {
       }
     }
   }, [open])
-
-  // Close dropdown on pathname change
-  useEffect(() => { setOpen(false) }, [pathname])
 
   const triggerLabel = current?.name ?? t('switcher_placeholder')
 

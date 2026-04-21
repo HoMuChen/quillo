@@ -69,9 +69,13 @@ export function SeoTab({
   })
 
   // When AI streams, reflect into the form in real time — each field
-  // gets overwritten as soon as Claude emits it.
-  useEffect(() => {
-    if (!object) return
+  // gets overwritten as soon as Claude emits it. Use React's "adjust state
+  // during render" pattern instead of an effect so we don't trigger a second
+  // render per chunk and to satisfy react-hooks/set-state-in-effect.
+  // Ref: https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  const [lastAiSnapshot, setLastAiSnapshot] = useState(object)
+  if (object && object !== lastAiSnapshot) {
+    setLastAiSnapshot(object)
     setForm((f) => ({
       ...f,
       meta_title: object.meta_title ?? f.meta_title,
@@ -81,12 +85,7 @@ export function SeoTab({
       focus_keyword: object.focus_keyword ?? f.focus_keyword,
       tags: (object.tags?.filter((x): x is string => typeof x === 'string' && x.length > 0)) ?? f.tags,
     }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    object?.meta_title, object?.meta_description, object?.slug,
-    object?.excerpt, object?.focus_keyword,
-    JSON.stringify(object?.tags),
-  ])
+  }
 
   return (
     <section className="space-y-6 max-w-2xl">

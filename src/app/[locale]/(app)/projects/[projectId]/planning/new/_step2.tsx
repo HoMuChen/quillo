@@ -21,7 +21,7 @@ export function PlanStep2({
   const t = useTranslations('planning')
   const router = useRouter()
   const [saving, startSaving] = useTransition()
-  const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const { object, submit, isLoading, error: streamError } = useObject({
     api: '/api/ai/plan/step2',
@@ -34,13 +34,11 @@ export function PlanStep2({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    if (streamError) setError(t('error_generic'))
-  }, [streamError, t])
+  const error = actionError ?? (streamError ? t('error_generic') : null)
 
   function onSave() {
     if (!object) return
-    setError(null)
+    setActionError(null)
     startSaving(async () => {
       try {
         // Validate strictly before saving
@@ -49,7 +47,7 @@ export function PlanStep2({
         router.replace(`/projects/${projectId}/planning`)
       } catch (err) {
         console.error(err)
-        setError(t('error_generic'))
+        setActionError(t('error_generic'))
       }
     })
   }

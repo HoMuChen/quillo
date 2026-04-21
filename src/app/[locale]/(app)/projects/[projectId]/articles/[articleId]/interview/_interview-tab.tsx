@@ -39,7 +39,17 @@ export function InterviewTab({
   const t = useTranslations('articles')
   const router = useRouter()
   const [questions, setQuestions] = useState<Question[]>(initialQuestions)
+  const [syncedFrom, setSyncedFrom] = useState(initialQuestions)
   const [pending, startTransition] = useTransition()
+
+  // Adopt the server snapshot whenever props change (e.g. after router.refresh()
+  // delivers freshly generated questions). React's recommended pattern for
+  // "reset state on prop change" — adjust state during render, not in an effect.
+  // Ref: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  if (syncedFrom !== initialQuestions) {
+    setSyncedFrom(initialQuestions)
+    setQuestions(initialQuestions)
+  }
 
   const { object, submit, isLoading, error: streamError } = useObject({
     api: '/api/ai/interview',
@@ -54,13 +64,6 @@ export function InterviewTab({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading])
-
-  // Sync local state when server props change (e.g. after router.refresh()
-  // delivers newly-generated questions). Without this, useState keeps the
-  // mount-time snapshot and the UI appears stale until manual reload.
-  useEffect(() => {
-    setQuestions(initialQuestions)
-  }, [initialQuestions])
 
   const sectionLabelById = new Map(sections.map((s) => [s.id, s.title]))
 
