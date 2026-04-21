@@ -85,16 +85,46 @@ export function PlanStep2({
 
       <div className="space-y-4">
         {pillars.map((p, i) => (
-          <PillarCard
-            key={i}
-            index={i}
-            pillar={p}
-            orphanArticles={orphanArticles}
-            orphanAssignments={orphanAssignments}
-            onToggleOrphan={toggleOrphan}
-          />
+          <PillarCard key={i} index={i} pillar={p} />
         ))}
       </div>
+
+      {orphanArticles.length > 0 && pillars.length > 0 && (
+        <div className="rounded-xl border border-rule bg-bg p-5 shadow-sh-1 space-y-3">
+          <div>
+            <p className="text-[13px] font-medium text-ink">{t('orphan_include_existing')}</p>
+            <p className="text-[11px] text-ink-4 mt-0.5">{t('orphan_include_existing_help')}</p>
+          </div>
+          <div className="space-y-1">
+            {orphanArticles.map((o) => (
+              <div key={o.id} className="flex items-center gap-3 py-1.5 border-b border-rule/40 last:border-0">
+                <span className="flex-1 text-[13px] text-ink truncate">
+                  {o.target_keyword || o.title}
+                  {o.target_keyword && <span className="ml-2 font-mono text-[10px] text-ink-4 truncate">{o.title}</span>}
+                </span>
+                <select
+                  value={orphanAssignments[o.id] ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setOrphanAssignments(prev => {
+                      const next = { ...prev }
+                      if (v === '') delete next[o.id]
+                      else next[o.id] = Number(v)
+                      return next
+                    })
+                  }}
+                  className="rounded-lg border border-rule bg-bg px-2 py-1 text-[12px] text-ink focus:outline-none focus:border-ink-3 min-w-[140px]"
+                >
+                  <option value="">{t('orphan_no_assign')}</option>
+                  {pillars.map((p, i) => (
+                    <option key={i} value={i}>{p?.title ?? `Pillar ${i + 1}`}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && <p className="text-[12px] text-rust" role="alert">{error}</p>}
 
@@ -114,17 +144,10 @@ const PILLAR_COLORS = ['p1', 'p2', 'p3'] as const
 function PillarCard({
   index,
   pillar,
-  orphanArticles,
-  orphanAssignments,
-  onToggleOrphan,
 }: {
   index: number
   pillar: DeepPartial<PillarPlan['pillars'][number]> | undefined
-  orphanArticles: OrphanArticle[]
-  orphanAssignments: Record<string, number>
-  onToggleOrphan: (articleId: string, pillarIndex: number) => void
 }) {
-  const t = useTranslations('planning')
   const color = PILLAR_COLORS[index % PILLAR_COLORS.length]
   const bgMap = { p1: 'bg-p1-tint border-p1', p2: 'bg-p2-tint border-p2', p3: 'bg-p3-tint border-p3' }
   const textMap = { p1: 'text-p1', p2: 'text-p2', p3: 'text-p3' }
@@ -173,39 +196,6 @@ function PillarCard({
         </ul>
       )}
 
-      {orphanArticles.length > 0 && (
-        <div className="border-t border-rule/60 pt-3 space-y-2">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-ink-4">{t('orphan_include_existing')}</p>
-          <div className="space-y-1">
-            {orphanArticles.map((o) => {
-              const checked = orphanAssignments[o.id] === index
-              const assignedElsewhere = o.id in orphanAssignments && orphanAssignments[o.id] !== index
-              return (
-                <label
-                  key={o.id}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 cursor-pointer transition-colors ${
-                    checked ? 'bg-bg/70' : assignedElsewhere ? 'opacity-30' : 'hover:bg-bg/50'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={assignedElsewhere}
-                    onChange={() => onToggleOrphan(o.id, index)}
-                    className="rounded accent-current cursor-pointer"
-                  />
-                  <span className="text-[13px] text-ink truncate flex-1">
-                    {o.target_keyword || o.title}
-                  </span>
-                  {o.target_keyword && (
-                    <span className="font-mono text-[10px] text-ink-4 truncate max-w-[120px]">{o.title}</span>
-                  )}
-                </label>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </article>
   )
 }

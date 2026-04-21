@@ -53,5 +53,7 @@
   "orphan_pillar_keyword": "Target keyword",
   "orphan_assign_confirm": "Assign",
   "orphan_no_pillars": "No pillars yet — create one first",
-  "orphan_include_existing": "Include existing articles"
+  "orphan_include_existing": "Include existing articles",
+  "orphan_include_existing_help": "Assign to a pillar, or leave as standalone",
+  "orphan_no_assign": "No pillar"
 }

@@ -53,5 +53,7 @@
   "orphan_pillar_keyword": "目標關鍵字",
   "orphan_assign_confirm": "指定",
   "orphan_no_pillars": "尚無 Pillar，請先建立",
-  "orphan_include_existing": "加入現有文章"
+  "orphan_include_existing": "加入現有文章",
+  "orphan_include_existing_help": "選擇要加入哪個 Pillar，不選則保持獨立",
+  "orphan_no_assign": "不分配"
 }
