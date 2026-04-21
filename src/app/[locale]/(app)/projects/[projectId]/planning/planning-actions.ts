@@ -295,9 +295,8 @@ export async function syncGhostArticlesAction(projectId: string) {
       .select('id')
       .single()
     if (artErr || !article) continue
-    imported++
 
-    await supabase.from('publish_targets').insert({
+    const { error: ptErr } = await supabase.from('publish_targets').insert({
       article_id: article.id,
       connection_id: conn.id,
       tenant_id: membership.tenant_id,
@@ -306,6 +305,12 @@ export async function syncGhostArticlesAction(projectId: string) {
       remote_status: post.status ?? null,
       published_at: post.published_at ?? null,
     })
+    if (ptErr) {
+      // Roll back the article to keep data consistent
+      await supabase.from('articles').delete().eq('id', article.id)
+      continue
+    }
+    imported++
   }
 
   revalidatePath(`/projects/${projectId}/planning`)
@@ -320,6 +325,13 @@ export async function assignOrphanToPillarAction(
   pillarId: string,
 ) {
   const supabase = await sb()
+  const { data: pillarCheck } = await supabase
+    .from('pillars')
+    .select('id')
+    .eq('id', pillarId)
+    .eq('project_id', projectId)
+    .maybeSingle()
+  if (!pillarCheck) throw new Error('Pillar does not belong to this project')
   const { error } = await supabase
     .from('articles')
     .update({ pillar_id: pillarId })
@@ -363,6 +375,7 @@ export async function createPillarAndAssignAction(
     .from('articles')
     .update({ pillar_id: pillar.id })
     .eq('id', articleId)
+    .eq('project_id', projectId)
   if (assignErr) throw assignErr
 
   revalidatePath(`/projects/${projectId}/planning`)
