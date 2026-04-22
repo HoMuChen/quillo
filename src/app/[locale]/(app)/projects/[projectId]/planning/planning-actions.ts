@@ -463,8 +463,10 @@ export async function syncShopifyArticlesAction(projectId: string) {
 
   const config = shopifyConfigFromRow({ config_encrypted: conn.config_encrypted })
   const articles = await listShopifyArticles(config)
+  console.log('[shopify-sync] fetched', articles.length, 'articles; tracked:', trackedIds.size)
 
   const newArticles = articles.filter((a) => a.id && !trackedIds.has(String(a.id)))
+  console.log('[shopify-sync] new articles to import:', newArticles.length)
   if (newArticles.length === 0) {
     revalidatePath(`/projects/${projectId}/planning`)
     return { imported: 0 }
@@ -485,6 +487,15 @@ export async function syncShopifyArticlesAction(projectId: string) {
       ? post.tags.split(',').map((t) => t.trim()).filter(Boolean)
       : []
 
+    let bodyTiptap: ReturnType<typeof generateJSON> | null = null
+    if (post.body_html) {
+      try {
+        bodyTiptap = generateJSON(post.body_html, [StarterKit, TiptapImage, TiptapLink])
+      } catch (err) {
+        console.error('[shopify-sync] generateJSON failed for article', post.id, err)
+      }
+    }
+
     const { data: article, error: artErr } = await supabase
       .from('articles')
       .insert({
@@ -494,9 +505,7 @@ export async function syncShopifyArticlesAction(projectId: string) {
         title: post.title ?? '(untitled)',
         slug: post.handle ?? null,
         excerpt: post.excerpt ?? null,
-        body_tiptap: post.body_html
-          ? generateJSON(post.body_html, [StarterKit, TiptapImage, TiptapLink])
-          : null,
+        body_tiptap: bodyTiptap,
         tags: tagNames,
         status: 'draft_ready',
         position: nextPos++,
@@ -504,7 +513,10 @@ export async function syncShopifyArticlesAction(projectId: string) {
       })
       .select('id')
       .single()
-    if (artErr || !article) continue
+    if (artErr || !article) {
+      console.error('[shopify-sync] article insert failed for', post.id, artErr)
+      continue
+    }
 
     const remoteUrl = post.handle
       ? `${config.storeUrl}/blogs/${config.blogTitle.toLowerCase().replace(/\s+/g, '-')}/${post.handle}`
@@ -520,12 +532,14 @@ export async function syncShopifyArticlesAction(projectId: string) {
       published_at: post.published_at ?? null,
     })
     if (ptErr) {
+      console.error('[shopify-sync] publish_target insert failed for', post.id, ptErr)
       // Roll back the article to keep data consistent
       await supabase.from('articles').delete().eq('id', article.id)
       continue
     }
     imported++
   }
+  console.log('[shopify-sync] imported', imported, 'articles')
 
   revalidatePath(`/projects/${projectId}/planning`)
   return { imported }
