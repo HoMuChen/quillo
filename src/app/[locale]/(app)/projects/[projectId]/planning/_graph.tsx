@@ -169,9 +169,9 @@ function computeLayout(
   }
 
   // --- Force simulation ---
-  const REPULSION = 1200
-  const SPRING_K = 0.055
-  const CENTER_K = 0.004
+  const REPULSION = 800
+  const SPRING_K = 0.06
+  const CENTER_K = 0.012
   const DAMPING = 0.82
   const ITERS = 280
 
@@ -225,25 +225,27 @@ function computeLayout(
     }
   }
 
-  // Place orphans below the settled pillar+cluster bounding box
+  // Place orphans below the settled pillar+cluster bounding box.
+  // Use actual canvas width (not cluster bounds) for row count so startX stays
+  // positive — the transform wrapper has origin (0,0) and clips negative coords.
   const maxY = fnodes.reduce((m, n) => Math.max(m, n.y), H / 2)
-  const minX = fnodes.reduce((m, n) => Math.min(m, n.x), W / 2)
-  const maxX = fnodes.reduce((m, n) => Math.max(m, n.x), W / 2)
   const orphanSpacing = ORPHAN_DOT + 24
-  const orphanCols = Math.max(1, Math.floor((maxX - minX + orphanSpacing) / orphanSpacing))
+  const orphanRowWidth = Math.max(W * 0.85, 300)
+  const orphanCols = Math.max(1, Math.floor(orphanRowWidth / orphanSpacing))
+  const orphanStartX = Math.max(40, W / 2 - orphanRowWidth / 2)
+  // Always place orphans within viewport bottom area, but below the cluster if cluster extends low
+  const orphanStartY = Math.min(H - ORPHAN_DOT - 40, Math.max(H * 0.78, maxY + 50))
   orphans.forEach((o, i) => {
     const col = i % orphanCols
     const row = Math.floor(i / orphanCols)
-    const totalW = (Math.min(orphans.length, orphanCols) - 1) * orphanSpacing
-    const startX = (minX + maxX) / 2 - totalW / 2
     const hx = hashId(o.id)
     const hy = hashId(o.id + 'y')
     fnodes.push({
       id: o.id, kind: 'orphan', pillarId: '', colorIdx: 0,
       status: (o.status === 'draft_ready' ? 'draft' : 'empty') as VisualStatus,
       title: o.title, subtitle: o.target_keyword,
-      x: startX + col * orphanSpacing + ((hx % 20) - 10),
-      y: maxY + 80 + row * orphanSpacing + ((hy % 20) - 10),
+      x: orphanStartX + col * orphanSpacing + ((hx % 20) - 10),
+      y: orphanStartY + row * orphanSpacing + ((hy % 20) - 10),
       vx: 0, vy: 0, size: ORPHAN_DOT, mass: 1,
     })
   })
