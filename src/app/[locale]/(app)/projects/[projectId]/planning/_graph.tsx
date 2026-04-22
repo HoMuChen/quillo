@@ -452,7 +452,7 @@ export function PlanningGraph({
       <div
         ref={canvasRef}
         className="relative w-full overflow-hidden rounded-xl"
-        style={{ height: 'calc(100vh - 130px)', cursor: dragPos ? 'grabbing' : isPanning ? 'grabbing' : 'grab', background: '#111110' }}
+        style={{ height: 'calc(100vh - 130px)', cursor: dragPos ? 'grabbing' : isPanning ? 'grabbing' : 'grab' }}
         onWheel={onWheel}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
@@ -505,6 +505,7 @@ export function PlanningGraph({
         {/* Nodes */}
         {nodes.map((n) => {
           const dkHex = DARK_HEX[n.colorIdx as 0 | 1 | 2]
+          const hex = COLOR_HEX[n.colorIdx as 0 | 1 | 2]
           const isHoveredGroup = hoveredPillarId === n.pillarId
           const isSelected = selectedPillarId === n.id
 
@@ -530,19 +531,19 @@ export function PlanningGraph({
               >
                 <span className="rounded-full block group-hover:scale-110 transition-transform duration-150" style={{
                   width: n.size, height: n.size,
-                  background: dkHex.bright,
+                  background: hex.main,
                   boxShadow: isDragTarget
-                    ? `0 0 0 3px rgba(255,200,80,0.6), 0 0 20px rgba(255,200,80,0.4)`
+                    ? `0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-ochre), 0 0 12px var(--color-ochre)`
                     : isSelected
-                      ? `0 0 0 3px rgba(255,255,255,0.2), 0 0 16px ${dkHex.bright}88`
+                      ? `0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)`
                       : isActive
-                        ? `0 0 12px ${dkHex.bright}66`
-                        : undefined,
+                        ? `0 0 0 4px color-mix(in oklab, ${hex.main} 30%, transparent)`
+                        : `0 1px 3px rgba(18,34,28,0.12)`,
                 }} />
                 <span style={{
                   position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
                   marginTop: 5, whiteSpace: 'nowrap',
-                  fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.85)',
+                  fontSize: 11, fontWeight: 500, color: 'var(--color-ink)',
                   fontFamily: 'var(--font-sans)',
                   pointerEvents: 'none',
                 }}>
@@ -567,7 +568,7 @@ export function PlanningGraph({
                   left: n.x, top: n.y,
                   transform: 'translate(-50%, -50%)',
                   zIndex: isArticleSelected ? 3 : 1,
-                  opacity: isArticleSelected ? 1 : hoveredPillarId ? 0.15 : 0.55,
+                  opacity: isArticleSelected ? 1 : hoveredPillarId ? 0.25 : 0.7,
                   transition: 'opacity 150ms ease',
                 }}
               >
@@ -576,18 +577,18 @@ export function PlanningGraph({
                   style={{
                     width: n.size,
                     height: n.size,
-                    background: '#888880',
+                    background: 'var(--color-ink-3)',
                     boxShadow: isArticleSelected
-                      ? `0 0 0 3px rgba(255,255,255,0.15), 0 0 12px rgba(255,200,100,0.5)`
+                      ? `0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)`
                       : undefined,
                   }}
                 />
                 <span style={{
                   position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
                   marginTop: 4, whiteSpace: 'nowrap',
-                  fontSize: 10, color: 'rgba(255,255,255,0.55)',
+                  fontSize: 10, color: 'var(--color-ink-3)',
                   fontFamily: 'var(--font-sans)',
-                  opacity: isArticleSelected || (hoveredPillarId && hoveredPillarId === n.pillarId) ? 1 : 0,
+                  opacity: isArticleSelected ? 1 : 0,
                   transition: 'opacity 150ms',
                   pointerEvents: 'none',
                 }}>
@@ -601,10 +602,10 @@ export function PlanningGraph({
           const isClusterSelected = selectedArticleId === n.id
           const isRevealed = !!hoveredPillarId && hoveredPillarId === n.pillarId
           const dotColor = n.status === 'published'
-            ? DARK_HEX[n.colorIdx as 0|1|2].bright
+            ? hex.main
             : n.status === 'draft'
-              ? DARK_HEX[n.colorIdx as 0|1|2].mid
-              : DARK_HEX[n.colorIdx as 0|1|2].dim
+              ? `color-mix(in oklab, ${hex.main} 70%, var(--color-bg))`
+              : `color-mix(in oklab, ${hex.main} 35%, var(--color-bg))`
           const clusterOpacity = isClusterSelected ? 1 : hoveredPillarId
             ? (isRevealed ? 1 : 0.06)
             : 0.65
@@ -629,16 +630,16 @@ export function PlanningGraph({
                 width: n.size, height: n.size,
                 background: dotColor,
                 boxShadow: isClusterSelected
-                  ? `0 0 0 2px rgba(255,255,255,0.2), 0 0 10px ${dotColor}`
+                  ? `0 0 0 2px var(--color-bg), 0 0 0 3px var(--color-ochre)`
                   : n.isHub
-                    ? `0 0 0 2px ${DARK_HEX[n.colorIdx as 0|1|2].bright}55`
+                    ? `0 0 0 2px var(--color-bg), 0 0 0 3px ${hex.main}`
                     : undefined,
               }} />
               {(isRevealed || isClusterSelected) && (
                 <span style={{
                   position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
                   marginTop: 3, whiteSpace: 'nowrap',
-                  fontSize: 9, color: 'rgba(255,255,255,0.6)',
+                  fontSize: 9, color: 'var(--color-ink-2)',
                   fontFamily: 'var(--font-sans)',
                   pointerEvents: 'none',
                 }}>
@@ -667,30 +668,23 @@ export function PlanningGraph({
         )}
 
         {/* Legend */}
-        <div className="absolute left-4 bottom-4 rounded-lg p-3 text-[10px] space-y-1.5 pointer-events-none" style={{ background: 'rgba(0,0,0,0.45)' }}>
-          {([['#5db88a','published'],['#5db88a66','draft'],['#44444466','planning']] as const).map(([c, l]) => (
-            <div key={l} className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
-              <span style={{ color: 'rgba(255,255,255,0.5)' }}>{l}</span>
-            </div>
-          ))}
+        <div className="absolute left-4 bottom-4 rounded-lg border border-rule bg-bg/90 backdrop-blur-sm shadow-sh-1 p-3 text-[11px] text-ink-3 space-y-1.5 pointer-events-none">
+          <LegendItem dot="published" label="published" />
+          <LegendItem dot="draft" label="draft" />
+          <LegendItem dot="empty" label="planning" />
         </div>
 
         {/* Zoom controls */}
-        <div className="absolute right-4 bottom-4 flex items-center gap-1 rounded-lg p-1 pointer-events-auto" style={{ background: 'rgba(0,0,0,0.45)' }}>
-          {[['+',' z => Math.min(4, +(z*1.25).toFixed(2))'],['reset','reset'],['-','z => Math.max(0.2, +(z/1.25).toFixed(2))']].map(() => null)}
+        <div className="absolute right-4 bottom-4 flex items-center gap-1 rounded-lg border border-rule bg-bg/90 backdrop-blur-sm shadow-sh-1 p-1 pointer-events-auto">
           <button type="button" onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); setZoom(z => Math.min(4, +(z * 1.25).toFixed(2))) }}
-            className="w-7 h-7 flex items-center justify-center rounded text-[16px] cursor-pointer transition-colors"
-            style={{ color: 'rgba(255,255,255,0.6)' }}>+</button>
+            className="w-7 h-7 flex items-center justify-center rounded text-[16px] text-ink-3 hover:bg-mist hover:text-ink transition-colors cursor-pointer">+</button>
           <button type="button" onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); resetView() }}
-            className="font-mono text-[10px] px-1.5 h-7 flex items-center rounded cursor-pointer"
-            style={{ color: 'rgba(255,255,255,0.45)' }}>{Math.round(zoom * 100)}%</button>
+            className="font-mono text-[10px] px-1.5 h-7 flex items-center text-ink-4 hover:bg-mist hover:text-ink transition-colors rounded cursor-pointer">{Math.round(zoom * 100)}%</button>
           <button type="button" onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); setZoom(z => Math.max(0.2, +(z / 1.25).toFixed(2))) }}
-            className="w-7 h-7 flex items-center justify-center rounded text-[16px] cursor-pointer"
-            style={{ color: 'rgba(255,255,255,0.6)' }}>−</button>
+            className="w-7 h-7 flex items-center justify-center rounded text-[16px] text-ink-3 hover:bg-mist hover:text-ink transition-colors cursor-pointer">−</button>
         </div>
       </div>
 
