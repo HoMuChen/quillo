@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
 import { ArticleStatusChip } from '@/components/ui/chip'
-import { Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { deleteArticleAction } from './articles-actions'
 
 type Row = {
@@ -24,6 +25,8 @@ type Pillar = { id: string; title: string }
 const STATUS_ORDER = ['planned', 'outlining', 'outline_ready', 'interviewing', 'drafting', 'draft_ready', 'editing'] as const
 type Status = typeof STATUS_ORDER[number]
 
+const PAGE_SIZE = 20
+
 export function ArticlesTable({
   projectId, articles, pillars,
 }: {
@@ -35,6 +38,7 @@ export function ArticlesTable({
   const [pillarFilter, setPillarFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<Status | 'all'>('all')
   const [sort, setSort] = useState<'updated' | 'status'>('updated')
+  const [page, setPage] = useState(1)
 
   const visible = useMemo(() => {
     const filtered = articles.filter((a) => {
@@ -46,11 +50,19 @@ export function ArticlesTable({
       return filtered.sort((a, b) => {
         const ai = STATUS_ORDER.indexOf(a.status as Status)
         const bi = STATUS_ORDER.indexOf(b.status as Status)
-        return bi - ai // most advanced first
+        return bi - ai
       })
     }
     return filtered.sort((a, b) => b.updated_at.localeCompare(a.updated_at))
   }, [articles, pillarFilter, statusFilter, sort])
+
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageRows = visible.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  function changeFilter(setter: (v: string) => void) {
+    return (v: string) => { setter(v); setPage(1) }
+  }
 
   return (
     <div className="space-y-3">
@@ -58,13 +70,13 @@ export function ArticlesTable({
         <FilterSelect
           label={t('filter_pillar')}
           value={pillarFilter}
-          onChange={setPillarFilter}
+          onChange={changeFilter(setPillarFilter)}
           options={[{ value: 'all', label: t('filter_all') }, ...pillars.map((p) => ({ value: p.id, label: p.title }))]}
         />
         <FilterSelect
           label={t('filter_status')}
           value={statusFilter}
-          onChange={(v) => setStatusFilter(v as Status | 'all')}
+          onChange={(v) => { setStatusFilter(v as Status | 'all'); setPage(1) }}
           options={[
             { value: 'all', label: t('filter_all') },
             ...STATUS_ORDER.map((s) => ({ value: s, label: s })),
@@ -96,14 +108,70 @@ export function ArticlesTable({
             </tr>
           </thead>
           <tbody>
-            {visible.map((a) => (
+            {pageRows.map((a) => (
               <ArticleRow key={a.id} projectId={projectId} row={a} />
             ))}
           </tbody>
         </table>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-4 border-t border-rule px-4 py-2.5">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Prev
+            </button>
+
+            <div className="flex items-center gap-1">
+              {pageNumbers(currentPage, totalPages).map((n, i) =>
+                n === '…' ? (
+                  <span key={`ellipsis-${i}`} className="px-1 text-[12px] text-ink-4">…</span>
+                ) : (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setPage(n as number)}
+                    className={cn(
+                      'w-7 h-7 rounded-md text-[12px] font-mono transition-colors cursor-pointer',
+                      n === currentPage
+                        ? 'bg-ink text-bg font-medium'
+                        : 'text-ink-3 hover:bg-mist hover:text-ink',
+                    )}
+                  >
+                    {n}
+                  </button>
+                )
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              Next
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
+}
+
+function pageNumbers(current: number, total: number): (number | '…')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pages: (number | '…')[] = [1]
+  if (current > 3) pages.push('…')
+  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i)
+  if (current < total - 2) pages.push('…')
+  pages.push(total)
+  return pages
 }
 
 function ArticleRow({ projectId, row }: { projectId: string; row: Row }) {
@@ -171,12 +239,12 @@ function FilterSelect({
   options: { value: string; label: string }[]
 }) {
   return (
-    <label className="inline-flex items-center gap-1.5 rounded-lg border border-rule bg-bg px-2 py-1">
+    <label className="inline-flex items-center gap-1.5 rounded-lg border border-rule bg-white px-2 py-1 cursor-pointer">
       <span className="text-[10px] uppercase tracking-[0.14em] text-ink-4">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-transparent text-[12px] text-ink-2 focus:outline-none"
+        className="bg-transparent text-[12px] text-ink-2 focus:outline-none cursor-pointer"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>

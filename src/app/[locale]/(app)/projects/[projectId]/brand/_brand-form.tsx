@@ -131,7 +131,7 @@ function Field({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full min-h-[92px] py-2 px-3 rounded-lg border border-rule bg-bg text-[14px] text-ink placeholder:text-ink-4 focus:outline-none focus:border-ink-3 focus:ring-2 focus:ring-ochre focus:ring-offset-2 focus:ring-offset-bg"
+          className="w-full min-h-[92px] py-2 px-3 rounded-lg border border-rule bg-white text-[14px] text-ink placeholder:text-ink-4 focus:outline-none focus:border-ink-3 focus:ring-2 focus:ring-ochre focus:ring-offset-2 focus:ring-offset-bg"
         />
       ) : (
         <Input placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
@@ -161,7 +161,7 @@ function ChipsField({
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
-      <div className="rounded-lg border border-rule bg-bg p-2 flex flex-wrap gap-1.5">
+      <div className="rounded-lg border border-rule bg-white p-2 flex flex-wrap gap-1.5">
         {value.map((term) => (
           <span
             key={term}
