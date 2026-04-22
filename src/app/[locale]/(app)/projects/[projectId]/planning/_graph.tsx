@@ -225,27 +225,28 @@ function computeLayout(
     }
   }
 
-  // Place orphans below the settled pillar+cluster bounding box.
-  // Use actual canvas width (not cluster bounds) for row count so startX stays
-  // positive — the transform wrapper has origin (0,0) and clips negative coords.
-  const maxY = fnodes.reduce((m, n) => Math.max(m, n.y), H / 2)
-  const orphanSpacing = ORPHAN_DOT + 24
-  const orphanRowWidth = Math.max(W * 0.85, 300)
-  const orphanCols = Math.max(1, Math.floor(orphanRowWidth / orphanSpacing))
-  const orphanStartX = Math.max(40, W / 2 - orphanRowWidth / 2)
-  // Place orphans below the cluster bounding box — let them extend beyond viewport if needed
-  const orphanStartY = maxY + 80
+  // Scatter orphans in a ring around the pillar+cluster group
+  const centroidX = fnodes.length ? fnodes.reduce((s, n) => s + n.x, 0) / fnodes.length : W / 2
+  const centroidY = fnodes.length ? fnodes.reduce((s, n) => s + n.y, 0) / fnodes.length : H / 2
+  const maxR = fnodes.reduce((m, n) => {
+    const d = Math.hypot(n.x - centroidX, n.y - centroidY)
+    return Math.max(m, d)
+  }, 0)
+  const ringR = maxR + 90
   orphans.forEach((o, i) => {
-    const col = i % orphanCols
-    const row = Math.floor(i / orphanCols)
     const hx = hashId(o.id)
-    const hy = hashId(o.id + 'y')
+    const hy = hashId(o.id + 'r')
+    const baseAng = (i / Math.max(orphans.length, 1)) * Math.PI * 2
+    const angJitter = (((hx % 1000) / 1000) - 0.5) * (Math.PI * 2 / Math.max(orphans.length, 1)) * 0.8
+    const ang = baseAng + angJitter
+    const rJitter = (((hy % 1000) / 1000) - 0.5) * 80
+    const r = ringR + rJitter
     fnodes.push({
       id: o.id, kind: 'orphan', pillarId: '', colorIdx: 0,
       status: (o.status === 'draft_ready' ? 'draft' : 'empty') as VisualStatus,
       title: o.title, subtitle: o.target_keyword,
-      x: orphanStartX + col * orphanSpacing + ((hx % 20) - 10),
-      y: orphanStartY + row * orphanSpacing + ((hy % 20) - 10),
+      x: centroidX + Math.cos(ang) * r,
+      y: centroidY + Math.sin(ang) * r,
       vx: 0, vy: 0, size: ORPHAN_DOT, mass: 1,
     })
   })
@@ -588,8 +589,7 @@ export function PlanningGraph({
                   style={{
                     width: n.size,
                     height: n.size,
-                    background: 'var(--color-bg)',
-                    border: '2px solid #5a5a50',
+                    background: '#7a7a6e',
                     boxShadow: isArticleSelected
                       ? `0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)`
                       : undefined,
