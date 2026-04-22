@@ -169,9 +169,9 @@ function computeLayout(
   }
 
   // --- Force simulation ---
-  const REPULSION = 800
-  const SPRING_K = 0.06
-  const CENTER_K = 0.012
+  const REPULSION = 1200
+  const SPRING_K = 0.055
+  const CENTER_K = 0.004
   const DAMPING = 0.82
   const ITERS = 280
 
@@ -233,8 +233,8 @@ function computeLayout(
   const orphanRowWidth = Math.max(W * 0.85, 300)
   const orphanCols = Math.max(1, Math.floor(orphanRowWidth / orphanSpacing))
   const orphanStartX = Math.max(40, W / 2 - orphanRowWidth / 2)
-  // Always place orphans within viewport bottom area, but below the cluster if cluster extends low
-  const orphanStartY = Math.min(H - ORPHAN_DOT - 40, Math.max(H * 0.78, maxY + 50))
+  // Place orphans below the cluster bounding box — let them extend beyond viewport if needed
+  const orphanStartY = maxY + 80
   orphans.forEach((o, i) => {
     const col = i % orphanCols
     const row = Math.floor(i / orphanCols)
@@ -588,7 +588,8 @@ export function PlanningGraph({
                   style={{
                     width: n.size,
                     height: n.size,
-                    background: '#8a8a7e',
+                    background: 'var(--color-bg)',
+                    border: '2px solid #5a5a50',
                     boxShadow: isArticleSelected
                       ? `0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)`
                       : undefined,
