@@ -114,6 +114,16 @@ export const seoSuggestionSchema = z.object({
 
 export type SeoSuggestion = z.infer<typeof seoSuggestionSchema>
 
+export const analyzeBrandSchema = z.object({
+  tone: z.string().nullable(),
+  author_background: z.string().nullable(),
+  reader_persona: z.string().nullable(),
+  preferred_terms: z.array(z.string()),
+  forbidden_terms: z.array(z.string()),
+  ee_at_cases: z.string().nullable(),
+})
+export type AnalyzeBrandResult = z.infer<typeof analyzeBrandSchema>
+
 export const organizeOrphansSchema = z.object({
   new_pillars: z.array(z.object({
     temp_id: z.string(),

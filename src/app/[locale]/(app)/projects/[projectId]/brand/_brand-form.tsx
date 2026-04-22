@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { saveBrandAction } from './actions'
+import { AnalyzeFromArticlesButton } from './_analyze-button'
+import type { AnalyzeBrandResult } from '@/lib/ai/schemas'
 
 type Brand = {
   author_background: string | null
@@ -16,7 +18,28 @@ type Brand = {
   ee_at_cases: string | null
 }
 
-export function BrandForm({ projectId, initial }: { projectId: string; initial: Brand }) {
+type ArticleRef = { id: string; title: string; target_keyword: string | null }
+
+function appendText(existing: string | null, addition: string | null | undefined): string | null {
+  if (!addition) return existing
+  if (!existing) return addition
+  return `${existing}\n\n${addition}`
+}
+
+function mergeChips(existing: string[], addition: string[] | undefined): string[] {
+  if (!addition?.length) return existing
+  return [...existing, ...addition.filter((t) => !existing.includes(t))]
+}
+
+export function BrandForm({
+  projectId,
+  initial,
+  articlesWithBody = [],
+}: {
+  projectId: string
+  initial: Brand
+  articlesWithBody?: ArticleRef[]
+}) {
   const t = useTranslations('brand')
   const [form, setForm] = useState<Brand>(initial)
   const [pending, startTransition] = useTransition()
@@ -44,9 +67,30 @@ export function BrandForm({ projectId, initial }: { projectId: string; initial: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(form)])
 
+  function applyAnalysis(result: AnalyzeBrandResult) {
+    setForm((prev) => ({
+      ...prev,
+      tone: appendText(prev.tone, result.tone),
+      author_background: appendText(prev.author_background, result.author_background),
+      reader_persona: appendText(prev.reader_persona, result.reader_persona),
+      ee_at_cases: appendText(prev.ee_at_cases, result.ee_at_cases),
+      preferred_terms: mergeChips(prev.preferred_terms, result.preferred_terms),
+      forbidden_terms: mergeChips(prev.forbidden_terms, result.forbidden_terms),
+    }))
+  }
+
   return (
     <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-      <StatusLine status={status} t={t} pending={pending} />
+      <div className="flex items-center justify-between h-4">
+        <StatusLine status={status} t={t} pending={pending} />
+        {articlesWithBody.length > 0 && (
+          <AnalyzeFromArticlesButton
+            projectId={projectId}
+            articles={articlesWithBody}
+            onApply={applyAnalysis}
+          />
+        )}
+      </div>
 
       <Field
         label={t('author_background')}
@@ -103,7 +147,7 @@ function StatusLine({
   t: (k: 'saving' | 'saved' | 'save_error') => string
   pending: boolean
 }) {
-  if (status === 'idle' && !pending) return <div className="h-4" />
+  if (status === 'idle' && !pending) return <div />
   const text =
     status === 'saving' || pending ? t('saving') :
     status === 'saved' ? t('saved') :

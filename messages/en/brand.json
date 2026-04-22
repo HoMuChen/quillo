@@ -16,5 +16,22 @@
   "ee_at_cases_placeholder": "E-E-A-T sources: case studies, numbers, first-hand stories",
   "saving": "Saving…",
   "saved": "Saved",
-  "save_error": "Save failed"
+  "save_error": "Save failed",
+  "cancel": "Cancel",
+  "analyze_btn": "Analyze tone from articles",
+  "analyze_title": "Analyze brand from articles",
+  "analyze_subtitle": "Pick articles with content — AI will extract tone and brand direction and merge into the form",
+  "analyze_pick": "Select articles",
+  "analyze_select_all": "Select all",
+  "analyze_deselect_all": "Deselect all",
+  "analyze_start": "Analyze",
+  "analyzing": "Analyzing…",
+  "analyze_apply": "Apply",
+  "analyze_done": "Analysis complete — review and apply",
+  "analyze_tone_preview": "Brand tone",
+  "analyze_preferred": "Preferred terms",
+  "analyze_forbidden": "Forbidden terms",
+  "analyze_background": "Author background",
+  "analyze_persona": "Reader persona",
+  "analyze_ee_at": "Experience cases"
 }

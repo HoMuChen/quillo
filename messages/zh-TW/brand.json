@@ -16,5 +16,22 @@
   "ee_at_cases_placeholder": "E-E-A-T 來源：實際案例、量化結果、親身經驗",
   "saving": "儲存中…",
   "saved": "已儲存",
-  "save_error": "儲存失敗"
+  "save_error": "儲存失敗",
+  "cancel": "取消",
+  "analyze_btn": "從文章分析語氣",
+  "analyze_title": "從既有文章分析品牌",
+  "analyze_subtitle": "選擇有內文的文章，AI 分析語氣與內容方向後自動合併至表單",
+  "analyze_pick": "選擇文章",
+  "analyze_select_all": "全選",
+  "analyze_deselect_all": "取消全選",
+  "analyze_start": "開始分析",
+  "analyzing": "分析中…",
+  "analyze_apply": "套用",
+  "analyze_done": "分析完成，確認後套用",
+  "analyze_tone_preview": "品牌語氣",
+  "analyze_preferred": "偏好用語",
+  "analyze_forbidden": "禁用詞",
+  "analyze_background": "作者背景",
+  "analyze_persona": "讀者畫像",
+  "analyze_ee_at": "代表性案例"
 }
