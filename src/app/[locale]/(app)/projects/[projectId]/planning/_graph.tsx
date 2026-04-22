@@ -198,7 +198,7 @@ export function PlanningGraph({
               <section
                 key={pillar.id}
                 className={cn(
-                  'relative overflow-hidden rounded-[16px] p-6 text-left transition-all shadow-sh-1',
+                  'relative rounded-[16px] p-6 text-left transition-all shadow-sh-1',
                   cardSpan(tier),
                   isSelected ? 'ring-2 ring-[var(--color-ochre)]' : '',
                 )}
@@ -286,21 +286,28 @@ export function PlanningGraph({
                     const selected = selectedArticleId === article.id
                     const isPlanning = articleStatus === 'empty'
                     return (
-                      <button
-                        key={article.id}
-                        type="button"
-                        onClick={() => setSelectedArticleId(article.id === selectedArticleId ? null : article.id)}
-                        className={cn(
-                          'rounded-[12px] border px-3 py-3 text-left transition-all cursor-pointer',
-                          isPlanning && 'border-dashed',
-                          selected && 'ring-2 ring-[var(--color-ochre)]',
-                        )}
-                        style={{
-                          borderColor: 'var(--color-rule)',
-                          background: 'var(--color-bg)',
-                          opacity: isPlanning ? 0.65 : 1,
-                        }}
-                      >
+                      <div key={article.id} className="relative group/tip">
+                        {/* Tooltip */}
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 rounded-md bg-ink px-2.5 py-1.5 text-center shadow-sh-2 opacity-0 transition-opacity duration-100 group-hover/tip:opacity-100 whitespace-nowrap">
+                          <div className="text-[11px] text-bg leading-[1.4]">{article.title}</div>
+                          {article.target_keyword && (
+                            <div className="mt-0.5 font-mono text-[10px] text-ink-4">{article.target_keyword}</div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedArticleId(article.id === selectedArticleId ? null : article.id)}
+                          className={cn(
+                            'w-full rounded-[12px] border px-3 py-3 text-left transition-all cursor-pointer',
+                            isPlanning && 'border-dashed',
+                            selected && 'ring-2 ring-[var(--color-ochre)]',
+                          )}
+                          style={{
+                            borderColor: 'var(--color-rule)',
+                            background: 'var(--color-bg)',
+                            opacity: isPlanning ? 0.65 : 1,
+                          }}
+                        >
                         <div className="flex items-start gap-2">
                           <span
                             className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
@@ -330,7 +337,8 @@ export function PlanningGraph({
                             </div>
                           </div>
                         </div>
-                      </button>
+                        </button>
+                      </div>
                     )
                   })}
                   {pillarArticles.length === 0 && (
@@ -345,7 +353,7 @@ export function PlanningGraph({
 
           <section
             className={cn(
-              'relative overflow-hidden rounded-[16px] p-6 shadow-sh-1',
+              'relative rounded-[16px] p-6 shadow-sh-1',
               orphanArticles.length > 8 ? 'lg:col-span-2' : '',
             )}
             style={{ background: 'white' }}
@@ -365,19 +373,25 @@ export function PlanningGraph({
               {orphanArticles.map((article) => {
                 const selected = selectedArticleId === article.id
                 return (
-                  <button
-                    key={article.id}
-                    type="button"
-                    onClick={() => setSelectedArticleId(article.id === selectedArticleId ? null : article.id)}
-                    className={cn(
-                      'rounded-[12px] border px-3 py-3 text-left transition-all cursor-pointer',
-                      selected && 'ring-2 ring-[var(--color-ochre)]',
-                    )}
-                    style={{
-                      borderColor: 'var(--color-rule)',
-                      background: 'white',
-                    }}
-                  >
+                  <div key={article.id} className="relative group/tip">
+                    <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 rounded-md bg-ink px-2.5 py-1.5 text-center shadow-sh-2 opacity-0 transition-opacity duration-100 group-hover/tip:opacity-100 whitespace-nowrap">
+                      <div className="text-[11px] text-bg leading-[1.4]">{article.title}</div>
+                      {article.target_keyword && (
+                        <div className="mt-0.5 font-mono text-[10px] text-ink-4">{article.target_keyword}</div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedArticleId(article.id === selectedArticleId ? null : article.id)}
+                      className={cn(
+                        'w-full rounded-[12px] border px-3 py-3 text-left transition-all cursor-pointer',
+                        selected && 'ring-2 ring-[var(--color-ochre)]',
+                      )}
+                      style={{
+                        borderColor: 'var(--color-rule)',
+                        background: 'white',
+                      }}
+                    >
                     <div className="flex items-start gap-2">
                       <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: ORPHAN_HEX.main }} />
                       <div className="min-w-0 flex-1">
@@ -387,7 +401,8 @@ export function PlanningGraph({
                         )}
                       </div>
                     </div>
-                  </button>
+                    </button>
+                  </div>
                 )
               })}
               {orphanArticles.length === 0 && (
