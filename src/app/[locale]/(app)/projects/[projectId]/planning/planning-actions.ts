@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { clusterArticlesSchema, type ClusterArticles, type OrganizePlan } from '@/lib/ai/schemas'
 import { ghostClientFromRow } from '@/lib/ghost/client'
+import { shopifyConfigFromRow, listShopifyArticles } from '@/lib/shopify/client'
 import { generateJSON } from '@tiptap/html'
 import StarterKit from '@tiptap/starter-kit'
 import TiptapImage from '@tiptap/extension-image'
@@ -433,4 +434,94 @@ export async function applyOrganizeAction(projectId: string, plan: OrganizePlan)
   }
 
   revalidatePath(`/projects/${projectId}/planning`)
+}
+
+export async function syncShopifyArticlesAction(projectId: string) {
+  const supabase = await sb()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data: membership } = await supabase
+    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
+  if (!membership) throw new Error('No tenant')
+
+  const { data: conn } = await supabase
+    .from('site_connections')
+    .select('id,config_encrypted')
+    .eq('project_id', projectId)
+    .eq('platform', 'shopify')
+    .maybeSingle()
+  if (!conn) throw new Error('No Shopify connection configured')
+
+  const { data: existingTargets } = await supabase
+    .from('publish_targets')
+    .select('remote_post_id')
+    .eq('connection_id', conn.id)
+  const trackedIds = new Set(
+    (existingTargets ?? []).map((t) => t.remote_post_id).filter(Boolean),
+  )
+
+  const config = shopifyConfigFromRow({ config_encrypted: conn.config_encrypted })
+  const articles = await listShopifyArticles(config)
+
+  const newArticles = articles.filter((a) => a.id && !trackedIds.has(String(a.id)))
+  if (newArticles.length === 0) {
+    revalidatePath(`/projects/${projectId}/planning`)
+    return { imported: 0 }
+  }
+
+  const { data: lastArticle } = await supabase
+    .from('articles')
+    .select('position')
+    .eq('project_id', projectId)
+    .order('position', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  let nextPos = (lastArticle?.position ?? -1) + 1
+
+  let imported = 0
+  for (const post of newArticles) {
+    const tagNames = post.tags
+      ? post.tags.split(',').map((t) => t.trim()).filter(Boolean)
+      : []
+
+    const { data: article, error: artErr } = await supabase
+      .from('articles')
+      .insert({
+        project_id: projectId,
+        tenant_id: membership.tenant_id,
+        pillar_id: null,
+        title: post.title ?? '(untitled)',
+        slug: post.handle ?? null,
+        excerpt: post.excerpt ?? null,
+        body_tiptap: post.body_html
+          ? generateJSON(post.body_html, [StarterKit, TiptapImage, TiptapLink])
+          : null,
+        tags: tagNames,
+        status: 'draft_ready',
+        position: nextPos++,
+        ...({ source: 'shopify' } as Record<string, unknown>),
+      })
+      .select('id')
+      .single()
+    if (artErr || !article) continue
+
+    const remoteUrl = post.handle
+      ? `${config.storeUrl}/blogs/${config.blogTitle.toLowerCase().replace(/\s+/g, '-')}/${post.handle}`
+      : null
+
+    await supabase.from('publish_targets').insert({
+      article_id: article.id,
+      connection_id: conn.id,
+      tenant_id: membership.tenant_id,
+      remote_post_id: String(post.id),
+      remote_url: remoteUrl,
+      remote_status: post.published ? 'published' : 'draft',
+      published_at: post.published_at ?? null,
+    })
+    imported++
+  }
+
+  revalidatePath(`/projects/${projectId}/planning`)
+  return { imported }
 }
