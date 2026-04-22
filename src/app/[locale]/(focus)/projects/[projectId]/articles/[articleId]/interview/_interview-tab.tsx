@@ -3,13 +3,13 @@
 import { useEffect, useState, useRef, useTransition } from 'react'
 import { experimental_useObject as useObject } from '@ai-sdk/react'
 import { useTranslations } from 'next-intl'
-import { useRouter } from '@/i18n/routing'
+import { Link, useRouter } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Sparkles, SkipForward } from 'lucide-react'
+import { ArrowLeft, PencilLine, Sparkles, SkipForward } from 'lucide-react'
 import { planAndQuestionsSchema } from '@/lib/ai/schemas'
 import {
-  answerQuestionAction, skipQuestionAction, skipAllAction,
+  answerQuestionAction, skipQuestionAction, skipAllAction, startManualDraftAction,
 } from './actions'
 
 type Section = { id: string; title: string; purpose: string; needs_interview: boolean }
@@ -29,12 +29,14 @@ export function InterviewTab({
   status,
   sections,
   questions: initialQuestions,
+  hasExistingBody = false,
 }: {
   projectId: string
   articleId: string
   status: string
   sections: Section[]
   questions: Question[]
+  hasExistingBody?: boolean
 }) {
   const t = useTranslations('articles')
   const router = useRouter()
@@ -72,7 +74,8 @@ export function InterviewTab({
         if (done) break
         setDraftText((prev) => prev + decoder.decode(value, { stream: true }))
       }
-      router.refresh()
+      // Body now exists — navigate to the clean editor URL (strips ?view=interview)
+      router.replace(`/projects/${projectId}/articles/${articleId}`)
     } catch (err) {
       if ((err as { name?: string }).name !== 'AbortError') {
         console.error(err)
@@ -129,8 +132,26 @@ export function InterviewTab({
 
   const showNoQuestionsCard = !hasQuestions && streamFinishedWithNoQuestions
 
+  const articleHref = `/projects/${projectId}/articles/${articleId}`
+
   return (
     <section className="space-y-5">
+      {hasExistingBody && (
+        <div className="rounded-lg bg-ochre-tint border border-ochre/30 p-3 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-2 text-[12px] text-ochre-ink">
+            <span aria-hidden>⚠</span>
+            <span>{t('interview_overwrite_warning')}</span>
+          </div>
+          <Link
+            href={articleHref}
+            className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink whitespace-nowrap"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            {t('interview_back_to_editor')}
+          </Link>
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('interview_title')}</h2>
@@ -176,8 +197,30 @@ export function InterviewTab({
       {streamError && <p className="text-[12px] text-rust" role="alert">{t('error_generic')}</p>}
 
       {!hasQuestions && !isLoading && !showNoQuestionsCard && (
-        <div className="rounded-xl border border-rule border-dashed p-10 text-center text-ink-3">
-          <p className="text-[13px]">{t('interview_start_desc')}</p>
+        <div className="rounded-xl border border-rule border-dashed p-10 text-center space-y-5">
+          <p className="text-[13px] text-ink-3">{t('interview_start_desc')}</p>
+          {!hasExistingBody && (
+            <>
+              <div className="flex items-center justify-center gap-3 text-[11px] uppercase tracking-[0.14em] text-ink-4 before:content-[''] before:h-px before:w-10 before:bg-rule after:content-[''] after:h-px after:w-10 after:bg-rule">
+                {t('interview_write_directly_hint')}
+              </div>
+              <Button
+                variant="default"
+                onClick={() =>
+                  startTransition(async () => {
+                    try {
+                      await startManualDraftAction(projectId, articleId)
+                      router.refresh()
+                    } catch (err) { console.error(err) }
+                  })
+                }
+                disabled={pending}
+              >
+                <PencilLine className="w-3.5 h-3.5 mr-1" />
+                {t('interview_write_directly')}
+              </Button>
+            </>
+          )}
         </div>
       )}
 

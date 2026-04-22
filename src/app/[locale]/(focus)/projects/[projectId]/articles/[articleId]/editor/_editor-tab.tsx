@@ -1,6 +1,8 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/routing'
+import { Sparkles } from 'lucide-react'
 import { TiptapEditor } from '@/components/tiptap/editor'
 import { saveArticleBodyAction } from './actions'
 import { getUploadUrlAction, saveImageAction, updateImageAltByUrlAction } from './upload-actions'
@@ -50,16 +52,27 @@ export function EditorTab({
   }
 
   return (
-    <TiptapEditor
-      initialTiptap={bodyTiptap}
-      initialMarkdown={bodyMarkdown}
-      onSave={async (tiptapDoc, md) => {
-        await saveArticleBodyAction(projectId, articleId, tiptapDoc, md)
-      }}
-      onUploadImage={handleImageUpload}
-      onRewrite={handleRewrite}
-      onUpdateImageAlt={handleUpdateImageAlt}
-      placeholder={t('editor_placeholder')}
-    />
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <Link
+          href={`/projects/${projectId}/articles/${articleId}?view=interview`}
+          className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ochre-ink transition-colors"
+        >
+          <Sparkles className="w-3 h-3" />
+          {t('editor_use_interview')}
+        </Link>
+      </div>
+      <TiptapEditor
+        initialTiptap={bodyTiptap}
+        initialMarkdown={bodyMarkdown}
+        onSave={async (tiptapDoc, md) => {
+          await saveArticleBodyAction(projectId, articleId, tiptapDoc, md)
+        }}
+        onUploadImage={handleImageUpload}
+        onRewrite={handleRewrite}
+        onUpdateImageAlt={handleUpdateImageAlt}
+        placeholder={t('editor_placeholder')}
+      />
+    </div>
   )
 }

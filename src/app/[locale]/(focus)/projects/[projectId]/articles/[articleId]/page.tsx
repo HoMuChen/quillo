@@ -7,10 +7,14 @@ import { EditorTab } from './editor/_editor-tab'
 import { InterviewTab } from './interview/_interview-tab'
 import { SeoTab } from './seo/_seo-tab'
 
-type Props = { params: Promise<{ locale: string; projectId: string; articleId: string }> }
+type Props = {
+  params: Promise<{ locale: string; projectId: string; articleId: string }>
+  searchParams: Promise<{ view?: string }>
+}
 
-export default async function ArticlePage({ params }: Props) {
+export default async function ArticlePage({ params, searchParams }: Props) {
   const { locale, projectId, articleId } = await params
+  const { view } = await searchParams
   setRequestLocale(locale)
 
   const supabase = await createClient()
@@ -29,6 +33,7 @@ export default async function ArticlePage({ params }: Props) {
   // cost is tiny and avoids a second page load transition.
   const isGhostImport = article.source === 'ghost'
   const hasBody = isGhostImport || Boolean(article.body_markdown || article.body_tiptap)
+  const showInterview = !hasBody || view === 'interview'
 
   const [outlineResult, questionsResult] = await Promise.all([
     supabase
@@ -134,20 +139,21 @@ export default async function ArticlePage({ params }: Props) {
       featureImageSlot={featureImageSlot}
       settingsSlot={settingsSlot}
     >
-      {hasBody ? (
-        <EditorTab
-          projectId={projectId}
-          articleId={articleId}
-          bodyMarkdown={article.body_markdown}
-          bodyTiptap={article.body_tiptap}
-        />
-      ) : (
+      {showInterview ? (
         <InterviewTab
           projectId={projectId}
           articleId={articleId}
           status={article.status}
           sections={sections}
           questions={questions}
+          hasExistingBody={hasBody}
+        />
+      ) : (
+        <EditorTab
+          projectId={projectId}
+          articleId={articleId}
+          bodyMarkdown={article.body_markdown}
+          bodyTiptap={article.body_tiptap}
         />
       )}
     </ArticleScreen>

@@ -45,3 +45,18 @@ export async function skipAllAction(projectId: string, articleId: string) {
   if (error) throw error
   revalidatePath(`/projects/${projectId}/articles/${articleId}/interview`)
 }
+
+export async function startManualDraftAction(projectId: string, articleId: string) {
+  const supabase = await sb()
+  const emptyDoc = { type: 'doc', content: [{ type: 'paragraph' }] }
+  const { error } = await supabase
+    .from('articles')
+    .update({
+      body_tiptap: emptyDoc,
+      body_markdown: '',
+      status: 'editing',
+    })
+    .eq('id', articleId)
+  if (error) throw error
+  revalidatePath(`/projects/${projectId}/articles/${articleId}`)
+}
