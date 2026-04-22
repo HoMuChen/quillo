@@ -55,38 +55,38 @@ export default async function ArticlePage({ params }: Props) {
     position: number
   }>
 
-  // Ghost connection + target + logs for the top-right publish menu and the
-  // drawer's publish section.
-  const { data: connection } = await supabase
+  // Fetch all connections for this project (ghost + shopify). Each one gets
+  // its own publish_target and recent publish_logs so the article screen can
+  // render platform-aware publish UI.
+  const { data: connectionsRaw } = await supabase
     .from('site_connections')
     .select('id,name,platform')
     .eq('project_id', projectId)
-    .eq('platform', 'ghost')
-    .maybeSingle()
+    .in('platform', ['ghost', 'shopify'])
 
-  const { data: target } = connection
-    ? await supabase
+  const connList = connectionsRaw ?? []
+
+  const connData = await Promise.all(
+    connList.map(async (conn) => {
+      const { data: target } = await supabase
         .from('publish_targets')
         .select('id,remote_post_id,remote_url,remote_status,published_at,scheduled_for')
         .eq('article_id', articleId)
-        .eq('connection_id', connection.id)
+        .eq('connection_id', conn.id)
         .maybeSingle()
-    : { data: null }
 
-  const { data: logs } = target
-    ? await supabase
-        .from('publish_logs')
-        .select('id,action,status,error_message,created_at')
-        .eq('publish_target_id', target.id)
-        .order('created_at', { ascending: false })
-        .limit(10)
-    : { data: [] as Array<{
-        id: string
-        action: string
-        status: string
-        error_message: string | null
-        created_at: string
-      }> }
+      const logs = target
+        ? (await supabase
+            .from('publish_logs')
+            .select('id,action,status,error_message,created_at')
+            .eq('publish_target_id', target.id)
+            .order('created_at', { ascending: false })
+            .limit(10)).data ?? []
+        : []
+
+      return { connection: conn, target: target ?? null, logs }
+    }),
+  )
 
   const featureImageSlot = (
     <FeatureImage
@@ -130,9 +130,7 @@ export default async function ArticlePage({ params }: Props) {
           ? { title: pillarTitle, href: `/projects/${projectId}/planning` }
           : null
       }
-      connection={connection ?? null}
-      target={target ?? null}
-      logs={logs ?? []}
+      connections={connData}
       featureImageSlot={featureImageSlot}
       settingsSlot={settingsSlot}
     >

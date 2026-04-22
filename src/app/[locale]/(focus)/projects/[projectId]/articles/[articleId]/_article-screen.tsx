@@ -12,7 +12,7 @@ type Connection = {
   id: string
   name: string
   platform: string
-} | null
+}
 
 type Target = {
   id: string
@@ -28,6 +28,12 @@ type Log = {
   status: string
   error_message: string | null
   created_at: string
+}
+
+type ConnectionWithTarget = {
+  connection: Connection
+  target: Target
+  logs: Log[]
 }
 
 type Article = {
@@ -47,9 +53,7 @@ export function ArticleScreen({
   locale,
   article,
   pillar,
-  connection,
-  target,
-  logs,
+  connections,
   featureImageSlot,
   settingsSlot,
   children,
@@ -59,9 +63,7 @@ export function ArticleScreen({
   locale: string
   article: Article
   pillar: Pillar
-  connection: Connection
-  target: Target
-  logs: Log[]
+  connections: ConnectionWithTarget[]
   featureImageSlot: ReactNode
   settingsSlot: ReactNode
   children: ReactNode
@@ -69,6 +71,11 @@ export function ArticleScreen({
   const t = useTranslations('articles')
   const tpl = useTranslations('planning')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  // Shared active platform state so CornerLeft's "view live" link follows the
+  // same platform the user is publishing to from CornerRight.
+  const [activePlatform, setActivePlatform] = useState<string | null>(
+    connections[0]?.connection.platform ?? null,
+  )
 
   return (
     <div className="min-h-screen">
@@ -79,14 +86,16 @@ export function ArticleScreen({
       <div className="fixed inset-x-0 top-0 z-30 flex items-start justify-between px-7 py-5 pointer-events-none">
         <CornerLeft
           projectId={projectId}
-          target={target}
+          connections={connections}
+          activePlatform={activePlatform}
         />
         <CornerRight
           projectId={projectId}
           articleId={articleId}
           article={article}
-          connection={connection}
-          target={target}
+          connections={connections}
+          activePlatform={activePlatform}
+          onSetActivePlatform={setActivePlatform}
           onOpenDrawer={() => setDrawerOpen(true)}
         />
       </div>
@@ -123,9 +132,7 @@ export function ArticleScreen({
       <SettingsDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        connection={connection}
-        target={target}
-        logs={logs}
+        connections={connections}
         projectId={projectId}
         locale={locale}
       >
@@ -141,13 +148,25 @@ export function ArticleScreen({
 
 function CornerLeft({
   projectId,
-  target,
+  connections,
+  activePlatform,
 }: {
   projectId: string
-  target: Target
+  connections: ConnectionWithTarget[]
+  activePlatform: string | null
 }) {
   const t = useTranslations('articles')
   const tp = useTranslations('publish')
+
+  // Prefer the currently active platform's target; otherwise fall back to the
+  // first connection that has a live URL so we still surface a "view live"
+  // link when possible.
+  const activeConn = connections.find((c) => c.connection.platform === activePlatform) ?? null
+  const liveConn =
+    activeConn?.target?.remote_url
+      ? activeConn
+      : connections.find((c) => c.target?.remote_url) ?? null
+  const anyDraft = connections.some((c) => c.target?.remote_status === 'draft')
 
   return (
     <div className="flex items-center gap-5 pointer-events-auto">
@@ -159,16 +178,16 @@ function CornerLeft({
         {t('back_to_planning')}
       </Link>
 
-      {target?.remote_url ? (
+      {liveConn?.target?.remote_url ? (
         <a
-          href={target.remote_url}
+          href={liveConn.target.remote_url}
           target="_blank"
           rel="noopener"
           className="text-[13px] text-ink-3 hover:text-ink transition-colors"
         >
           {tp('view_live')} ↗
         </a>
-      ) : target?.remote_status === 'draft' ? (
+      ) : anyDraft ? (
         <span className="text-[13px] text-ink-4">{tp('save_as_draft')}</span>
       ) : null}
     </div>
@@ -178,16 +197,18 @@ function CornerLeft({
 function CornerRight({
   articleId,
   article,
-  connection,
-  target,
+  connections,
+  activePlatform,
+  onSetActivePlatform,
   onOpenDrawer,
   projectId,
 }: {
   projectId: string
   articleId: string
   article: Article
-  connection: Connection
-  target: Target
+  connections: ConnectionWithTarget[]
+  activePlatform: string | null
+  onSetActivePlatform: (platform: string) => void
   onOpenDrawer: () => void
 }) {
   const t = useTranslations('articles')
@@ -196,16 +217,23 @@ function CornerRight({
   const [pending, startTransition] = useTransition()
 
   const contentReady = article.status === 'editing' || article.status === 'draft_ready'
-  const hasRemote = Boolean(target?.remote_post_id && target.remote_status !== 'unpublished')
+
+  const activeConn =
+    connections.find((c) => c.connection.platform === activePlatform) ?? connections[0] ?? null
+  const hasRemote = Boolean(
+    activeConn?.target?.remote_post_id && activeConn.target.remote_status !== 'unpublished',
+  )
 
   function run(action: 'publish' | 'draft' | 'unpublish') {
-    if (!connection) return
+    if (!activeConn) return
+    const platform = activeConn.connection.platform
+    const connectionId = activeConn.connection.id
     startTransition(async () => {
       try {
-        const res = await fetch('/api/publish/ghost', {
+        const res = await fetch(`/api/publish/${platform}`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ articleId, connectionId: connection.id, action }),
+          body: JSON.stringify({ articleId, connectionId, action }),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error ?? 'publish failed')
@@ -218,8 +246,35 @@ function CornerRight({
 
   return (
     <div className="flex items-center gap-5 pointer-events-auto">
-      {connection ? (
+      {connections.length === 0 ? (
+        <Link
+          href={`/projects/${projectId}/settings`}
+          className="text-[13px] text-ink-3 hover:text-ink transition-colors"
+        >
+          {tp('no_connection_cta')}
+        </Link>
+      ) : (
         <>
+          {connections.length > 1 && (
+            <div className="flex gap-3 pointer-events-auto">
+              {connections.map((c) => (
+                <button
+                  key={c.connection.platform}
+                  type="button"
+                  onClick={() => onSetActivePlatform(c.connection.platform)}
+                  className={cn(
+                    'text-[11px] uppercase tracking-[0.1em] cursor-pointer transition-colors',
+                    activePlatform === c.connection.platform
+                      ? 'text-ink font-medium'
+                      : 'text-ink-4 hover:text-ink',
+                  )}
+                >
+                  {c.connection.platform}
+                </button>
+              ))}
+            </div>
+          )}
+
           <TextAction
             onClick={() => run('publish')}
             disabled={!contentReady || pending}
@@ -238,13 +293,6 @@ function CornerRight({
             </TextAction>
           )}
         </>
-      ) : (
-        <Link
-          href={`/projects/${projectId}/settings`}
-          className="text-[13px] text-ink-3 hover:text-ink transition-colors"
-        >
-          {tp('no_connection_cta')}
-        </Link>
       )}
 
       <button
@@ -301,18 +349,14 @@ function TextAction({
 function SettingsDrawer({
   open,
   onClose,
-  connection,
-  target,
-  logs,
+  connections,
   projectId,
   locale,
   children,
 }: {
   open: boolean
   onClose: () => void
-  connection: Connection
-  target: Target
-  logs: Log[]
+  connections: ConnectionWithTarget[]
   projectId: string
   locale: string
   children: ReactNode
@@ -371,13 +415,15 @@ function SettingsDrawer({
             {children}
           </section>
 
-          {connection && (
-            <section className="p-5 border-t border-rule space-y-3">
+          {connections.map(({ connection, target, logs }) => (
+            <section key={connection.id} className="p-5 border-t border-rule space-y-3">
               <h3 className="font-sans font-semibold text-[13px] text-ink">{tp('tab_title')}</h3>
 
               <div className="rounded-lg border border-rule bg-bg-2/50 p-3 text-[12px] space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-ink-4 uppercase tracking-[0.12em] text-[10px]">Ghost</span>
+                  <span className="text-ink-4 uppercase tracking-[0.12em] text-[10px]">
+                    {connection.platform.charAt(0).toUpperCase() + connection.platform.slice(1)}
+                  </span>
                   <Link
                     href={`/projects/${projectId}/settings`}
                     locale={locale as 'zh-TW' | 'en'}
@@ -422,7 +468,7 @@ function SettingsDrawer({
                 </ul>
               )}
             </section>
-          )}
+          ))}
         </div>
       </aside>
     </>
