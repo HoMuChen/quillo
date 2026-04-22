@@ -134,7 +134,7 @@ export async function listShopifyArticles(
   const res = await shopifyFetch(
     config.storeUrl,
     config.accessToken,
-    `/blogs/${config.blogId}/articles.json?limit=250&status=any`,
+    `/blogs/${config.blogId}/articles.json?limit=250&published_status=any`,
   )
   if (!res.ok) throw new Error(`Shopify articles fetch failed: ${res.status}`)
   const json = await res.json() as { articles: ShopifyArticle[] }
