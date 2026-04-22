@@ -50,8 +50,8 @@
   "default_blog_help": "文章將發布到此 Blog",
   "select_blog": "選擇 Blog…",
   "fetch_blogs": "載入 Blog 列表",
-  "no_connection_shopify_title": "還沒有 Shopify 連線",
-  "no_connection_shopify_body": "請先在設定中建立 Shopify 連線，才能發布文章",
+  "no_connection_title_shopify": "還沒有 Shopify 連線",
+  "no_connection_body_shopify": "請先在設定中建立 Shopify 連線，才能發布文章",
   "tab_subtitle_shopify": "把這篇文章發布到 Shopify Blog",
   "publish_platform": "發布到 {platform}"
 }

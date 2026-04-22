@@ -50,8 +50,8 @@
   "default_blog_help": "Articles will be published to this blog",
   "select_blog": "Select a blog…",
   "fetch_blogs": "Load blogs",
-  "no_connection_shopify_title": "No Shopify connection yet",
-  "no_connection_shopify_body": "Set up a Shopify connection in settings to publish this article.",
+  "no_connection_title_shopify": "No Shopify connection yet",
+  "no_connection_body_shopify": "Set up a Shopify connection in settings to publish this article.",
   "tab_subtitle_shopify": "Publish this article to your Shopify blog",
   "publish_platform": "Publish to {platform}"
 }
