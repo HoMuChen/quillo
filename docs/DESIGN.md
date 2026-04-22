@@ -85,13 +85,16 @@ Quillo 是**給人專心寫長文的編輯器** + **給人理性看數字的儀�
 
 | Token | Hex | 用途 |
 |---|---|---|
-| `bg` | `#FAF7F0` | App 底色、canvas、input bg |
-| `bg-2` | `#EFEADC` | sidebar 底、hover 填色、nested surface |
-| `bg-3` | `#F5EFDF` | 按鈕 hover、subtle chip 底 |
-| `rule` | `#D9D2BF` | hairline 邊框、分隔線（1px） |
-| `rule-strong` | `#BFB6A0` | 聚焦容器邊框、卡片 hover 邊 |
+| `bg` | `#f8f8f5` | App 底色（米白紙面）、input bg、canvas |
+| `bg-2` | `#ece9e5` | sidebar 底、hover 填色、nested surface |
+| `bg-3` | `#f0eeea` | 按鈕 hover、subtle chip 底 |
+| `white` | `#ffffff` | **卡片表面**（浮在 bg 上，用 shadow 而非 border 區隔） |
+| `rule` | `#dddbd7` | hairline 分隔線（1px），表格行、panel 邊框 |
+| `rule-strong` | `#c8c5c0` | 聚焦容器邊框 |
 | `mist` | `rgba(18,34,28,0.06)` | 任意輕 hover |
 | `ink-shade` | `rgba(18,34,28,0.40)` | modal backdrop |
+
+**卡片表面原則**：白卡（`#fff`）浮在米白紙面（`bg #f8f8f5`）上，用 `shadow-sh-1` 製造層次，**不加 `border-rule`**。`border` 只出現在：① 分隔線型邊框（panel、drawer 的 `border-l`）② 語意邊框（dashed empty state、`border-rust` 錯誤）③ 資料密度高的表格內部行分隔。
 
 ### 3.2 Ink（墨色）
 
@@ -376,30 +379,21 @@ const Dot = ({ cls = 'bg-ink-3' }) => <span className={cn('w-1.5 h-1.5 rounded-f
 ### 7.4 Card
 
 ```tsx
-<article className="rounded-lg border border-rule bg-bg shadow-sh-1 p-5 hover:border-rule-strong transition-colors">
+<article className="rounded-xl bg-white shadow-sh-1 p-5">
   {/* content */}
 </article>
 ```
 
-Hover 加深邊框，**不改背景**（保持紙感）。
+- **白底**（`bg-white`）浮在米白頁面（`bg`）上，層次由 `shadow-sh-1` 建立，**不加 border**
+- Hover 可升一級陰影：`hover:shadow-sh-2 transition-shadow`
+- **大型規劃卡片**（Planning pillar、Cluster Inbox）用 `rounded-[16px] p-6`，其他用 `rounded-xl p-5`
+- 顏色只出現在卡片內的**資料元素**（數字、進度條、狀態點），不用 tinted background
 
-#### 7.4a · Pillar tinted card 變體（豁免 border + shadow）
-
-Pillar 卡片使用 pillar `tint` 漸層當背景色（68% → 36% 混 bg），這時候可以**豁免**預設的 `border-rule + shadow-sh-1` 約定：
-
-```tsx
-<section
-  className="relative overflow-hidden rounded-[16px] border p-6"
-  style={{
-    borderColor: `color-mix(in oklab, ${hex.main} 8%, transparent)`, // 極淡邊界救援
-    background: `linear-gradient(180deg, color-mix(in oklab, ${hex.tint} 68%, var(--color-bg)) 0%, color-mix(in oklab, ${hex.tint} 36%, var(--color-bg)) 100%)`,
-  }}
-/>
-```
-
-**理由**：tint 漸層 + 24px grid gap 已經分出卡片邊界，再加 sh-1 + rule 邊框會變成「雜誌卡片貼在白紙上」的重量感，不符合 §01 chrome 扁平原則。**極淡邊框（pillar main 8% mix + transparent）** 只在 tint 淡化處（漸層下緣、空 pillar）兜底，不搶視覺。
-
-**只適用於**：background 有色調漸層的卡片。一般 `bg-bg` 卡片仍走預設 §7.4 約定。
+**保留 border 的例外情況：**
+- `border-dashed border-rule/80`：empty state（語意：「這裡尚無內容」）
+- `border-rust`：錯誤狀態
+- `border-l border-rule`：側邊 panel / drawer 分隔線
+- 表格內 `border-b border-rule/60`：行分隔（資料密度需求）
 
 ### 7.5 KPI card（儀表板）
 

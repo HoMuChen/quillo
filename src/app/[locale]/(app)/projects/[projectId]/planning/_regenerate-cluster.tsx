@@ -53,7 +53,7 @@ export function RegenerateClusterOverlay({
 
   return (
     <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl rounded-xl border border-rule bg-bg shadow-sh-2 p-6 max-h-[85vh] flex flex-col">
+      <div className="w-full max-w-2xl rounded-xl bg-white shadow-sh-2 p-6 max-h-[85vh] flex flex-col">
         <header className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h2 className="font-serif italic text-[22px] text-ink">{t('regenerate_title')}</h2>

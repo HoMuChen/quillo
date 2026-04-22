@@ -90,7 +90,7 @@ export function PlanStep2({
       </div>
 
       {orphanArticles.length > 0 && pillars.length > 0 && (
-        <div className="rounded-xl border border-rule bg-bg p-5 shadow-sh-1 space-y-3">
+        <div className="rounded-xl bg-white p-5 shadow-sh-1 space-y-3">
           <div>
             <p className="text-[13px] font-medium text-ink">{t('orphan_include_existing')}</p>
             <p className="text-[11px] text-ink-4 mt-0.5">{t('orphan_include_existing_help')}</p>
@@ -149,13 +149,12 @@ function PillarCard({
   pillar: DeepPartial<PillarPlan['pillars'][number]> | undefined
 }) {
   const color = PILLAR_COLORS[index % PILLAR_COLORS.length]
-  const bgMap = { p1: 'bg-p1-tint border-p1', p2: 'bg-p2-tint border-p2', p3: 'bg-p3-tint border-p3' }
   const textMap = { p1: 'text-p1', p2: 'text-p2', p3: 'text-p3' }
 
   if (!pillar) return null
 
   return (
-    <article className={`rounded-xl border ${bgMap[color]} p-5 shadow-sh-1 space-y-3`}>
+    <article className="rounded-xl bg-white p-5 shadow-sh-1 space-y-3">
       <header className="flex items-start justify-between gap-3">
         <div>
           <h3 className={`font-serif italic text-[22px] leading-tight ${textMap[color]}`}>

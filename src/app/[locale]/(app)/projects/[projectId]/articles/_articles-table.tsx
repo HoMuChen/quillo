@@ -84,7 +84,7 @@ export function ArticlesTable({
         </span>
       </div>
 
-      <div className="rounded-xl border border-rule overflow-hidden bg-bg shadow-sh-1">
+      <div className="rounded-xl overflow-hidden bg-white shadow-sh-1">
         <table className="w-full text-[13px]">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-[0.14em] text-ink-4 border-b border-rule">

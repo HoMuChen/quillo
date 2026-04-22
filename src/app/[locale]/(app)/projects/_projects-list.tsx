@@ -30,7 +30,7 @@ export function ProjectsList({ projects }: { projects: Project[] }) {
         <li key={p.id}>
           <Link
             href={`/projects/${p.id}/planning`}
-            className="block rounded-xl border border-rule bg-bg p-5 shadow-sh-1 hover:shadow-sh-2 hover:border-ink-3 transition-all"
+            className="block rounded-xl bg-white p-5 shadow-sh-1 hover:shadow-sh-2 transition-shadow"
           >
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-serif italic text-[22px] text-ink truncate">{p.name}</h3>

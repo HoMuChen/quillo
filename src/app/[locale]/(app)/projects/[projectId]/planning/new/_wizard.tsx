@@ -89,7 +89,7 @@ export function PlanWizard({ projectId, locale, orphanArticles }: { projectId: s
         </div>
 
         {direction && (
-          <article className="rounded-xl border border-rule bg-bg p-5 shadow-sh-1 whitespace-pre-wrap text-[14px] text-ink leading-[1.6]">
+          <article className="rounded-xl bg-white p-5 shadow-sh-1 whitespace-pre-wrap text-[14px] text-ink leading-[1.6]">
             {direction}
           </article>
         )}

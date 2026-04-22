@@ -47,7 +47,7 @@ export function NewProjectDialog({ locale }: { locale: 'zh-TW' | 'en' }) {
         >
           <form
             action={handleSubmit}
-            className="w-full max-w-md rounded-xl border border-rule bg-bg p-6 shadow-sh-2 space-y-4"
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-sh-2 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="font-serif italic text-[22px] text-ink">{t('create')}</h2>

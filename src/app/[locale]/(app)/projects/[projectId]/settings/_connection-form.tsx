@@ -101,7 +101,7 @@ export function ConnectionForm({
       <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('ghost_title')}</h2>
 
       {initial && !editing ? (
-        <div className="rounded-xl border border-rule bg-bg p-5 shadow-sh-1 space-y-3">
+        <div className="rounded-xl bg-white p-5 shadow-sh-1 space-y-3">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[14px] text-ink font-medium">{initial.name}</div>
@@ -150,7 +150,7 @@ export function ConnectionForm({
           {error && <p className="text-[12px] text-rust">{error}</p>}
         </div>
       ) : (
-        <form onSubmit={save} className="rounded-xl border border-rule bg-bg p-5 shadow-sh-1 space-y-4">
+        <form onSubmit={save} className="rounded-xl bg-white p-5 shadow-sh-1 space-y-4">
           <div className="space-y-1.5">
             <Label>{t('conn_name')}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('conn_name_placeholder')} />
