@@ -1,7 +1,7 @@
 'use client'
 
 import {
-  useCallback, useMemo, useState, useTransition,
+  useCallback, useEffect, useMemo, useRef, useState, useTransition,
 } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/routing'
@@ -176,6 +176,15 @@ export function PlanningGraph({
     ? (articles.find((a) => a.id === selectedArticleId) ?? orphanArticles.find((o) => o.id === selectedArticleId) ?? null)
     : null
   const isOrphanSelected = selectedArticleId ? orphanArticles.some((o) => o.id === selectedArticleId) : false
+
+  // Keep last-seen values so the panel content stays visible during the close animation
+  const lastPillarRef = useRef(selectedPillar)
+  const lastPillarArticlesRef = useRef(selectedPillarArticles)
+  if (selectedPillar) { lastPillarRef.current = selectedPillar; lastPillarArticlesRef.current = selectedPillarArticles }
+
+  const lastArticleRef = useRef(selectedArticle)
+  const lastIsOrphanRef = useRef(isOrphanSelected)
+  if (selectedArticle) { lastArticleRef.current = selectedArticle; lastIsOrphanRef.current = isOrphanSelected }
 
   return (
     <div className="space-y-3">
@@ -394,20 +403,22 @@ export function PlanningGraph({
 
       </div>
 
-      {selectedPillar && (
+      {lastPillarRef.current && (
         <PillarDetail
+          open={selectedPillar !== null}
           projectId={projectId}
-          pillar={selectedPillar}
-          articles={selectedPillarArticles}
+          pillar={lastPillarRef.current}
+          articles={lastPillarArticlesRef.current}
           onClose={() => setSelectedPillarId(null)}
         />
       )}
 
-      {selectedArticle && (
+      {lastArticleRef.current && (
         <ArticlePanel
+          open={selectedArticle !== null}
           projectId={projectId}
-          article={selectedArticle}
-          isOrphan={isOrphanSelected}
+          article={lastArticleRef.current}
+          isOrphan={lastIsOrphanRef.current}
           pillars={pillars}
           onClose={() => setSelectedArticleId(null)}
         />
@@ -417,11 +428,13 @@ export function PlanningGraph({
 }
 
 function PillarDetail({
+  open,
   projectId,
   pillar,
   articles,
   onClose,
 }: {
+  open: boolean
   projectId: string
   pillar: Pillar
   articles: Article[]
@@ -431,6 +444,20 @@ function PillarDetail({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [mode, setMode] = useState<'view' | 'edit' | 'confirm-delete' | 'add-article'>('view')
+
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [open])
   const [regenerating, setRegenerating] = useState(false)
   const canRegenerate = articles.every((a) => a.status === 'planned')
 
@@ -448,8 +475,21 @@ function PillarDetail({
   }
 
   return (
-    <aside className="fixed right-6 bottom-6 top-24 w-[340px] z-40 flex flex-col rounded-xl border border-rule bg-bg shadow-sh-2 overflow-hidden">
-      <header className="flex items-start justify-between gap-2 p-4 border-b border-rule">
+    <>
+      <div
+        aria-hidden
+        onClick={onClose}
+        className={cn(
+          'fixed inset-0 z-40 bg-ink-shade backdrop-blur-[1px] transition-opacity',
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+        )}
+      />
+      <aside className={cn(
+        'fixed top-0 right-0 bottom-0 z-50 w-[480px] max-w-[92vw] flex flex-col border-l border-rule bg-bg shadow-sh-3 overflow-hidden',
+        'transition-transform duration-300 ease-out',
+        open ? 'translate-x-0' : 'translate-x-full',
+      )}>
+      <header className="flex items-start justify-between gap-2 px-5 py-4 border-b border-rule shrink-0">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4">{t('pillar_label')}</div>
           <h3 className="font-serif italic text-[24px] text-ink leading-tight truncate">{pillar.title}</h3>
@@ -457,7 +497,7 @@ function PillarDetail({
             <p className="font-mono text-[11px] text-ink-3 mt-1 truncate">{pillar.target_keyword}</p>
           )}
         </div>
-        <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink cursor-pointer">
+        <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink cursor-pointer shrink-0">
           <X className="w-4 h-4" />
         </button>
       </header>
@@ -558,6 +598,7 @@ function PillarDetail({
         />
       )}
     </aside>
+    </>
   )
 }
 
@@ -704,12 +745,14 @@ function ArticleAddInline({
 }
 
 function ArticlePanel({
+  open,
   projectId,
   article,
   isOrphan,
   pillars,
   onClose,
 }: {
+  open: boolean
   projectId: string
   article: Article | OrphanArticle
   isOrphan: boolean
@@ -724,6 +767,20 @@ function ArticlePanel({
   const [newKeyword, setNewKeyword] = useState(article.target_keyword ?? '')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [open])
 
   const tags = 'tags' in article ? (article as OrphanArticle).tags : []
   const role = 'role' in article ? (article as Article).role : null
@@ -761,8 +818,21 @@ function ArticlePanel({
   }
 
   return (
-    <aside className="fixed right-6 bottom-6 top-24 w-[320px] z-40 flex flex-col rounded-xl border border-rule bg-bg shadow-sh-2 overflow-hidden">
-      <header className="flex items-start justify-between gap-2 p-4 border-b border-rule">
+    <>
+      <div
+        aria-hidden
+        onClick={onClose}
+        className={cn(
+          'fixed inset-0 z-40 bg-ink-shade backdrop-blur-[1px] transition-opacity',
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+        )}
+      />
+      <aside className={cn(
+        'fixed top-0 right-0 bottom-0 z-50 w-[480px] max-w-[92vw] flex flex-col border-l border-rule bg-bg shadow-sh-3 overflow-hidden',
+        'transition-transform duration-300 ease-out',
+        open ? 'translate-x-0' : 'translate-x-full',
+      )}>
+      <header className="flex items-start justify-between gap-2 px-5 py-4 border-b border-rule shrink-0">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4 flex items-center gap-2">
             {isOrphan ? 'Ghost' : 'Cluster'}
@@ -849,6 +919,7 @@ function ArticlePanel({
         {error && <p className="text-[12px] text-rust">{error}</p>}
       </div>
     </aside>
+    </>
   )
 }
 
