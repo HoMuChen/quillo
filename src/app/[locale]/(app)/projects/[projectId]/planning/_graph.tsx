@@ -90,10 +90,10 @@ type LaidOutEdge = {
   clusterStatus: VisualStatus
 }
 
-// Dot sizes — Obsidian-style small nodes
-const PILLAR_DOT = 18
-const CLUSTER_DOT = 8
-const ORPHAN_DOT = 7
+// Dot sizes
+const PILLAR_DOT = 20
+const CLUSTER_DOT = 10
+const ORPHAN_DOT = 10
 
 function computeLayout(
   pillars: Pillar[],
@@ -495,7 +495,7 @@ export function PlanningGraph({
                 stroke={DARK_HEX[e.colorIdx as 0 | 1 | 2].mid}
                 strokeWidth={active ? 1.2 : 0.6}
                 strokeLinecap="round"
-                opacity={dim ? 0.04 : active ? 0.7 : 0.2}
+                opacity={dim ? 0.06 : active ? 0.75 : 0.35}
                 style={{ transition: 'opacity 150ms ease, stroke-width 150ms ease' }}
               />
             )
@@ -568,7 +568,7 @@ export function PlanningGraph({
                   left: n.x, top: n.y,
                   transform: 'translate(-50%, -50%)',
                   zIndex: isArticleSelected ? 3 : 1,
-                  opacity: isArticleSelected ? 1 : hoveredPillarId ? 0.25 : 0.7,
+                  opacity: isArticleSelected ? 1 : hoveredPillarId ? 0.35 : 0.85,
                   transition: 'opacity 150ms ease',
                 }}
               >
@@ -577,7 +577,7 @@ export function PlanningGraph({
                   style={{
                     width: n.size,
                     height: n.size,
-                    background: 'var(--color-ink-3)',
+                    background: '#8a8a7e',
                     boxShadow: isArticleSelected
                       ? `0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)`
                       : undefined,
