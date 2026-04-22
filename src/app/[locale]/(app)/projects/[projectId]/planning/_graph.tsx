@@ -251,6 +251,16 @@ function computeLayout(
     })
   })
 
+  // Shift all nodes so min x/y ≥ 40 — transform wrapper has origin (0,0)
+  // and clips anything at negative coordinates.
+  const minX = fnodes.reduce((m, n) => Math.min(m, n.x), Infinity)
+  const minY = fnodes.reduce((m, n) => Math.min(m, n.y), Infinity)
+  const shiftX = minX < 40 ? 40 - minX : 0
+  const shiftY = minY < 40 ? 40 - minY : 0
+  if (shiftX || shiftY) {
+    for (const n of fnodes) { n.x += shiftX; n.y += shiftY }
+  }
+
   // Build output
   const nodes: LaidOutNode[] = fnodes.map(n => ({
     id: n.id, kind: n.kind, x: n.x, y: n.y, size: n.size,
