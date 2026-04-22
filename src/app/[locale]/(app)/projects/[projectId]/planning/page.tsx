@@ -143,7 +143,6 @@ export default async function PlanningPage({ params }: Props) {
         articles={articles ?? []}
         publishTargets={publishTargets ?? []}
         orphanArticles={orphanArticles}
-        hasGhostConnection={!!ghostConn}
       />
     </div>
   )
