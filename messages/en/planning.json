@@ -64,5 +64,7 @@
   "organize_existing_pillars": "Assign to existing pillars",
   "organize_nothing": "Not enough similar articles to form groups",
   "organize_summary": "Will assign {count} articles",
-  "organize_apply": "Apply"
+  "organize_apply": "Apply",
+  "sync_shopify": "Sync from Shopify",
+  "sync_shopify_done": "Imported {count} from Shopify"
 }

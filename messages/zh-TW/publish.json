@@ -40,5 +40,18 @@
   "no_connection_title": "還沒有 Ghost 連線",
   "no_connection_body": "請先在設定中建立 Ghost 連線，才能發布文章",
   "no_connection_cta": "前往設定",
-  "status_not_published": "尚未發布"
+  "status_not_published": "尚未發布",
+  "shopify_title": "Shopify",
+  "store_url": "Store URL",
+  "store_url_help": "你的 myshopify 網域，例如 my-store.myshopify.com",
+  "access_token": "Admin API Access Token",
+  "access_token_help": "Shopify 後台 → Apps → Develop apps → 建立 app → Admin API access token（開頭為 shpat_）",
+  "default_blog": "預設 Blog",
+  "default_blog_help": "文章將發布到此 Blog",
+  "select_blog": "選擇 Blog…",
+  "fetch_blogs": "載入 Blog 列表",
+  "no_connection_shopify_title": "還沒有 Shopify 連線",
+  "no_connection_shopify_body": "請先在設定中建立 Shopify 連線，才能發布文章",
+  "tab_subtitle_shopify": "把這篇文章發布到 Shopify Blog",
+  "publish_platform": "發布到 {platform}"
 }

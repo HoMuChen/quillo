@@ -64,5 +64,7 @@
   "organize_existing_pillars": "歸屬到現有 Pillar",
   "organize_nothing": "沒有足夠相似的文章可以分群",
   "organize_summary": "將歸屬 {count} 篇文章",
-  "organize_apply": "套用"
+  "organize_apply": "套用",
+  "sync_shopify": "從 Shopify 同步",
+  "sync_shopify_done": "從 Shopify 匯入 {count} 篇"
 }
