@@ -2,14 +2,16 @@
 
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { Check, X, Trash2 } from 'lucide-react'
+import { Check, X, Trash2, RefreshCw } from 'lucide-react'
 import {
   saveGhostConnectionAction, testGhostConnectionAction, deleteGhostConnectionAction,
 } from './settings-actions'
+import { syncGhostArticlesAction } from '../planning/planning-actions'
 
 type Initial = {
   id: string
@@ -27,15 +29,19 @@ export function ConnectionForm({
   initial: Initial
 }) {
   const t = useTranslations('publish')
+  const tp = useTranslations('planning')
+  const router = useRouter()
   const [name, setName] = useState(initial?.name ?? '')
   const [apiUrl, setApiUrl] = useState(initial?.apiUrl ?? '')
   const [apiKey, setApiKey] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [syncMessage, setSyncMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [testResult, setTestResult] = useState<{ ok: boolean; error: string | null } | null>(null)
   const [savePending, startSave] = useTransition()
   const [testPending, startTest] = useTransition()
   const [deletePending, startDelete] = useTransition()
+  const [syncPending, startSync] = useTransition()
   const [editing, setEditing] = useState(!initial)
 
   async function save(e: React.FormEvent) {
@@ -77,6 +83,19 @@ export function ConnectionForm({
     })
   }
 
+  function sync() {
+    setSyncMessage(null)
+    startSync(async () => {
+      try {
+        const result = await syncGhostArticlesAction(projectId)
+        setSyncMessage({ ok: true, text: tp('sync_done', { count: result.imported }) })
+        router.refresh()
+      } catch (err) {
+        setSyncMessage({ ok: false, text: err instanceof Error ? err.message : 'Error' })
+      }
+    })
+  }
+
   return (
     <section className="space-y-4">
       <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('ghost_title')}</h2>
@@ -96,6 +115,10 @@ export function ConnectionForm({
               </div>
             </div>
             <div className="flex gap-2">
+              <Button variant="default" size="sm" onClick={sync} disabled={syncPending}>
+                <RefreshCw className={cn('w-3 h-3 mr-1', syncPending && 'animate-spin')} />
+                {syncPending ? tp('syncing') : tp('sync_ghost')}
+              </Button>
               <Button variant="default" size="sm" onClick={test} disabled={testPending}>
                 {testPending ? '...' : t('test_connection')}
               </Button>
@@ -105,6 +128,15 @@ export function ConnectionForm({
               </Button>
             </div>
           </div>
+          {syncMessage && (
+            <p className={cn('text-[12px]', syncMessage.ok ? 'text-sage-ink' : 'text-rust')}>
+              {syncMessage.ok ? (
+                <><Check className="inline w-3 h-3 mr-1" />{syncMessage.text}</>
+              ) : (
+                <><X className="inline w-3 h-3 mr-1" />{syncMessage.text}</>
+              )}
+            </p>
+          )}
           {testResult && (
             <p className={cn('text-[12px]', testResult.ok ? 'text-sage' : 'text-rust')}>
               {testResult.ok ? (
