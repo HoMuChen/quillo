@@ -510,7 +510,7 @@ export async function syncShopifyArticlesAction(projectId: string) {
       ? `${config.storeUrl}/blogs/${config.blogTitle.toLowerCase().replace(/\s+/g, '-')}/${post.handle}`
       : null
 
-    await supabase.from('publish_targets').insert({
+    const { error: ptErr } = await supabase.from('publish_targets').insert({
       article_id: article.id,
       connection_id: conn.id,
       tenant_id: membership.tenant_id,
@@ -519,6 +519,11 @@ export async function syncShopifyArticlesAction(projectId: string) {
       remote_status: post.published ? 'published' : 'draft',
       published_at: post.published_at ?? null,
     })
+    if (ptErr) {
+      // Roll back the article to keep data consistent
+      await supabase.from('articles').delete().eq('id', article.id)
+      continue
+    }
     imported++
   }
 
