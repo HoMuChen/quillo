@@ -63,17 +63,19 @@ Quillo 是**給人專心寫長文的編輯器** + **給人理性看數字的儀�
 - 其他區域（sidebar、topbar、dashboard、table、modal）用純 `--bg` 平面
 - 視覺連貫不會斷裂——因為底色 `#faf7f0` 一致，只是去掉紋理
 
-### 小調整 · Pillar 色加一階中間亮度
+### 小調整 · Pillar 色採用 Claude 品牌調色盤（coral / harbor / sage）
 
-`p1 #2b3f36` / `p2 #2d4a66` / `p3 #6e3a2f` 三個都很深，在大節點（128px 圓）好看，在小 chip / tree leaf（24px）很難分辨。新增：
+沿用到 2026-04 為止的 pillar 三色是深綠 / 深藍 / 深棕（Writing / SEO / Strategy），辨識度夠但太接近「印刷墨色」，無法一眼讓人聯想到 Quillo 背後的 Claude AI。改採 Claude 品牌的 **橘紅 / 藍 / 綠** 三色：
 
-| Deep（既有） | Mid（新增，用於小元素） |
-|---|---|
-| `p1 #2b3f36` | `p1-mid #4a6b5c`（+25% 亮度） |
-| `p2 #2d4a66` | `p2-mid #4c6f91`（+25%） |
-| `p3 #6e3a2f` | `p3-mid #9a5d4f`（+25%） |
+| Token | Main（text-safe，AA） | Mid（Claude 原色，填充 only） | Tint（hover / bg） |
+|---|---|---|---|
+| `p1 · Coral` | `#A85A2D` (4.6:1 ✓AA) | `#D97757`（Claude signature） | `#F4DDD0` |
+| `p2 · Harbor` | `#2D4A66` (8.1:1 ✓AAA) | `#4C6F91` | `#E4EAF0` |
+| `p3 · Sage` | `#4A6A3F` (5.7:1 ✓AA) | `#7A9370` | `#E3EAD9` |
 
-配套：`-tint` 繼續作為最淺底（hover、selected bg）。
+**鐵律**：`main` 是 AA 合規的**文字安全色**，可用於 `text-p1` / `text-p3`。`mid` 是 Claude 品牌飽和度，只能當**填充**（chip 底、大節點、圖表 stroke），**不可當文字**（對比不足）。`tint` 用於 selected / hover 背景。
+
+`p1` / `p3` 的 main 已經是文字版深度，所以**不需要再另外做 `-ink` 變體**（對比足夠 AA）。`p2` 與既有 `indigo-ink` 同值，可互換使用。
 
 ---
 
@@ -116,11 +118,13 @@ Quillo 是**給人專心寫長文的編輯器** + **給人理性看數字的儀�
 
 ### 3.4 Pillar（樹 / 圖）
 
-| Token | Deep | Mid | Tint |
+採 Claude 品牌調色盤 · coral / harbor / sage。`main` 是 AA 合規文字色，`mid` 是 Claude 原色飽和度（填充 only），`tint` 是最淺底（selected / hover bg）。
+
+| Token | Main (text AA) | Mid (fill only) | Tint |
 |---|---|---|---|
-| p1 · Writing | `#2B3F36` | `#4A6B5C` | `#E6EDE6` |
-| p2 · SEO | `#2D4A66` | `#4C6F91` | `#E4EAF0` |
-| p3 · Strategy | `#6E3A2F` | `#9A5D4F` | `#EFE2DC` |
+| p1 · Coral | `#A85A2D` | `#D97757` | `#F4DDD0` |
+| p2 · Harbor | `#2D4A66` | `#4C6F91` | `#E4EAF0` |
+| p3 · Sage | `#4A6A3F` | `#7A9370` | `#E3EAD9` |
 
 若 Pillar 超過 3 個，第 4–6 個循環使用，**不要再加新色**——太多色會破壞編輯感。實務上 spec 允許 3–5 個 Pillar，4 與 5 用 p1/p2 循環。
 
@@ -379,6 +383,24 @@ const Dot = ({ cls = 'bg-ink-3' }) => <span className={cn('w-1.5 h-1.5 rounded-f
 
 Hover 加深邊框，**不改背景**（保持紙感）。
 
+#### 7.4a · Pillar tinted card 變體（豁免 border + shadow）
+
+Pillar 卡片使用 pillar `tint` 漸層當背景色（68% → 36% 混 bg），這時候可以**豁免**預設的 `border-rule + shadow-sh-1` 約定：
+
+```tsx
+<section
+  className="relative overflow-hidden rounded-[16px] border p-6"
+  style={{
+    borderColor: `color-mix(in oklab, ${hex.main} 8%, transparent)`, // 極淡邊界救援
+    background: `linear-gradient(180deg, color-mix(in oklab, ${hex.tint} 68%, var(--color-bg)) 0%, color-mix(in oklab, ${hex.tint} 36%, var(--color-bg)) 100%)`,
+  }}
+/>
+```
+
+**理由**：tint 漸層 + 24px grid gap 已經分出卡片邊界，再加 sh-1 + rule 邊框會變成「雜誌卡片貼在白紙上」的重量感，不符合 §01 chrome 扁平原則。**極淡邊框（pillar main 8% mix + transparent）** 只在 tint 淡化處（漸層下緣、空 pillar）兜底，不搶視覺。
+
+**只適用於**：background 有色調漸層的卡片。一般 `bg-bg` 卡片仍走預設 §7.4 約定。
+
 ### 7.5 KPI card（儀表板）
 
 ```tsx
@@ -549,7 +571,7 @@ planned → outlined → interviewing → drafted → editing → published
 
 | 指標 | Hex | 備註 |
 |---|---|---|
-| Impressions | `p1 #2B3F36` | 主色 |
+| Impressions | `p1 #A85A2D` | 主色（Claude coral） |
 | Clicks | `ochre #C28C3C` | |
 | CTR | `sage #6A8466` | |
 | Position | `p2 #2D4A66` | **反向 Y 軸** |
@@ -694,9 +716,9 @@ export default {
         rust:  '#9C4A30',
         sage:  { DEFAULT: '#6A8466', ink: '#4A5E47' },
         indigo:{ ink: '#2D4A66' },
-        p1: { DEFAULT: '#2B3F36', mid: '#4A6B5C', tint: '#E6EDE6' },
-        p2: { DEFAULT: '#2D4A66', mid: '#4C6F91', tint: '#E4EAF0' },
-        p3: { DEFAULT: '#6E3A2F', mid: '#9A5D4F', tint: '#EFE2DC' },
+        p1: { DEFAULT: '#A85A2D', mid: '#D97757', tint: '#F4DDD0' }, /* Claude coral */
+        p2: { DEFAULT: '#2D4A66', mid: '#4C6F91', tint: '#E4EAF0' }, /* Claude harbor */
+        p3: { DEFAULT: '#4A6A3F', mid: '#7A9370', tint: '#E3EAD9' }, /* Claude sage */
       },
       boxShadow: {
         'sh-1': '0 1px 0 rgba(18,34,28,0.05), 0 2px 8px rgba(18,34,28,0.04)',

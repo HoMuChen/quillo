@@ -67,9 +67,9 @@ function pillarVisualStatus(statuses: VisualStatus[]): VisualStatus {
 }
 
 const COLOR_HEX = {
-  0: { main: '#2b3f36', tint: '#e6ede6' },
+  0: { main: '#a85a2d', tint: '#f4ddd0' },
   1: { main: '#2d4a66', tint: '#e4eaf0' },
-  2: { main: '#6e3a2f', tint: '#efe2dc' },
+  2: { main: '#4a6a3f', tint: '#e3ead9' },
 } as const
 
 const ORPHAN_HEX = {
@@ -127,11 +127,17 @@ export function PlanningGraph({
     const hex = COLOR_HEX[colorIdx]
     const statuses = articlesForPillar.map((a) => articleVisualStatus(a, targetsByArticle.get(a.id)))
     const visualStatus = pillarVisualStatus(statuses)
+    const publishedCount = statuses.filter((s) => s === 'published').length
+    const draftCount = statuses.filter((s) => s === 'draft').length
+    const emptyCount = statuses.filter((s) => s === 'empty').length
     const sortedArticles = [...articlesForPillar].sort((a, b) => {
       if ((a.role === 'hub') !== (b.role === 'hub')) return a.role === 'hub' ? -1 : 1
       return a.position - b.position
     })
-    return { pillar, articles: sortedArticles, colorIdx, hex, visualStatus }
+    return {
+      pillar, articles: sortedArticles, colorIdx, hex, visualStatus,
+      publishedCount, draftCount, emptyCount,
+    }
   }), [pillars, articlesByPillar, targetsByArticle])
 
   const arrangedPillarCards = useMemo(() => {
@@ -175,40 +181,46 @@ export function PlanningGraph({
     <div className="space-y-3">
       <div className="relative">
         <div className="grid gap-6 lg:grid-cols-4 auto-rows-[minmax(220px,auto)]">
-          {arrangedPillarCards.map(({ pillar, articles: pillarArticles, hex, tier }) => {
+          {arrangedPillarCards.map(({ pillar, articles: pillarArticles, hex, tier, publishedCount, draftCount, emptyCount }, i) => {
             const isSelected = selectedPillarId === pillar.id
+            const totalCount = pillarArticles.length
+            const indexLabel = String(i + 1).padStart(2, '0')
             return (
               <section
                 key={pillar.id}
                 className={cn(
-                  'relative overflow-hidden rounded-[16px] border p-6 text-left shadow-sh-2 transition-all',
+                  'relative overflow-hidden rounded-[16px] border p-6 text-left transition-all',
                   cardSpan(tier),
                   isSelected && 'ring-2 ring-[var(--color-ochre)]',
                 )}
                 style={{
-                  borderColor: `color-mix(in oklab, ${hex.main} 14%, var(--color-rule))`,
+                  borderColor: `color-mix(in oklab, ${hex.main} 8%, transparent)`,
                   background: `linear-gradient(180deg, color-mix(in oklab, ${hex.tint} 68%, var(--color-bg)) 0%, color-mix(in oklab, ${hex.tint} 36%, var(--color-bg)) 100%)`,
                 }}
               >
-                <div className="absolute right-3 top-3 flex gap-2">
-                  <span
-                    className="rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-[0.04em]"
-                    style={{
-                      color: hex.main,
-                      borderColor: `color-mix(in oklab, ${hex.main} 10%, var(--color-rule))`,
-                      background: 'color-mix(in oklab, white 82%, var(--color-bg))',
-                    }}
+                <div className="pointer-events-none absolute right-5 top-5 text-right leading-none">
+                  <div
+                    className="font-serif italic text-[36px] leading-none tracking-tight tabular-nums"
+                    style={{ color: hex.main }}
                   >
-                    {pillarArticles.length} clusters
-                  </span>
+                    {totalCount === 0 ? '—' : String(totalCount).padStart(2, '0')}
+                  </div>
+                  <div className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-4">
+                    clusters
+                  </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setSelectedPillarId(pillar.id === selectedPillarId ? null : pillar.id)}
-                  className="mb-5 block pr-20 text-left cursor-pointer"
+                  className="mb-4 block pr-24 text-left cursor-pointer"
                 >
-                  <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-4">pillar</div>
+                  <div className="flex items-baseline gap-2 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-4">
+                    <span>pillar</span>
+                    <span className="font-serif italic normal-case tracking-normal text-[13px] text-ink-3 tabular-nums">
+                      {indexLabel}
+                    </span>
+                  </div>
                   <h3 className="mt-2 text-[20px] font-semibold leading-[1.25] tracking-tight text-ink">{pillar.title}</h3>
                   {pillar.target_keyword && (
                     <p className="mt-2 font-mono text-[11px] text-ink-3">{pillar.target_keyword}</p>
@@ -217,6 +229,48 @@ export function PlanningGraph({
                     <p className="mt-3 line-clamp-2 max-w-[62ch] text-[13px] leading-[1.55] text-ink-2">{pillar.description}</p>
                   )}
                 </button>
+
+                {totalCount > 0 && (
+                  <div className="mb-4">
+                    <div
+                      className="flex h-1.5 w-full gap-px overflow-hidden rounded-full"
+                      style={{ background: `color-mix(in oklab, ${hex.main} 8%, var(--color-rule))` }}
+                    >
+                      {publishedCount > 0 && (
+                        <div style={{ width: `${(publishedCount / totalCount) * 100}%`, background: statusTone('published', hex) }} />
+                      )}
+                      {draftCount > 0 && (
+                        <div style={{ width: `${(draftCount / totalCount) * 100}%`, background: statusTone('draft', hex) }} />
+                      )}
+                      {emptyCount > 0 && (
+                        <div style={{ width: `${(emptyCount / totalCount) * 100}%`, background: statusTone('empty', hex) }} />
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] text-ink-3 tabular-nums">
+                      {publishedCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: statusTone('published', hex) }} />
+                          {publishedCount} published
+                        </span>
+                      )}
+                      {draftCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: statusTone('draft', hex) }} />
+                          {draftCount} draft
+                        </span>
+                      )}
+                      {emptyCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span
+                            className="h-1.5 w-1.5 rounded-full border"
+                            style={{ borderColor: `color-mix(in oklab, ${hex.main} 32%, var(--color-rule))`, background: 'transparent' }}
+                          />
+                          {emptyCount} planned
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid gap-2 sm:grid-cols-2">
                   {pillarArticles.map((article) => {
