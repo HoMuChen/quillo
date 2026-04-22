@@ -198,13 +198,12 @@ export function PlanningGraph({
               <section
                 key={pillar.id}
                 className={cn(
-                  'relative overflow-hidden rounded-[16px] border p-6 text-left transition-all',
+                  'relative overflow-hidden rounded-[16px] p-6 text-left transition-all shadow-sh-1',
                   cardSpan(tier),
-                  isSelected && 'ring-2 ring-[var(--color-ochre)]',
+                  isSelected ? 'ring-2 ring-[var(--color-ochre)]' : '',
                 )}
                 style={{
-                  borderColor: `color-mix(in oklab, ${hex.main} 8%, transparent)`,
-                  background: `linear-gradient(180deg, color-mix(in oklab, ${hex.tint} 68%, var(--color-bg)) 0%, color-mix(in oklab, ${hex.tint} 36%, var(--color-bg)) 100%)`,
+                  background: 'white',
                 }}
               >
                 <div className="pointer-events-none absolute right-5 top-5 text-right leading-none">
@@ -297,13 +296,9 @@ export function PlanningGraph({
                           selected && 'ring-2 ring-[var(--color-ochre)]',
                         )}
                         style={{
-                          borderColor: isPlanning
-                            ? `color-mix(in oklab, ${hex.main} 12%, var(--color-rule))`
-                            : `color-mix(in oklab, ${hex.main} 10%, var(--color-rule))`,
-                          background: isPlanning
-                            ? 'color-mix(in oklab, white 58%, var(--color-bg))'
-                            : 'color-mix(in oklab, white 76%, var(--color-bg))',
-                          opacity: isPlanning ? 0.78 : 1,
+                          borderColor: 'var(--color-rule)',
+                          background: 'var(--color-bg)',
+                          opacity: isPlanning ? 0.65 : 1,
                         }}
                       >
                         <div className="flex items-start gap-2">
@@ -348,10 +343,13 @@ export function PlanningGraph({
             )
           })}
 
-          <section className={cn(
-            'relative overflow-hidden rounded-[16px] border border-rule bg-bg p-6 shadow-sh-1',
-            orphanArticles.length > 8 ? 'lg:col-span-2' : '',
-          )}>
+          <section
+            className={cn(
+              'relative overflow-hidden rounded-[16px] p-6 shadow-sh-1',
+              orphanArticles.length > 8 ? 'lg:col-span-2' : '',
+            )}
+            style={{ background: 'white' }}
+          >
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-4">unassigned</div>
@@ -376,8 +374,8 @@ export function PlanningGraph({
                       selected && 'ring-2 ring-[var(--color-ochre)]',
                     )}
                     style={{
-                      borderColor: 'color-mix(in oklab, var(--color-ink-3) 18%, transparent)',
-                      background: 'color-mix(in oklab, white 72%, var(--color-bg-2))',
+                      borderColor: 'var(--color-rule)',
+                      background: 'white',
                     }}
                   >
                     <div className="flex items-start gap-2">
