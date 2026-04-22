@@ -1,7 +1,6 @@
 import { setRequestLocale } from 'next-intl/server'
 import { requireUser } from '@/lib/auth/require-user'
 import { AppShell } from '@/components/app-shell'
-import { UserMenu } from '@/components/user-menu'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function AppLayout({
@@ -24,7 +23,6 @@ export default async function AppLayout({
   return (
     <AppShell
       userEmail={user.email ?? undefined}
-      userMenu={<UserMenu />}
       projects={projects ?? []}
     >
       {children}

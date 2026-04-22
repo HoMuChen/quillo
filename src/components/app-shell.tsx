@@ -1,19 +1,17 @@
 import type { ReactNode } from 'react'
 import { Link } from '@/i18n/routing'
 import { ProjectsSidebar } from './projects-sidebar'
-import { LocaleSwitcher } from './locale-switcher'
+import { UserDropdown } from './user-dropdown'
 
 type Project = { id: string; name: string }
 
 export function AppShell({
   children,
   userEmail,
-  userMenu,
   projects,
 }: {
   children: ReactNode
   userEmail?: string
-  userMenu?: ReactNode
   projects: Project[]
 }) {
   return (
@@ -28,13 +26,9 @@ export function AppShell({
           <ProjectsSidebar projects={projects} />
         </div>
 
-        {(userEmail || userMenu) && (
-          <div className="text-[12px] text-ink-3 border-t border-rule pt-4 mt-4 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              {userEmail && <div className="truncate flex-1">{userEmail}</div>}
-              <LocaleSwitcher />
-            </div>
-            {userMenu}
+        {userEmail && (
+          <div className="border-t border-rule pt-3 mt-4">
+            <UserDropdown email={userEmail} />
           </div>
         )}
       </aside>
