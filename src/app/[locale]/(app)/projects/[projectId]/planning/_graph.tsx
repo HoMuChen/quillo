@@ -352,10 +352,7 @@ export function PlanningGraph({
           })}
 
           <section
-            className={cn(
-              'relative rounded-[16px] p-6 shadow-sh-1',
-              orphanArticles.length > 8 ? 'lg:col-span-2' : '',
-            )}
+            className="relative rounded-[16px] p-6 shadow-sh-1 lg:col-span-2"
             style={{ background: 'white' }}
           >
             <div className="mb-4 flex items-center justify-between gap-3">
@@ -369,7 +366,11 @@ export function PlanningGraph({
               </span>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            <div className={cn(
+              'grid gap-2',
+              orphanArticles.length >= 2 && 'sm:grid-cols-2',
+              orphanArticles.length >= 3 && 'xl:grid-cols-3',
+            )}>
               {orphanArticles.map((article) => {
                 const selected = selectedArticleId === article.id
                 return (
