@@ -157,21 +157,7 @@ function computeLayout(
     })
   })
 
-  // Orphans — scatter to the sides
-  orphans.forEach((o, i) => {
-    const hx = hashId(o.id)
-    const hy = hashId(o.id + 'y')
-    fnodes.push({
-      id: o.id, kind: 'orphan', pillarId: '', colorIdx: 0,
-      status: (o.status === 'draft_ready' ? 'draft' : 'empty') as VisualStatus,
-      title: o.title, subtitle: o.target_keyword,
-      x: (((hx % 1000) / 1000) - 0.5) * W * 1.4 + W / 2,
-      y: (((hy % 1000) / 1000) - 0.5) * H * 1.4 + H / 2,
-      vx: 0, vy: 0, size: ORPHAN_DOT, mass: 1,
-    })
-  })
-
-  // Index for O(1) lookup
+  // Index for O(1) lookup (pillar + cluster only — orphans are placed after simulation)
   const fmap = new Map(fnodes.map(n => [n.id, n]))
 
   // Edges (spring pairs): pillar ↔ cluster
@@ -238,6 +224,29 @@ function computeLayout(
       n.y += n.vy
     }
   }
+
+  // Place orphans below the settled pillar+cluster bounding box
+  const maxY = fnodes.reduce((m, n) => Math.max(m, n.y), H / 2)
+  const minX = fnodes.reduce((m, n) => Math.min(m, n.x), W / 2)
+  const maxX = fnodes.reduce((m, n) => Math.max(m, n.x), W / 2)
+  const orphanSpacing = ORPHAN_DOT + 24
+  const orphanCols = Math.max(1, Math.floor((maxX - minX + orphanSpacing) / orphanSpacing))
+  orphans.forEach((o, i) => {
+    const col = i % orphanCols
+    const row = Math.floor(i / orphanCols)
+    const totalW = (Math.min(orphans.length, orphanCols) - 1) * orphanSpacing
+    const startX = (minX + maxX) / 2 - totalW / 2
+    const hx = hashId(o.id)
+    const hy = hashId(o.id + 'y')
+    fnodes.push({
+      id: o.id, kind: 'orphan', pillarId: '', colorIdx: 0,
+      status: (o.status === 'draft_ready' ? 'draft' : 'empty') as VisualStatus,
+      title: o.title, subtitle: o.target_keyword,
+      x: startX + col * orphanSpacing + ((hx % 20) - 10),
+      y: maxY + 80 + row * orphanSpacing + ((hy % 20) - 10),
+      vx: 0, vy: 0, size: ORPHAN_DOT, mass: 1,
+    })
+  })
 
   // Build output
   const nodes: LaidOutNode[] = fnodes.map(n => ({
