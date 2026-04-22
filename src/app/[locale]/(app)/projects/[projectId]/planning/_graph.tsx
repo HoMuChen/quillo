@@ -1,12 +1,15 @@
 'use client'
 
 import {
-  useCallback, useEffect, useMemo, useRef, useState, useTransition,
+  useCallback, useMemo, useRef, useState, useTransition,
 } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/routing'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { SlideOverPanel } from '@/components/ui/slide-over'
 import { Pencil, Trash2, RefreshCw, Plus, X } from 'lucide-react'
 import {
   updatePillar, deletePillar, addArticle,
@@ -81,6 +84,17 @@ function cardSpan(tier: 'hero' | 'secondary' | 'standard') {
   if (tier === 'hero') return 'lg:col-span-2'
   if (tier === 'secondary') return 'lg:col-span-2'
   return ''
+}
+
+function ArticleTooltip({ title, keyword }: { title: string; keyword?: string | null }) {
+  return (
+    <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5 text-center opacity-0 shadow-sh-2 transition-opacity duration-100 group-hover/tip:opacity-100">
+      <div className="text-[11px] leading-[1.4] text-bg">{title}</div>
+      {keyword && (
+        <div className="mt-0.5 font-mono text-[10px] text-ink-4">{keyword}</div>
+      )}
+    </div>
+  )
 }
 
 function statusTone(status: VisualStatus, hex: { main: string; tint: string }) {
@@ -287,13 +301,7 @@ export function PlanningGraph({
                     const isPlanning = articleStatus === 'empty'
                     return (
                       <div key={article.id} className="relative group/tip">
-                        {/* Tooltip */}
-                        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 rounded-md bg-ink px-2.5 py-1.5 text-center shadow-sh-2 opacity-0 transition-opacity duration-100 group-hover/tip:opacity-100 whitespace-nowrap">
-                          <div className="text-[11px] text-bg leading-[1.4]">{article.title}</div>
-                          {article.target_keyword && (
-                            <div className="mt-0.5 font-mono text-[10px] text-ink-4">{article.target_keyword}</div>
-                          )}
-                        </div>
+                        <ArticleTooltip title={article.title} keyword={article.target_keyword} />
                         <button
                           type="button"
                           onClick={() => setSelectedArticleId(article.id === selectedArticleId ? null : article.id)}
@@ -375,12 +383,7 @@ export function PlanningGraph({
                 const selected = selectedArticleId === article.id
                 return (
                   <div key={article.id} className="relative group/tip">
-                    <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 rounded-md bg-ink px-2.5 py-1.5 text-center shadow-sh-2 opacity-0 transition-opacity duration-100 group-hover/tip:opacity-100 whitespace-nowrap">
-                      <div className="text-[11px] text-bg leading-[1.4]">{article.title}</div>
-                      {article.target_keyword && (
-                        <div className="mt-0.5 font-mono text-[10px] text-ink-4">{article.target_keyword}</div>
-                      )}
-                    </div>
+                    <ArticleTooltip title={article.title} keyword={article.target_keyword} />
                     <button
                       type="button"
                       onClick={() => setSelectedArticleId(article.id === selectedArticleId ? null : article.id)}
@@ -458,20 +461,6 @@ function PillarDetail({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [mode, setMode] = useState<'view' | 'edit' | 'confirm-delete' | 'add-article'>('view')
-
-  useEffect(() => {
-    if (!open) return
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [open])
   const [regenerating, setRegenerating] = useState(false)
   const canRegenerate = articles.every((a) => a.status === 'planned')
 
@@ -489,32 +478,14 @@ function PillarDetail({
   }
 
   return (
-    <>
-      <div
-        aria-hidden
-        onClick={onClose}
-        className={cn(
-          'fixed inset-0 z-40 bg-ink-shade backdrop-blur-[1px] transition-opacity',
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+    <SlideOverPanel open={open} onClose={onClose} width={480} ariaLabel={pillar.title} className="overflow-hidden">
+      <PanelHeader onClose={onClose}>
+        <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4">{t('pillar_label')}</div>
+        <h3 className="font-serif italic text-[24px] text-ink leading-tight truncate">{pillar.title}</h3>
+        {pillar.target_keyword && (
+          <p className="font-mono text-[11px] text-ink-3 mt-1 truncate">{pillar.target_keyword}</p>
         )}
-      />
-      <aside className={cn(
-        'fixed top-0 right-0 bottom-0 z-50 w-[480px] max-w-[92vw] flex flex-col border-l border-rule bg-bg shadow-sh-3 overflow-hidden',
-        'transition-transform duration-300 ease-out',
-        open ? 'translate-x-0' : 'translate-x-full',
-      )}>
-      <header className="flex items-start justify-between gap-2 px-5 py-4 border-b border-rule shrink-0">
-        <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4">{t('pillar_label')}</div>
-          <h3 className="font-serif italic text-[24px] text-ink leading-tight truncate">{pillar.title}</h3>
-          {pillar.target_keyword && (
-            <p className="font-mono text-[11px] text-ink-3 mt-1 truncate">{pillar.target_keyword}</p>
-          )}
-        </div>
-        <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink cursor-pointer shrink-0">
-          <X className="w-4 h-4" />
-        </button>
-      </header>
+      </PanelHeader>
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {mode === 'view' && (
@@ -611,8 +582,18 @@ function PillarDetail({
           onClose={() => { setRegenerating(false); refresh() }}
         />
       )}
-    </aside>
-    </>
+    </SlideOverPanel>
+  )
+}
+
+function PanelHeader({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <header className="flex items-start justify-between gap-2 px-5 py-4 border-b border-rule shrink-0">
+      <div className="min-w-0">{children}</div>
+      <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink cursor-pointer shrink-0">
+        <X className="w-4 h-4" />
+      </button>
+    </header>
   )
 }
 
@@ -654,37 +635,31 @@ function PillarEditInline({
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <FieldInline label={t('form_pillar_title')}>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required className="inp" />
-      </FieldInline>
-      <FieldInline label={t('form_pillar_description')}>
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-          className="inp min-h-[60px]" />
-      </FieldInline>
-      <FieldInline label={t('form_target_keyword')}>
-        <input value={keyword} onChange={(e) => setKeyword(e.target.value)} className="inp" />
-      </FieldInline>
-      <FieldInline label={t('form_search_intent')}>
-        <select value={intent} onChange={(e) => setIntent(e.target.value)} className="inp">
+      <Field label={t('form_pillar_title')}>
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
+      </Field>
+      <Field label={t('form_pillar_description')}>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className={FIELD_TEXTAREA}
+        />
+      </Field>
+      <Field label={t('form_target_keyword')}>
+        <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+      </Field>
+      <Field label={t('form_search_intent')}>
+        <select value={intent} onChange={(e) => setIntent(e.target.value)} className={FIELD_SELECT}>
           <option value="">—</option>
           <option value="informational">informational</option>
           <option value="commercial">commercial</option>
           <option value="transactional">transactional</option>
         </select>
-      </FieldInline>
+      </Field>
 
       {error && <p className="text-[12px] text-rust">{error}</p>}
 
-      <div className="flex gap-2 justify-end">
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={pending}>
-          {t('cancel')}
-        </Button>
-        <Button type="submit" variant="primary" size="sm" disabled={pending}>
-          {pending ? '...' : t('save')}
-        </Button>
-      </div>
-
-      <style>{`.inp{width:100%;padding:6px 10px;border:1px solid var(--color-rule);border-radius:8px;background:var(--color-bg);font-size:13px;color:var(--color-ink);outline:none}`}</style>
+      <InlineFormActions onCancel={onCancel} pending={pending} t={t} />
     </form>
   )
 }
@@ -728,32 +703,27 @@ function ArticleAddInline({
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <FieldInline label={t('form_article_title')}>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required className="inp" autoFocus />
-      </FieldInline>
-      <FieldInline label={t('form_target_keyword')}>
-        <input value={keyword} onChange={(e) => setKeyword(e.target.value)} className="inp" />
-      </FieldInline>
-      <FieldInline label={t('form_role')}>
-        <select value={role} onChange={(e) => setRole(e.target.value as 'hub' | 'supporting' | 'comparison')} className="inp">
+      <Field label={t('form_article_title')}>
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus />
+      </Field>
+      <Field label={t('form_target_keyword')}>
+        <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+      </Field>
+      <Field label={t('form_role')}>
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value as 'hub' | 'supporting' | 'comparison')}
+          className={FIELD_SELECT}
+        >
           <option value="hub">hub</option>
           <option value="supporting">supporting</option>
           <option value="comparison">comparison</option>
         </select>
-      </FieldInline>
+      </Field>
 
       {error && <p className="text-[12px] text-rust">{error}</p>}
 
-      <div className="flex gap-2 justify-end">
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={pending}>
-          {t('cancel')}
-        </Button>
-        <Button type="submit" variant="primary" size="sm" disabled={pending}>
-          {pending ? '...' : t('save')}
-        </Button>
-      </div>
-
-      <style>{`.inp{width:100%;padding:6px 10px;border:1px solid var(--color-rule);border-radius:8px;background:var(--color-bg);font-size:13px;color:var(--color-ink);outline:none}`}</style>
+      <InlineFormActions onCancel={onCancel} pending={pending} t={t} />
     </form>
   )
 }
@@ -781,20 +751,6 @@ function ArticlePanel({
   const [newKeyword, setNewKeyword] = useState(article.target_keyword ?? '')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [open])
 
   const tags = 'tags' in article ? (article as OrphanArticle).tags : []
   const role = 'role' in article ? (article as Article).role : null
@@ -832,35 +788,17 @@ function ArticlePanel({
   }
 
   return (
-    <>
-      <div
-        aria-hidden
-        onClick={onClose}
-        className={cn(
-          'fixed inset-0 z-40 bg-ink-shade backdrop-blur-[1px] transition-opacity',
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
-        )}
-      />
-      <aside className={cn(
-        'fixed top-0 right-0 bottom-0 z-50 w-[480px] max-w-[92vw] flex flex-col border-l border-rule bg-bg shadow-sh-3 overflow-hidden',
-        'transition-transform duration-300 ease-out',
-        open ? 'translate-x-0' : 'translate-x-full',
-      )}>
-      <header className="flex items-start justify-between gap-2 px-5 py-4 border-b border-rule shrink-0">
-        <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4 flex items-center gap-2">
-            {isOrphan ? 'Ghost' : 'Cluster'}
-            {role && <span className="px-1.5 py-0.5 rounded border border-rule bg-bg-2">{role}</span>}
-          </div>
-          <h3 className="font-serif italic text-[20px] text-ink leading-tight">{article.title}</h3>
-          {article.target_keyword && (
-            <p className="font-mono text-[11px] text-ink-3 mt-0.5 truncate">{article.target_keyword}</p>
-          )}
+    <SlideOverPanel open={open} onClose={onClose} width={480} ariaLabel={article.title} className="overflow-hidden">
+      <PanelHeader onClose={onClose}>
+        <div className="text-[10px] uppercase tracking-[0.14em] text-ink-4 flex items-center gap-2">
+          {isOrphan ? 'Ghost' : 'Cluster'}
+          {role && <span className="px-1.5 py-0.5 rounded border border-rule bg-bg-2">{role}</span>}
         </div>
-        <button type="button" onClick={onClose} className="p-1 text-ink-3 hover:text-ink cursor-pointer shrink-0">
-          <X className="w-4 h-4" />
-        </button>
-      </header>
+        <h3 className="font-serif italic text-[20px] text-ink leading-tight">{article.title}</h3>
+        {article.target_keyword && (
+          <p className="font-mono text-[11px] text-ink-3 mt-0.5 truncate">{article.target_keyword}</p>
+        )}
+      </PanelHeader>
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {tags.length > 0 && (
@@ -901,8 +839,11 @@ function ArticlePanel({
                     <p className="text-[12px] text-ink-4">{t('orphan_no_pillars')}</p>
                   ) : (
                     <>
-                      <select value={assignPillarId} onChange={(e) => setAssignPillarId(e.target.value)}
-                        className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3">
+                      <select
+                        value={assignPillarId}
+                        onChange={(e) => setAssignPillarId(e.target.value)}
+                        className={FIELD_SELECT}
+                      >
                         {pillars.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
                       </select>
                       <Button variant="primary" disabled={!assignPillarId || pending} onClick={assign} className="w-full">
@@ -915,12 +856,17 @@ function ArticlePanel({
 
               {mode === 'new-pillar' && (
                 <form onSubmit={createAndAssign} className="space-y-2">
-                  <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required
+                  <Input
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    required
                     placeholder={t('orphan_pillar_title')}
-                    className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3" />
-                  <input value={newKeyword} onChange={(e) => setNewKeyword(e.target.value)}
+                  />
+                  <Input
+                    value={newKeyword}
+                    onChange={(e) => setNewKeyword(e.target.value)}
                     placeholder={t('orphan_pillar_keyword')}
-                    className="w-full rounded-lg border border-rule bg-bg px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3" />
+                  />
                   <Button type="submit" variant="primary" disabled={!newTitle.trim() || pending} className="w-full">
                     {pending ? '…' : t('orphan_assign_confirm')}
                   </Button>
@@ -932,16 +878,37 @@ function ArticlePanel({
 
         {error && <p className="text-[12px] text-rust">{error}</p>}
       </div>
-    </aside>
-    </>
+    </SlideOverPanel>
   )
 }
 
-function FieldInline({ label, children }: { label: string; children: React.ReactNode }) {
+const FIELD_SELECT = 'w-full rounded-lg border border-rule bg-white px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3'
+const FIELD_TEXTAREA = 'w-full rounded-lg border border-rule bg-white px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-ink-3 min-h-[60px]'
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <div className="text-[10px] uppercase tracking-[0.12em] text-ink-4 font-medium">{label}</div>
+      <Label className="normal-case tracking-[0.12em] text-[10px]">{label}</Label>
       {children}
+    </div>
+  )
+}
+
+function InlineFormActions({
+  onCancel, pending, t,
+}: {
+  onCancel: () => void
+  pending: boolean
+  t: (key: string) => string
+}) {
+  return (
+    <div className="flex gap-2 justify-end">
+      <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={pending}>
+        {t('cancel')}
+      </Button>
+      <Button type="submit" variant="primary" size="sm" disabled={pending}>
+        {pending ? '...' : t('save')}
+      </Button>
     </div>
   )
 }

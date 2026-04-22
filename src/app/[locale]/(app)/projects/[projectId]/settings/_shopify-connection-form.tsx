@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { Check, X, Trash2, RefreshCw } from 'lucide-react'
+import { Trash2, RefreshCw } from 'lucide-react'
 import {
   saveShopifyConnectionAction,
   testShopifyConnectionAction,
@@ -15,6 +15,7 @@ import {
   fetchShopifyBlogsAction,
 } from './settings-actions'
 import { syncShopifyArticlesAction } from '../planning/planning-actions'
+import { LastTestBadge, StatusLines } from './_connection-ui'
 
 type Blog = { id: number; title: string }
 
@@ -164,22 +165,14 @@ export function ShopifyConnectionForm({
               </Button>
             </div>
           </div>
-          {syncMessage && (
-            <p className={cn('text-[12px]', syncMessage.ok ? 'text-sage-ink' : 'text-rust')}>
-              {syncMessage.ok
-                ? <><Check className="inline w-3 h-3 mr-1" />{syncMessage.text}</>
-                : <><X className="inline w-3 h-3 mr-1" />{syncMessage.text}</>}
-            </p>
-          )}
-          {testResult && (
-            <p className={cn('text-[12px]', testResult.ok ? 'text-sage' : 'text-rust')}>
-              {testResult.ok
-                ? <><Check className="inline w-3 h-3 mr-1" />{t('test_success')}</>
-                : <><X className="inline w-3 h-3 mr-1" />{testResult.error ?? t('test_failed')}</>}
-            </p>
-          )}
-          {message && <p className="text-[12px] text-sage">{message}</p>}
-          {error && <p className="text-[12px] text-rust">{error}</p>}
+          <StatusLines
+            testResult={testResult}
+            syncMessage={syncMessage}
+            message={message}
+            error={error}
+            testSuccessLabel={t('test_success')}
+            testFailedLabel={t('test_failed')}
+          />
         </div>
       ) : (
         <form onSubmit={save} className="rounded-xl bg-white p-5 shadow-sh-1 space-y-4">
@@ -257,11 +250,4 @@ export function ShopifyConnectionForm({
       )}
     </section>
   )
-}
-
-function LastTestBadge({ ok }: { ok: boolean | null }) {
-  if (ok === null) return <span className="text-ink-4">—</span>
-  return ok
-    ? <span className="text-sage inline-flex items-center gap-1"><Check className="w-3 h-3" /> ok</span>
-    : <span className="text-rust inline-flex items-center gap-1"><X className="w-3 h-3" /> failed</span>
 }

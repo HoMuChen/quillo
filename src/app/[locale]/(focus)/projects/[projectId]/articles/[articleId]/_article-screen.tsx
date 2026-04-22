@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import type { ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
+import { SlideOverPanel } from '@/components/ui/slide-over'
 import { cn } from '@/lib/utils'
 import { ChevronLeft, Settings2, X } from 'lucide-react'
 
@@ -364,113 +365,75 @@ function SettingsDrawer({
   const t = useTranslations('articles')
   const tp = useTranslations('publish')
 
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  // Lock body scroll while open
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [open])
-
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        aria-hidden
-        onClick={onClose}
-        className={cn(
-          'fixed inset-0 z-40 bg-ink-shade backdrop-blur-[1px] transition-opacity',
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
-        )}
-      />
+    <SlideOverPanel open={open} onClose={onClose} ariaLabel={t('open_settings')}>
+      <header className="flex items-center justify-between gap-3 px-5 h-14 border-b border-rule shrink-0">
+        <h2 className="font-sans font-semibold text-[16px] text-ink tracking-tight">{t('open_settings')}</h2>
+        <Button variant="ghost" size="icon" onClick={onClose} title={t('close')}>
+          <X className="w-4 h-4" />
+        </Button>
+      </header>
 
-      {/* Panel */}
-      <aside
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('open_settings')}
-        className={cn(
-          'fixed top-0 right-0 bottom-0 z-50 w-[520px] max-w-[92vw] bg-bg border-l border-rule shadow-sh-3 flex flex-col',
-          'transition-transform duration-300 ease-out',
-          open ? 'translate-x-0' : 'translate-x-full',
-        )}
-      >
-        <header className="flex items-center justify-between gap-3 px-5 h-14 border-b border-rule shrink-0">
-          <h2 className="font-sans font-semibold text-[16px] text-ink tracking-tight">{t('open_settings')}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose} title={t('close')}>
-            <X className="w-4 h-4" />
-          </Button>
-        </header>
+      <div className="flex-1 overflow-auto">
+        <section className="p-5">
+          {children}
+        </section>
 
-        <div className="flex-1 overflow-auto">
-          <section className="p-5">
-            {children}
-          </section>
+        {connections.map(({ connection, target, logs }) => (
+          <section key={connection.id} className="p-5 border-t border-rule space-y-3">
+            <h3 className="font-sans font-semibold text-[13px] text-ink">{tp('tab_title')}</h3>
 
-          {connections.map(({ connection, target, logs }) => (
-            <section key={connection.id} className="p-5 border-t border-rule space-y-3">
-              <h3 className="font-sans font-semibold text-[13px] text-ink">{tp('tab_title')}</h3>
-
-              <div className="rounded-lg border border-rule bg-bg-2/50 p-3 text-[12px] space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-ink-4 uppercase tracking-[0.12em] text-[10px]">
-                    {connection.platform.charAt(0).toUpperCase() + connection.platform.slice(1)}
-                  </span>
-                  <Link
-                    href={`/projects/${projectId}/settings`}
-                    locale={locale as 'zh-TW' | 'en'}
-                    className="text-[11px] text-ink-3 underline underline-offset-2 hover:text-ink"
-                  >
-                    {tp('manage_connection')}
-                  </Link>
-                </div>
-                <div className="text-ink font-medium">{connection.name}</div>
+            <div className="rounded-lg border border-rule bg-bg-2/50 p-3 text-[12px] space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-ink-4 uppercase tracking-[0.12em] text-[10px]">
+                  {connection.platform.charAt(0).toUpperCase() + connection.platform.slice(1)}
+                </span>
+                <Link
+                  href={`/projects/${projectId}/settings`}
+                  locale={locale as 'zh-TW' | 'en'}
+                  className="text-[11px] text-ink-3 underline underline-offset-2 hover:text-ink"
+                >
+                  {tp('manage_connection')}
+                </Link>
               </div>
+              <div className="text-ink font-medium">{connection.name}</div>
+            </div>
 
-              {target?.published_at && (
-                <div className="font-mono text-[11px] text-ink-3">
-                  {tp('published_at')}: {new Date(target.published_at).toISOString().slice(0, 16).replace('T', ' ')}
-                </div>
-              )}
+            {target?.published_at && (
+              <div className="font-mono text-[11px] text-ink-3">
+                {tp('published_at')}: {new Date(target.published_at).toISOString().slice(0, 16).replace('T', ' ')}
+              </div>
+            )}
 
-              {logs.length > 0 && (
-                <ul className="rounded-lg border border-rule bg-bg divide-y divide-rule/60 max-h-64 overflow-auto">
-                  {logs.map((log) => (
-                    <li key={log.id} className="flex items-start justify-between gap-3 px-3 py-2 text-[12px]">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className={cn(
-                            'w-1.5 h-1.5 rounded-full shrink-0',
-                            log.status === 'success' ? 'bg-sage' : 'bg-rust',
-                          )}
-                          aria-hidden
-                        />
-                        <span className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.1em]">{log.action}</span>
-                        {log.error_message && (
-                          <span className="text-[11px] text-rust truncate" title={log.error_message}>
-                            {log.error_message}
-                          </span>
+            {logs.length > 0 && (
+              <ul className="rounded-lg border border-rule bg-bg divide-y divide-rule/60 max-h-64 overflow-auto">
+                {logs.map((log) => (
+                  <li key={log.id} className="flex items-start justify-between gap-3 px-3 py-2 text-[12px]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={cn(
+                          'w-1.5 h-1.5 rounded-full shrink-0',
+                          log.status === 'success' ? 'bg-sage' : 'bg-rust',
                         )}
-                      </div>
-                      <span className="font-mono text-[10px] text-ink-4 shrink-0">
-                        {new Date(log.created_at).toISOString().slice(5, 16).replace('T', ' ')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          ))}
-        </div>
-      </aside>
-    </>
+                        aria-hidden
+                      />
+                      <span className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.1em]">{log.action}</span>
+                      {log.error_message && (
+                        <span className="text-[11px] text-rust truncate" title={log.error_message}>
+                          {log.error_message}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-mono text-[10px] text-ink-4 shrink-0">
+                      {new Date(log.created_at).toISOString().slice(5, 16).replace('T', ' ')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
+      </div>
+    </SlideOverPanel>
   )
 }
