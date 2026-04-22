@@ -90,6 +90,11 @@ type LaidOutEdge = {
   clusterStatus: VisualStatus
 }
 
+// Dot sizes — Obsidian-style small nodes
+const PILLAR_DOT = 18
+const CLUSTER_DOT = 8
+const ORPHAN_DOT = 7
+
 function computeLayout(
   pillars: Pillar[],
   articlesByPillar: Map<string, Article[]>,
@@ -100,247 +105,160 @@ function computeLayout(
 ): { nodes: LaidOutNode[]; edges: LaidOutEdge[] } {
   if ((pillars.length === 0 && orphans.length === 0) || W === 0 || H === 0) return { nodes: [], edges: [] }
 
-  const S = Math.min(W, H)
-  const scale = Math.max(0.6, Math.min(1, S / 700))
-  const pillarSize = 96 * scale
-  const clusterSize = 46 * scale
-  const baseR = Math.max(pillarSize / 2 + clusterSize / 2 + 36, 130 * scale)
-
-  type Placed = {
-    id: string
-    x: number
-    y: number
-    r: number
-    size: number
-    kind: 'pillar' | 'cluster' | 'orphan'
-    pillarId: string
-    pinned: boolean
-    parentX?: number
-    parentY?: number
-    baseR?: number
+  // --- Build node list ---
+  type FNode = {
+    id: string; kind: 'pillar' | 'cluster' | 'orphan'
+    pillarId: string; colorIdx: number; status: VisualStatus
+    isHub?: boolean; title: string; subtitle?: string | null
+    parentId?: string
+    x: number; y: number; vx: number; vy: number
+    size: number; mass: number
   }
-  const placed: Placed[] = []
 
-  // ---- Grid layout for pillars ----
-  // Pillars fill the canvas in a grid so they don't crowd around a central ring.
-  const n = pillars.length
-  const cols = n === 0 ? 1 : Math.max(1, Math.ceil(Math.sqrt(n * (W / H))))
-  const rows = Math.ceil(Math.max(n, 1) / cols)
-  const padX = W * 0.12
-  const padY = H * 0.12
-  // Each cell must be large enough for the pillar + its cluster orbit.
-  // If there are many pillars, cells expand beyond the viewport — that's fine
-  // because the canvas is pannable/zoomable.
-  const minCellW = Math.max(360, baseR * 2.4)
-  const minCellH = Math.max(300, baseR * 2.0)
-  const cellW = Math.max((W - 2 * padX) / cols, minCellW)
-  const cellH = Math.max((H - 2 * padY) / rows, minCellH)
-
-  const pillarInfo = pillars.map((pillar, i) => {
-    const colorIdx = COLOR_IDX[i % COLOR_IDX.length]
-    const col = i % cols
-    const row = Math.floor(i / cols)
-    const x = padX + cellW * (col + 0.5)
-    const y = padY + cellH * (row + 0.5)
-    return { pillar, x, y, colorIdx }
-  })
-
-  const nodes: LaidOutNode[] = []
+  const colorMap = new Map<string, number>()
   const pillarStatusMap = new Map<string, VisualStatus>()
+  const fnodes: FNode[] = []
 
-  // Place pillars (pinned at grid positions)
-  for (const info of pillarInfo) {
-    const articles = articlesByPillar.get(info.pillar.id) ?? []
+  // Pillars
+  pillars.forEach((pillar, i) => {
+    const colorIdx = COLOR_IDX[i % COLOR_IDX.length]
+    colorMap.set(pillar.id, colorIdx)
+    const articles = articlesByPillar.get(pillar.id) ?? []
     const childStatuses = articles.map((a) => articleVisualStatus(a, targetsByArticle.get(a.id)))
     const pStatus = pillarVisualStatus(childStatuses)
-    pillarStatusMap.set(info.pillar.id, pStatus)
-
-    nodes.push({
-      id: info.pillar.id,
-      kind: 'pillar',
-      x: info.x,
-      y: info.y,
-      size: pillarSize,
-      pillarId: info.pillar.id,
-      colorIdx: info.colorIdx,
-      status: pStatus,
-      title: info.pillar.title,
-      subtitle: info.pillar.target_keyword,
-    })
-    placed.push({
-      id: info.pillar.id,
-      x: info.x,
-      y: info.y,
-      r: pillarSize / 2 + 12,
-      size: pillarSize,
-      kind: 'pillar',
-      pillarId: info.pillar.id,
-      pinned: true,
-    })
-  }
-
-  // Place clusters in a full ring around each pillar.
-  // No wedge constraint — collision relaxation + territorial pull handle separation.
-
-  for (const info of pillarInfo) {
-    const articles = articlesByPillar.get(info.pillar.id) ?? []
-    if (articles.length === 0) continue
-
-    articles.forEach((article, idx) => {
-      const N = articles.length
-      const ang = -Math.PI / 2 + (idx / N) * Math.PI * 2
-      const x = info.x + Math.cos(ang) * baseR
-      const y = info.y + Math.sin(ang) * baseR
-
-      const status = articleVisualStatus(article, targetsByArticle.get(article.id))
-      nodes.push({
-        id: article.id,
-        kind: 'cluster',
-        x, y,
-        size: clusterSize,
-        pillarId: info.pillar.id,
-        colorIdx: info.colorIdx,
-        status,
-        isHub: article.role === 'hub',
-        title: article.title,
-        subtitle: article.target_keyword,
-        parentId: info.pillar.id,
-      })
-      placed.push({
-        id: article.id,
-        x, y,
-        r: clusterSize / 2 + 22,
-        size: clusterSize,
-        kind: 'cluster',
-        pillarId: info.pillar.id,
-        pinned: false,
-        parentX: info.x,
-        parentY: info.y,
-        baseR,
-      })
-    })
-  }
-
-  // ---- Place orphan nodes in a grid below the pillar area ----
-  // They start after the pillar grid ends, so they don't overlap pillars
-  // and don't form a ring.
-  const orphanStartY = padY + rows * cellH + 80
-  const orphanSpacing = clusterSize + 70
-  const orphanCols = Math.max(1, Math.floor((cols * cellW) / orphanSpacing))
-  orphans.forEach((o, i) => {
-    const oc = i % orphanCols
-    const or = Math.floor(i / orphanCols)
-    const baseX = padX + oc * orphanSpacing + clusterSize / 2
-    const baseY = orphanStartY + or * orphanSpacing
-    const hx = hashId(o.id)
-    const hy = hashId(o.id + 'y')
-    const x = baseX + ((hx % 60) - 30) * 0.4
-    const y = baseY + ((hy % 60) - 30) * 0.4
-    nodes.push({
-      id: o.id,
-      kind: 'orphan',
-      x, y,
-      size: clusterSize,
-      pillarId: '',
-      colorIdx: 0,
-      status: (o.status === 'draft_ready' ? 'draft' : 'empty') as VisualStatus,
-      title: o.title,
-      subtitle: o.target_keyword,
-    })
-    placed.push({
-      id: o.id,
-      x, y,
-      r: clusterSize / 2 + 26,
-      size: clusterSize,
-      kind: 'orphan',
-      pillarId: '',
-      pinned: false,
+    pillarStatusMap.set(pillar.id, pStatus)
+    const ang = -Math.PI / 2 + (i / Math.max(pillars.length, 1)) * Math.PI * 2
+    fnodes.push({
+      id: pillar.id, kind: 'pillar', pillarId: pillar.id, colorIdx, status: pStatus,
+      title: pillar.title, subtitle: pillar.target_keyword,
+      x: W / 2 + Math.cos(ang) * Math.min(W, H) * 0.25,
+      y: H / 2 + Math.sin(ang) * Math.min(W, H) * 0.25,
+      vx: 0, vy: 0, size: PILLAR_DOT, mass: 4,
     })
   })
 
-  // ---- Collision relaxation + parent tether + territorial pull ----
-  const pillarCentroids = new Map<string, { x: number; y: number }>()
-  for (const info of pillarInfo) pillarCentroids.set(info.pillar.id, { x: info.x, y: info.y })
+  // Clusters
+  pillars.forEach((pillar) => {
+    const colorIdx = colorMap.get(pillar.id) ?? 0
+    const articles = articlesByPillar.get(pillar.id) ?? []
+    articles.forEach((article, idx) => {
+      const status = articleVisualStatus(article, targetsByArticle.get(article.id))
+      const ang = -Math.PI / 2 + (idx / Math.max(articles.length, 1)) * Math.PI * 2
+      const r0 = PILLAR_DOT * 3
+      const px = fnodes.find(n => n.id === pillar.id)
+      fnodes.push({
+        id: article.id, kind: 'cluster', pillarId: pillar.id, colorIdx, status,
+        isHub: article.role === 'hub', title: article.title, subtitle: article.target_keyword,
+        parentId: pillar.id,
+        x: (px?.x ?? W/2) + Math.cos(ang) * r0,
+        y: (px?.y ?? H/2) + Math.sin(ang) * r0,
+        vx: 0, vy: 0, size: article.role === 'hub' ? CLUSTER_DOT + 3 : CLUSTER_DOT, mass: 1,
+      })
+    })
+  })
 
-  const ITER = 80
-  for (let it = 0; it < ITER; it++) {
-    for (let i = 0; i < placed.length; i++) {
-      const a = placed[i]
-      if (a.pinned) continue
-      let fx = 0
-      let fy = 0
+  // Orphans — scatter to the sides
+  orphans.forEach((o, i) => {
+    const hx = hashId(o.id)
+    const hy = hashId(o.id + 'y')
+    fnodes.push({
+      id: o.id, kind: 'orphan', pillarId: '', colorIdx: 0,
+      status: (o.status === 'draft_ready' ? 'draft' : 'empty') as VisualStatus,
+      title: o.title, subtitle: o.target_keyword,
+      x: (((hx % 1000) / 1000) - 0.5) * W * 1.4 + W / 2,
+      y: (((hy % 1000) / 1000) - 0.5) * H * 1.4 + H / 2,
+      vx: 0, vy: 0, size: ORPHAN_DOT, mass: 1,
+    })
+  })
 
-      // Node-node repulsion
-      for (let j = 0; j < placed.length; j++) {
-        if (i === j) continue
-        const b = placed[j]
-        const dx = a.x - b.x
-        const dy = a.y - b.y
-        const d = Math.hypot(dx, dy) || 0.01
-        const minD = a.r + b.r + 2
-        if (d < minD) {
-          const push = (minD - d) * 0.55
-          fx += (dx / d) * push
-          fy += (dy / d) * push
-        }
-      }
+  // Index for O(1) lookup
+  const fmap = new Map(fnodes.map(n => [n.id, n]))
 
-      // Tether to own parent
-      if (a.parentX != null && a.parentY != null && a.baseR) {
-        const tx = a.x - a.parentX
-        const ty = a.y - a.parentY
-        const td = Math.hypot(tx, ty) || 0.01
-        const diff = td - a.baseR
-        const k = 0.1
-        fx -= (tx / td) * diff * k
-        fy -= (ty / td) * diff * k
-      }
-
-      // Territorial pull — if another pillar is closer than own, push back toward own
-      const own = pillarCentroids.get(a.pillarId)
-      if (own) {
-        let nearest = own
-        let nearestD = Math.hypot(a.x - own.x, a.y - own.y)
-        for (const [pid, p] of pillarCentroids) {
-          if (pid === a.pillarId) continue
-          const d = Math.hypot(a.x - p.x, a.y - p.y)
-          if (d < nearestD) { nearestD = d; nearest = p }
-        }
-        if (nearest !== own) {
-          const tx = a.x - own.x
-          const ty = a.y - own.y
-          const td = Math.hypot(tx, ty) || 0.01
-          const k = 0.03
-          fx += (tx / td) * td * k * -0 + (own.x - a.x) * k
-          fy += (own.y - a.y) * k
-        }
-      }
-
-      a.x += fx
-      a.y += fy
+  // Edges (spring pairs): pillar ↔ cluster
+  const springPairs: Array<[string, string, number]> = [] // [fromId, toId, restLength]
+  for (const n of fnodes) {
+    if (n.kind === 'cluster' && n.parentId) {
+      springPairs.push([n.parentId, n.id, PILLAR_DOT * 5])
     }
   }
 
-  // Reflect relaxed positions back into nodes
-  const byId = new Map(placed.map((p) => [p.id, p]))
-  for (const n of nodes) {
-    const p = byId.get(n.id)
-    if (p) { n.x = p.x; n.y = p.y }
+  // --- Force simulation ---
+  const REPULSION = 1200
+  const SPRING_K = 0.055
+  const CENTER_K = 0.004
+  const DAMPING = 0.82
+  const ITERS = 280
+
+  for (let it = 0; it < ITERS; it++) {
+    const alpha = Math.max(0.05, 1 - it / (ITERS * 0.85))
+
+    // Repulsion between all pairs
+    for (let i = 0; i < fnodes.length; i++) {
+      const a = fnodes[i]
+      for (let j = i + 1; j < fnodes.length; j++) {
+        const b = fnodes[j]
+        const dx = a.x - b.x
+        const dy = a.y - b.y
+        const d2 = dx * dx + dy * dy + 0.1
+        const d = Math.sqrt(d2)
+        const f = (REPULSION * alpha * a.mass * b.mass) / d2
+        const fx = (dx / d) * f
+        const fy = (dy / d) * f
+        a.vx += fx / a.mass
+        a.vy += fy / a.mass
+        b.vx -= fx / b.mass
+        b.vy -= fy / b.mass
+      }
+    }
+
+    // Spring attraction
+    for (const [fromId, toId, rest] of springPairs) {
+      const a = fmap.get(fromId)
+      const b = fmap.get(toId)
+      if (!a || !b) continue
+      const dx = b.x - a.x
+      const dy = b.y - a.y
+      const d = Math.hypot(dx, dy) || 0.01
+      const f = SPRING_K * (d - rest)
+      const fx = (dx / d) * f
+      const fy = (dy / d) * f
+      a.vx += fx / a.mass
+      a.vy += fy / a.mass
+      b.vx -= fx / b.mass
+      b.vy -= fy / b.mass
+    }
+
+    // Centering
+    for (const n of fnodes) {
+      n.vx += (W / 2 - n.x) * CENTER_K * alpha
+      n.vy += (H / 2 - n.y) * CENTER_K * alpha
+      n.vx *= DAMPING
+      n.vy *= DAMPING
+      n.x += n.vx
+      n.y += n.vy
+    }
   }
 
-  // Build edges: pillar → each cluster under it
+  // Build output
+  const nodes: LaidOutNode[] = fnodes.map(n => ({
+    id: n.id, kind: n.kind, x: n.x, y: n.y, size: n.size,
+    pillarId: n.pillarId, colorIdx: n.colorIdx, status: n.status,
+    isHub: n.isHub, title: n.title, subtitle: n.subtitle, parentId: n.parentId,
+  }))
+
   const edges: LaidOutEdge[] = []
-  for (const n of nodes) {
-    if (n.kind !== 'cluster' || !n.parentId) continue
-    const parent = nodes.find((x) => x.id === n.parentId)
-    if (!parent) continue
+  for (const [fromId, toId] of springPairs) {
+    const a = fmap.get(fromId)
+    const b = fmap.get(toId)
+    if (!a || !b) continue
+    const colorIdx = b.colorIdx as 0 | 1 | 2
     edges.push({
-      from: { x: parent.x, y: parent.y },
-      to: { x: n.x, y: n.y },
-      pillarId: n.pillarId,
-      colorIdx: n.colorIdx,
-      pillarStatus: parent.status,
-      clusterStatus: n.status,
+      from: { x: a.x, y: a.y },
+      to: { x: b.x, y: b.y },
+      pillarId: b.pillarId,
+      colorIdx,
+      pillarStatus: pillarStatusMap.get(b.pillarId) ?? 'empty',
+      clusterStatus: b.status,
     })
   }
 
@@ -367,6 +285,13 @@ const COLOR_HEX = {
   0: { main: '#2b3f36', tint: '#e6ede6' },
   1: { main: '#2d4a66', tint: '#e4eaf0' },
   2: { main: '#6e3a2f', tint: '#efe2dc' },
+} as const
+
+// Dark-canvas palette for Obsidian-style rendering
+const DARK_HEX = {
+  0: { bright: '#5db88a', mid: '#3d7a5e', dim: '#2a5040' },
+  1: { bright: '#5a9fd4', mid: '#3d6fa0', dim: '#2a4d70' },
+  2: { bright: '#d4784e', mid: '#a05838', dim: '#703a28' },
 } as const
 
 export function PlanningGraph({
@@ -526,8 +451,8 @@ export function PlanningGraph({
     <div className="space-y-3">
       <div
         ref={canvasRef}
-        className="relative w-full overflow-hidden"
-        style={{ height: 'calc(100vh - 130px)', cursor: dragPos ? 'grabbing' : isPanning ? 'grabbing' : 'grab' }}
+        className="relative w-full overflow-hidden rounded-xl"
+        style={{ height: 'calc(100vh - 130px)', cursor: dragPos ? 'grabbing' : isPanning ? 'grabbing' : 'grab', background: '#111110' }}
         onWheel={onWheel}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
@@ -567,11 +492,10 @@ export function PlanningGraph({
                 key={i}
                 d={curvePath(e.from.x, e.from.y, e.to.x, e.to.y)}
                 fill="none"
-                stroke={COLOR_HEX[e.colorIdx as 0 | 1 | 2].main}
-                strokeWidth={active ? 1.75 : 1.25}
+                stroke={DARK_HEX[e.colorIdx as 0 | 1 | 2].mid}
+                strokeWidth={active ? 1.2 : 0.6}
                 strokeLinecap="round"
-                strokeDasharray={dashed ? '3 5' : undefined}
-                opacity={!hoveredPillarId ? 0 : dim ? 0 : dashed ? 0.4 : active ? 0.8 : 0.55}
+                opacity={dim ? 0.04 : active ? 0.7 : 0.2}
                 style={{ transition: 'opacity 150ms ease, stroke-width 150ms ease' }}
               />
             )
@@ -580,13 +504,14 @@ export function PlanningGraph({
 
         {/* Nodes */}
         {nodes.map((n) => {
-          const hex = COLOR_HEX[n.colorIdx as 0 | 1 | 2]
-          const isInGroup = hoveredPillarId && hoveredPillarId === n.pillarId
-          const isDimmed = hoveredPillarId && hoveredPillarId !== n.pillarId
+          const dkHex = DARK_HEX[n.colorIdx as 0 | 1 | 2]
+          const isHoveredGroup = hoveredPillarId === n.pillarId
           const isSelected = selectedPillarId === n.id
 
           if (n.kind === 'pillar') {
             const isDragTarget = dragTargetPillarId === n.id
+            const isActive = isHoveredGroup || isSelected
+            const pillarOpacity = hoveredPillarId ? (isActive ? 1 : 0.25) : 1
             return (
               <button
                 key={n.id}
@@ -594,57 +519,34 @@ export function PlanningGraph({
                 onMouseEnter={() => setHoveredPillarId(n.id)}
                 onMouseLeave={() => setHoveredPillarId(null)}
                 onClick={() => setSelectedPillarId(n.id === selectedPillarId ? null : n.id)}
-                className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
+                className="absolute select-none cursor-pointer group"
                 style={{
-                  left: n.x,
-                  top: n.y,
+                  left: n.x, top: n.y,
                   transform: 'translate(-50%, -50%)',
-                  opacity: isDimmed ? 0.22 : 1,
-                  filter: isDimmed ? 'saturate(0.55)' : undefined,
-                  transition: 'opacity 150ms ease, filter 150ms ease',
-                  zIndex: isInGroup || isSelected ? 3 : 1,
+                  opacity: pillarOpacity,
+                  transition: 'opacity 200ms ease',
+                  zIndex: isActive ? 4 : 2,
                 }}
               >
-                <span
-                  className={cn(
-                    'relative flex items-center justify-center rounded-full transition-transform duration-150 group-hover:scale-105',
-                  )}
-                  style={{
-                    width: n.size,
-                    height: n.size,
-                    background: n.status === 'empty'
-                      ? 'var(--color-bg)'
-                      : n.status === 'draft'
-                        ? hex.tint
-                        : `radial-gradient(circle at 30% 25%, color-mix(in oklab, ${hex.main} 85%, white), ${hex.main} 75%)`,
-                    color: n.status === 'published' ? 'var(--color-bg)' : hex.main,
-                    border: n.status === 'published'
-                      ? 'none'
-                      : n.status === 'empty'
-                        ? `2px dashed ${hex.main}`
-                        : `2px solid ${hex.main}`,
-                    boxShadow: isDragTarget
-                      ? `0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-ochre), 0 0 16px var(--color-ochre)`
-                      : isSelected
-                        ? `0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)`
-                        : '0 1px 0 rgba(18,34,28,0.05), 0 2px 8px rgba(18,34,28,0.04)',
-                  }}
-                >
-                  {/* Draft hatching overlay */}
-                  {n.status === 'draft' && (
-                    <span
-                      className="absolute inset-0 rounded-full pointer-events-none"
-                      style={{
-                        background: `repeating-linear-gradient(135deg, color-mix(in oklab, ${hex.main} 35%, transparent) 0 2px, transparent 2px 8px)`,
-                      }}
-                    />
-                  )}
-                  <span
-                    className="font-serif italic leading-tight px-2 text-center"
-                    style={{ fontSize: Math.max(12, n.size * 0.15) }}
-                  >
-                    {n.subtitle || n.title}
-                  </span>
+                <span className="rounded-full block group-hover:scale-110 transition-transform duration-150" style={{
+                  width: n.size, height: n.size,
+                  background: dkHex.bright,
+                  boxShadow: isDragTarget
+                    ? `0 0 0 3px rgba(255,200,80,0.6), 0 0 20px rgba(255,200,80,0.4)`
+                    : isSelected
+                      ? `0 0 0 3px rgba(255,255,255,0.2), 0 0 16px ${dkHex.bright}88`
+                      : isActive
+                        ? `0 0 12px ${dkHex.bright}66`
+                        : undefined,
+                }} />
+                <span style={{
+                  position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+                  marginTop: 5, whiteSpace: 'nowrap',
+                  fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.85)',
+                  fontFamily: 'var(--font-sans)',
+                  pointerEvents: 'none',
+                }}>
+                  {n.subtitle || n.title}
                 </span>
               </button>
             )
@@ -660,14 +562,12 @@ export function PlanningGraph({
                   e.stopPropagation()
                   orphanDragRef.current = { orphanId: n.id, startX: e.clientX, startY: e.clientY }
                 }}
-                className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-grab active:cursor-grabbing"
+                className="absolute select-none cursor-grab active:cursor-grabbing group"
                 style={{
-                  left: n.x,
-                  top: n.y,
+                  left: n.x, top: n.y,
                   transform: 'translate(-50%, -50%)',
-                  maxWidth: n.size + 80,
                   zIndex: isArticleSelected ? 3 : 1,
-                  opacity: isArticleSelected ? 1 : 0.65,
+                  opacity: isArticleSelected ? 1 : hoveredPillarId ? 0.15 : 0.55,
                   transition: 'opacity 150ms ease',
                 }}
               >
@@ -676,23 +576,38 @@ export function PlanningGraph({
                   style={{
                     width: n.size,
                     height: n.size,
-                    background: 'var(--color-ink-3)',
+                    background: '#888880',
                     boxShadow: isArticleSelected
-                      ? '0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-ochre)'
-                      : '0 1px 0 rgba(18,34,28,0.06), 0 2px 8px rgba(18,34,28,0.08)',
+                      ? `0 0 0 3px rgba(255,255,255,0.15), 0 0 12px rgba(255,200,100,0.5)`
+                      : undefined,
                   }}
                 />
-                <span className="font-serif italic text-[11px] text-ink-3 leading-tight whitespace-normal" style={{ maxWidth: n.size + 80 }}>
-                  {n.subtitle || n.title.slice(0, 12)}
+                <span style={{
+                  position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+                  marginTop: 4, whiteSpace: 'nowrap',
+                  fontSize: 10, color: 'rgba(255,255,255,0.55)',
+                  fontFamily: 'var(--font-sans)',
+                  opacity: isArticleSelected || (hoveredPillarId && hoveredPillarId === n.pillarId) ? 1 : 0,
+                  transition: 'opacity 150ms',
+                  pointerEvents: 'none',
+                }}>
+                  {n.subtitle || n.title.slice(0, 16)}
                 </span>
               </button>
             )
           }
 
-          // Cluster — hidden by default, revealed on pillar hover
+          // Cluster
           const isClusterSelected = selectedArticleId === n.id
           const isRevealed = !!hoveredPillarId && hoveredPillarId === n.pillarId
-          const clusterOpacity = isClusterSelected ? 1 : isRevealed ? 1 : hoveredPillarId ? 0 : 0.1
+          const dotColor = n.status === 'published'
+            ? DARK_HEX[n.colorIdx as 0|1|2].bright
+            : n.status === 'draft'
+              ? DARK_HEX[n.colorIdx as 0|1|2].mid
+              : DARK_HEX[n.colorIdx as 0|1|2].dim
+          const clusterOpacity = isClusterSelected ? 1 : hoveredPillarId
+            ? (isRevealed ? 1 : 0.06)
+            : 0.65
           return (
             <button
               key={n.id}
@@ -700,59 +615,36 @@ export function PlanningGraph({
               onMouseEnter={() => setHoveredPillarId(n.pillarId)}
               onMouseLeave={() => setHoveredPillarId(null)}
               onClick={() => setSelectedArticleId(n.id === selectedArticleId ? null : n.id)}
-              className="absolute flex flex-col items-center gap-1 text-center select-none group cursor-pointer"
+              className="absolute select-none cursor-pointer group"
               style={{
-                left: n.x,
-                top: n.y,
+                left: n.x, top: n.y,
                 transform: 'translate(-50%, -50%)',
                 opacity: clusterOpacity,
-                transition: 'opacity 180ms ease',
+                transition: 'opacity 200ms ease',
                 zIndex: isClusterSelected ? 3 : isRevealed ? 2 : 1,
-                maxWidth: n.size + 80,
-                pointerEvents: isRevealed || isClusterSelected ? 'auto' : 'none',
+                pointerEvents: isRevealed || isClusterSelected || !hoveredPillarId ? 'auto' : 'none',
               }}
             >
-              <span
-                className={cn('relative rounded-full transition-all duration-150 group-hover:scale-105')}
-                style={{
-                  width: n.size,
-                  height: n.size,
-                  background: n.status === 'published'
-                    ? hex.main
-                    : n.status === 'draft'
-                      ? hex.tint
-                      : 'var(--color-bg)',
-                  border: n.status === 'empty'
-                    ? `1.5px dashed color-mix(in oklab, ${hex.main} 55%, var(--color-ink-4))`
-                    : `1.5px solid ${hex.main}`,
-                  color: n.status === 'empty'
-                    ? `color-mix(in oklab, ${hex.main} 60%, var(--color-ink-4))`
-                    : hex.main,
-                  boxShadow: n.isHub
-                    ? `0 0 0 3px var(--color-bg), 0 0 0 4px color-mix(in oklab, ${hex.main} 65%, var(--color-ink-4))`
-                    : '0 1px 0 rgba(18,34,28,0.05), 0 2px 8px rgba(18,34,28,0.04)',
-                }}
-              >
-                {n.status === 'draft' && (
-                  <span className="absolute inset-0 rounded-full pointer-events-none" style={{
-                    background: `repeating-linear-gradient(135deg, color-mix(in oklab, ${hex.main} 35%, transparent) 0 1.5px, transparent 1.5px 6px)`,
-                  }} />
-                )}
-                {n.status === 'empty' && (
-                  <span className="absolute inset-0 flex items-center justify-center font-serif text-[22px] leading-none pointer-events-none"
-                    style={{ color: `color-mix(in oklab, ${hex.main} 60%, var(--color-ink-4))` }}>+</span>
-                )}
-              </span>
-              <span
-                className="font-serif italic text-[13px] text-ink leading-tight whitespace-normal"
-                style={{
-                  maxWidth: n.size + 80,
-                  opacity: isRevealed || isClusterSelected ? 1 : 0,
-                  transition: 'opacity 180ms ease',
-                }}
-              >
-                {n.subtitle || n.title.slice(0, 12)}
-              </span>
+              <span className="rounded-full block group-hover:scale-150 transition-transform duration-100" style={{
+                width: n.size, height: n.size,
+                background: dotColor,
+                boxShadow: isClusterSelected
+                  ? `0 0 0 2px rgba(255,255,255,0.2), 0 0 10px ${dotColor}`
+                  : n.isHub
+                    ? `0 0 0 2px ${DARK_HEX[n.colorIdx as 0|1|2].bright}55`
+                    : undefined,
+              }} />
+              {(isRevealed || isClusterSelected) && (
+                <span style={{
+                  position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+                  marginTop: 3, whiteSpace: 'nowrap',
+                  fontSize: 9, color: 'rgba(255,255,255,0.6)',
+                  fontFamily: 'var(--font-sans)',
+                  pointerEvents: 'none',
+                }}>
+                  {n.subtitle || n.title.slice(0, 16)}
+                </span>
+              )}
             </button>
           )
         })}
@@ -774,33 +666,31 @@ export function PlanningGraph({
           />
         )}
 
-        {/* Legend — bottom-left, outside transform */}
-        <div className="absolute left-4 bottom-4 rounded-lg border border-rule bg-bg/90 backdrop-blur-sm shadow-sh-1 p-3 text-[11px] text-ink-3 space-y-1.5 pointer-events-none">
-          <LegendItem dot="published" label="published" />
-          <LegendItem dot="draft" label="draft" />
-          <LegendItem dot="empty" label="planning" />
+        {/* Legend */}
+        <div className="absolute left-4 bottom-4 rounded-lg p-3 text-[10px] space-y-1.5 pointer-events-none" style={{ background: 'rgba(0,0,0,0.45)' }}>
+          {([['#5db88a','published'],['#5db88a66','draft'],['#44444466','planning']] as const).map(([c, l]) => (
+            <div key={l} className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}>{l}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Zoom controls — bottom-right, outside transform */}
-        <div className="absolute right-4 bottom-4 flex items-center gap-1 rounded-lg border border-rule bg-bg/90 backdrop-blur-sm shadow-sh-1 p-1 pointer-events-auto">
-          <button
-            type="button"
-            onMouseDown={(e) => e.stopPropagation()}
+        {/* Zoom controls */}
+        <div className="absolute right-4 bottom-4 flex items-center gap-1 rounded-lg p-1 pointer-events-auto" style={{ background: 'rgba(0,0,0,0.45)' }}>
+          {[['+',' z => Math.min(4, +(z*1.25).toFixed(2))'],['reset','reset'],['-','z => Math.max(0.2, +(z/1.25).toFixed(2))']].map(() => null)}
+          <button type="button" onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); setZoom(z => Math.min(4, +(z * 1.25).toFixed(2))) }}
-            className="w-7 h-7 flex items-center justify-center rounded text-[16px] text-ink-3 hover:bg-mist hover:text-ink transition-colors cursor-pointer"
-          >+</button>
-          <button
-            type="button"
-            onMouseDown={(e) => e.stopPropagation()}
+            className="w-7 h-7 flex items-center justify-center rounded text-[16px] cursor-pointer transition-colors"
+            style={{ color: 'rgba(255,255,255,0.6)' }}>+</button>
+          <button type="button" onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); resetView() }}
-            className="font-mono text-[10px] px-1.5 h-7 flex items-center text-ink-4 hover:bg-mist hover:text-ink transition-colors rounded cursor-pointer"
-          >{Math.round(zoom * 100)}%</button>
-          <button
-            type="button"
-            onMouseDown={(e) => e.stopPropagation()}
+            className="font-mono text-[10px] px-1.5 h-7 flex items-center rounded cursor-pointer"
+            style={{ color: 'rgba(255,255,255,0.45)' }}>{Math.round(zoom * 100)}%</button>
+          <button type="button" onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); setZoom(z => Math.max(0.2, +(z / 1.25).toFixed(2))) }}
-            className="w-7 h-7 flex items-center justify-center rounded text-[16px] text-ink-3 hover:bg-mist hover:text-ink transition-colors cursor-pointer"
-          >−</button>
+            className="w-7 h-7 flex items-center justify-center rounded text-[16px] cursor-pointer"
+            style={{ color: 'rgba(255,255,255,0.6)' }}>−</button>
         </div>
       </div>
 
