@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { decryptJson, fromBytea } from '@/lib/crypto/encrypt'
 import { ConnectionForm } from './_connection-form'
 import { ShopifyConnectionForm } from './_shopify-connection-form'
+import { GscConnectionCard } from './_gsc-connection-card'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
 
@@ -17,7 +18,7 @@ export default async function SettingsPage({ params }: Props) {
     .from('projects').select('id,name').eq('id', projectId).single()
   if (!project) notFound()
 
-  const [{ data: ghostConn }, { data: shopifyConn }] = await Promise.all([
+  const [{ data: ghostConn }, { data: shopifyConn }, { data: gscConn }] = await Promise.all([
     supabase
       .from('site_connections')
       .select('id,name,platform,last_tested_at,last_test_ok,config_encrypted')
@@ -29,6 +30,11 @@ export default async function SettingsPage({ params }: Props) {
       .select('id,name,platform,last_tested_at,last_test_ok,config_encrypted')
       .eq('project_id', projectId)
       .eq('platform', 'shopify')
+      .maybeSingle(),
+    supabase
+      .from('gsc_connections')
+      .select('id,google_user_email,property_url,last_synced_at,last_sync_status,last_sync_error')
+      .eq('project_id', projectId)
       .maybeSingle(),
   ])
 
@@ -82,6 +88,7 @@ export default async function SettingsPage({ params }: Props) {
         projectId={projectId}
         initial={shopifyInitial}
       />
+      <GscConnectionCard projectId={projectId} initial={gscConn ?? null} />
     </div>
   )
 }

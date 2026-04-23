@@ -53,5 +53,18 @@
   "no_connection_title_shopify": "No Shopify connection yet",
   "no_connection_body_shopify": "Set up a Shopify connection in settings to publish this article.",
   "tab_subtitle_shopify": "Publish this article to your Shopify blog",
-  "publish_platform": "Publish to {platform}"
+  "publish_platform": "Publish to {platform}",
+  "gsc_title": "Google Search Console",
+  "gsc_connect": "Connect Google Search Console",
+  "gsc_connected_as": "Connected as {email}",
+  "gsc_property": "Property: {url}",
+  "gsc_last_synced": "Last synced {when}",
+  "gsc_never_synced": "Not synced yet",
+  "gsc_sync_now": "Sync now",
+  "gsc_syncing": "Syncing…",
+  "gsc_sync_done": "Synced {rows} rows",
+  "gsc_disconnect": "Disconnect",
+  "gsc_reconnect_needed": "Google access was revoked. Reconnect to resume syncing.",
+  "gsc_connected_banner": "Connected. First sync started.",
+  "gsc_not_connected_body": "Connect your Google Search Console property to see performance data and enrich planning with real search queries."
 }

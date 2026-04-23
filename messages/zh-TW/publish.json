@@ -53,5 +53,18 @@
   "no_connection_title_shopify": "還沒有 Shopify 連線",
   "no_connection_body_shopify": "請先在設定中建立 Shopify 連線，才能發布文章",
   "tab_subtitle_shopify": "把這篇文章發布到 Shopify Blog",
-  "publish_platform": "發布到 {platform}"
+  "publish_platform": "發布到 {platform}",
+  "gsc_title": "Google Search Console",
+  "gsc_connect": "連接 Google Search Console",
+  "gsc_connected_as": "已連接：{email}",
+  "gsc_property": "資源：{url}",
+  "gsc_last_synced": "上次同步：{when}",
+  "gsc_never_synced": "尚未同步",
+  "gsc_sync_now": "立即同步",
+  "gsc_syncing": "同步中…",
+  "gsc_sync_done": "已同步 {rows} 筆資料",
+  "gsc_disconnect": "中斷連結",
+  "gsc_reconnect_needed": "Google 存取權已撤銷，請重新連結以繼續同步。",
+  "gsc_connected_banner": "已連結，首次同步已啟動。",
+  "gsc_not_connected_body": "連接 Google Search Console，查看成效數據，並以真實搜尋查詢豐富內容規劃。"
 }
