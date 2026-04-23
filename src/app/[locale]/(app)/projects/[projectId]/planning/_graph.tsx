@@ -216,7 +216,7 @@ export function PlanningGraph({
   return (
     <div className="space-y-3">
       <div className="relative">
-        <div className="grid gap-6 lg:grid-cols-4 auto-rows-[minmax(220px,auto)]">
+        <div className="grid gap-6 lg:grid-cols-4 lg:grid-flow-row-dense auto-rows-[minmax(220px,auto)]">
           {arrangedPillarCards.map(({ pillar, articles: pillarArticles, hex, tier, publishedCount, draftCount, emptyCount }, i) => {
             const isSelected = selectedPillarId === pillar.id
             const totalCount = pillarArticles.length
