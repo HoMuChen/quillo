@@ -31,7 +31,7 @@ export function PlanWizard({ projectId, locale, orphanArticles }: { projectId: s
       const res = await fetch('/api/ai/plan/step1', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ projectId, topic, audience_supplement: audience || undefined }),
+        body: JSON.stringify({ projectId, topic, audience_supplement: audience || undefined, pillarCount }),
         signal: controller.signal,
       })
       if (!res.ok || !res.body) throw new Error(await res.text())

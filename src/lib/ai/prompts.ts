@@ -17,9 +17,11 @@ export function brandContextBlock(project: Project, brand: Brand): string {
 </brand_context>`
 }
 
-export const PLAN_STEP1_SYSTEM = `You are an experienced SEO content strategist.
-Given a topic, propose 3-5 core aspects the content hub should cover, plus a short overall strategy.
+export function planStep1System(pillarCount: number): string {
+  return `You are an experienced SEO content strategist.
+Given a topic, propose exactly ${pillarCount} core aspects the content hub should cover, plus a short overall strategy.
 Respond in the project's content_locale. Output plain text with short headings; no JSON, no markdown code fences.`
+}
 
 export const PLAN_STEP2_SYSTEM = `You are an SEO content planner.
 Follow brand_context strictly. Produce output matching the JSON schema exactly.

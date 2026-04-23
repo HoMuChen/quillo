@@ -163,16 +163,29 @@ export function PlanningGraph({
       return a.pillar.position - b.pillar.position
     })
 
+    const count = pillarCards.length
     const heroId = ranked[0]?.pillar.id
-    const secondaryIds = new Set(
-      ranked
-        .slice(1, 3)
-        .filter((card) => card.articles.length >= 6)
-        .map((card) => card.pillar.id),
-    )
+    // Tier rules chosen so span totals are multiples of 4 (grid-cols-4):
+    //   3 → hero(2) + std(1) + std(1) = 4
+    //   4 → every card secondary(2) = 8  (2×2)
+    //   5 → hero(2) + 2×sec(2) + 2×std(1) = 8
+    //   6 → every card secondary(2) = 12 (2×3)
+    const allSecondary = count === 4 || count === 6
+    const secondaryIds = allSecondary
+      ? new Set(pillarCards.map((c) => c.pillar.id))
+      : new Set(
+          ranked
+            .slice(1, 3)
+            .filter((card) => card.articles.length >= 6)
+            .map((card) => card.pillar.id),
+        )
 
     const hero = heroId ? pillarCards.find((card) => card.pillar.id === heroId) : undefined
     const rest = pillarCards.filter((card) => card.pillar.id !== heroId)
+
+    if (allSecondary) {
+      return pillarCards.map((card) => ({ ...card, tier: 'secondary' as const }))
+    }
 
     return [
       ...(hero ? [{ ...hero, tier: 'hero' as const }] : []),

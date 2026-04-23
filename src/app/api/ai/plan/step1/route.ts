@@ -2,7 +2,7 @@ import { streamText } from 'ai'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { MODELS } from '@/lib/ai/gateway'
-import { PLAN_STEP1_SYSTEM, brandContextBlock } from '@/lib/ai/prompts'
+import { planStep1System, brandContextBlock } from '@/lib/ai/prompts'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -11,6 +11,7 @@ const bodySchema = z.object({
   projectId: z.string().uuid(),
   topic: z.string().min(1).max(500),
   audience_supplement: z.string().max(1000).optional(),
+  pillarCount: z.number().int().min(3).max(6).default(3),
 })
 
 export async function POST(req: Request) {
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: MODELS.main,
-    system: `${PLAN_STEP1_SYSTEM}\n\n${brandContextBlock(project, brand)}`,
+    system: `${planStep1System(parsed.data.pillarCount)}\n\n${brandContextBlock(project, brand)}`,
     prompt: `Topic: ${parsed.data.topic}\nAudience notes: ${parsed.data.audience_supplement ?? '(none)'}`,
   })
 
