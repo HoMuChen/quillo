@@ -9,7 +9,6 @@ export async function savePlanAction(
   locale: 'zh-TW' | 'en',
   projectId: string,
   plan: PillarPlan,
-  orphanAssignments: Record<string, number> = {},
 ) {
   const parsed = pillarPlanSchema.parse(plan)
 
@@ -25,10 +24,11 @@ export async function savePlanAction(
   })
   if (error) throw error
 
-  // Assign orphan articles to the newly created pillars
-  const assignEntries = Object.entries(orphanAssignments)
-  if (assignEntries.length > 0) {
-    // Fetch newly created pillars ordered by position to map by index
+  // Apply AI's existing_article_ids: assign orphan articles to the pillars the AI chose.
+  const hasExistingAssignments = parsed.pillars.some(
+    (p) => (p.existing_article_ids ?? []).length > 0,
+  )
+  if (hasExistingAssignments) {
     const { data: pillars } = await supabase
       .from('pillars')
       .select('id,position')
@@ -36,15 +36,18 @@ export async function savePlanAction(
       .order('position')
 
     if (pillars && pillars.length > 0) {
-      for (const [articleId, pillarIndex] of assignEntries) {
-        const pillar = pillars[pillarIndex]
-        if (!pillar) continue
-        await supabase
-          .from('articles')
-          .update({ pillar_id: pillar.id })
-          .eq('id', articleId)
-          .eq('project_id', projectId)
-          .is('pillar_id', null)
+      for (let i = 0; i < parsed.pillars.length; i++) {
+        const pillar = pillars[i]
+        const ids = parsed.pillars[i].existing_article_ids ?? []
+        if (!pillar || ids.length === 0) continue
+        for (const articleId of ids) {
+          await supabase
+            .from('articles')
+            .update({ pillar_id: pillar.id })
+            .eq('id', articleId)
+            .eq('project_id', projectId)
+            .is('pillar_id', null)
+        }
       }
     }
   }

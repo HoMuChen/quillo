@@ -66,5 +66,13 @@
   "organize_summary": "Will assign {count} articles",
   "organize_apply": "Apply",
   "sync_shopify": "Sync from Shopify",
-  "sync_shopify_done": "Imported {count} from Shopify"
+  "sync_shopify_done": "Imported {count} from Shopify",
+  "pillar_count_label": "How many pillars?",
+  "pillar_count_help": "Between 3 and 6. Default 3.",
+  "step2_config_intro": "Pick how existing articles fit in. AI will build {count} pillars with 5-10 new articles each.",
+  "orphan_preassign_title": "Include existing articles",
+  "orphan_preassign_help": "Checked articles will be assigned to the most relevant pillar automatically.",
+  "orphan_select_all": "Select all",
+  "orphan_deselect_all": "Deselect all",
+  "generate_plan_btn": "Generate plan"
 }

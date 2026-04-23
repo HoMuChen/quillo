@@ -14,6 +14,7 @@ export function PlanWizard({ projectId, locale, orphanArticles }: { projectId: s
   const [step, setStep] = useState<1 | 2>(1)
   const [topic, setTopic] = useState('')
   const [audience, setAudience] = useState('')
+  const [pillarCount, setPillarCount] = useState(3)
   const [direction, setDirection] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -86,6 +87,25 @@ export function PlanWizard({ projectId, locale, orphanArticles }: { projectId: s
               disabled={streaming}
             />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pillar-count">{t('pillar_count_label')}</Label>
+            <div className="flex items-center gap-2">
+              <input
+                id="pillar-count"
+                type="number"
+                min={3}
+                max={6}
+                value={pillarCount}
+                onChange={(e) => {
+                  const v = Number(e.target.value)
+                  if (Number.isFinite(v)) setPillarCount(Math.min(6, Math.max(3, Math.floor(v))))
+                }}
+                disabled={streaming}
+                className="w-20 h-9 py-2 px-3 rounded-lg border border-rule bg-white text-[14px] text-ink focus:outline-none focus:border-ink-3"
+              />
+              <p className="text-[11px] text-ink-4">{t('pillar_count_help')}</p>
+            </div>
+          </div>
         </div>
 
         {direction && (
@@ -122,5 +142,13 @@ export function PlanWizard({ projectId, locale, orphanArticles }: { projectId: s
     )
   }
 
-  return <PlanStep2 projectId={projectId} locale={locale} direction={direction} orphanArticles={orphanArticles} />
+  return (
+    <PlanStep2
+      projectId={projectId}
+      locale={locale}
+      direction={direction}
+      pillarCount={pillarCount}
+      orphanArticles={orphanArticles}
+    />
+  )
 }

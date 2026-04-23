@@ -66,5 +66,13 @@
   "organize_summary": "將歸屬 {count} 篇文章",
   "organize_apply": "套用",
   "sync_shopify": "從 Shopify 同步",
-  "sync_shopify_done": "從 Shopify 匯入 {count} 篇"
+  "sync_shopify_done": "從 Shopify 匯入 {count} 篇",
+  "pillar_count_label": "要幾個 Pillar？",
+  "pillar_count_help": "3 到 6 個，預設 3 個",
+  "step2_config_intro": "挑選現有文章要不要納入，AI 會產出 {count} 個 Pillar，每個 5-10 篇新文章",
+  "orphan_preassign_title": "要納入的既有文章",
+  "orphan_preassign_help": "勾選的文章會由 AI 分配到最相關的 Pillar",
+  "orphan_select_all": "全選",
+  "orphan_deselect_all": "取消全選",
+  "generate_plan_btn": "開始生成"
 }

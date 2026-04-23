@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { experimental_useObject as useObject } from '@ai-sdk/react'
 import type { DeepPartial } from 'ai'
 import { useTranslations } from 'next-intl'
@@ -15,40 +15,62 @@ export function PlanStep2({
   projectId,
   locale,
   direction,
+  pillarCount,
   orphanArticles,
 }: {
   projectId: string
   locale: 'zh-TW' | 'en'
   direction: string
+  pillarCount: number
   orphanArticles: OrphanArticle[]
 }) {
   const t = useTranslations('planning')
   const router = useRouter()
   const [saving, startSaving] = useTransition()
   const [actionError, setActionError] = useState<string | null>(null)
+  const [selectedOrphans, setSelectedOrphans] = useState<Set<string>>(() => new Set())
+  const [started, setStarted] = useState(false)
 
   const { object, submit, isLoading, error: streamError } = useObject({
     api: '/api/ai/plan/step2',
     schema: pillarPlanSchema,
   })
 
-  // orphanAssignments: articleId → pillarIndex (0-based)
-  const [orphanAssignments, setOrphanAssignments] = useState<Record<string, number>>({})
+  const orphansById = useMemo(
+    () => new Map(orphanArticles.map((o) => [o.id, o])),
+    [orphanArticles],
+  )
 
-  function toggleOrphan(articleId: string, pillarIndex: number) {
-    setOrphanAssignments(prev => {
-      if (prev[articleId] === pillarIndex) {
-        const next = { ...prev }; delete next[articleId]; return next
-      }
-      return { ...prev, [articleId]: pillarIndex }
+  function toggleOrphan(id: string) {
+    setSelectedOrphans((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
     })
   }
 
-  // Kick off generation once on mount
-  useEffect(() => {
-    submit({ projectId, direction })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  function toggleAll() {
+    setSelectedOrphans((prev) =>
+      prev.size === orphanArticles.length
+        ? new Set()
+        : new Set(orphanArticles.map((o) => o.id)),
+    )
+  }
+
+  function startGeneration() {
+    const selected = orphanArticles.filter((o) => selectedOrphans.has(o.id))
+    submit({
+      projectId,
+      direction,
+      pillarCount,
+      orphanArticles: selected.map((o) => ({
+        id: o.id,
+        title: o.title,
+        target_keyword: o.target_keyword ?? undefined,
+      })),
+    })
+    setStarted(true)
+  }
 
   const error = actionError ?? (streamError ? t('error_generic') : null)
 
@@ -58,7 +80,7 @@ export function PlanStep2({
     startSaving(async () => {
       try {
         const parsed = pillarPlanSchema.parse(object)
-        await savePlanAction(locale, projectId, parsed, orphanAssignments)
+        await savePlanAction(locale, projectId, parsed)
         router.replace(`/projects/${projectId}/planning`)
       } catch (err) {
         console.error(err)
@@ -69,6 +91,64 @@ export function PlanStep2({
 
   const pillars = object?.pillars ?? []
 
+  // --- Pre-generation config screen ---
+  if (!started) {
+    return (
+      <section className="space-y-5">
+        <div className="space-y-1.5">
+          <p className="font-serif italic text-[22px] text-ink">{t('step2_heading')}</p>
+          <p className="text-[13px] text-ink-3">{t('step2_config_intro', { count: pillarCount })}</p>
+        </div>
+
+        {orphanArticles.length > 0 && (
+          <div className="rounded-xl bg-white p-5 shadow-sh-1 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[13px] font-medium text-ink">{t('orphan_preassign_title')}</p>
+                <p className="text-[11px] text-ink-4 mt-0.5">{t('orphan_preassign_help')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={toggleAll}
+                className="text-[11px] text-ochre-ink hover:text-ochre cursor-pointer"
+              >
+                {selectedOrphans.size === orphanArticles.length ? t('orphan_deselect_all') : t('orphan_select_all')}
+              </button>
+            </div>
+            <div className="divide-y divide-rule/40 rounded-lg border border-rule overflow-hidden">
+              {orphanArticles.map((o) => (
+                <label
+                  key={o.id}
+                  className="flex items-center gap-3 px-3 py-2 hover:bg-mist cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedOrphans.has(o.id)}
+                    onChange={() => toggleOrphan(o.id)}
+                    className="accent-ochre w-3.5 h-3.5 cursor-pointer"
+                  />
+                  <span className="flex-1 min-w-0 text-[13px] text-ink truncate">
+                    {o.target_keyword || o.title}
+                    {o.target_keyword && (
+                      <span className="ml-2 font-mono text-[10px] text-ink-4">{o.title}</span>
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button variant="primary" onClick={startGeneration}>
+            ✦ {t('generate_plan_btn')}
+          </Button>
+        </div>
+      </section>
+    )
+  }
+
+  // --- Generation / result screen ---
   return (
     <section className="space-y-5">
       <div className="space-y-1.5">
@@ -85,46 +165,9 @@ export function PlanStep2({
 
       <div className="space-y-4">
         {pillars.map((p, i) => (
-          <PillarCard key={i} index={i} pillar={p} />
+          <PillarCard key={i} index={i} pillar={p} orphansById={orphansById} />
         ))}
       </div>
-
-      {orphanArticles.length > 0 && pillars.length > 0 && (
-        <div className="rounded-xl bg-white p-5 shadow-sh-1 space-y-3">
-          <div>
-            <p className="text-[13px] font-medium text-ink">{t('orphan_include_existing')}</p>
-            <p className="text-[11px] text-ink-4 mt-0.5">{t('orphan_include_existing_help')}</p>
-          </div>
-          <div className="space-y-1">
-            {orphanArticles.map((o) => (
-              <div key={o.id} className="flex items-center gap-3 py-1.5 border-b border-rule/40 last:border-0">
-                <span className="flex-1 text-[13px] text-ink truncate">
-                  {o.target_keyword || o.title}
-                  {o.target_keyword && <span className="ml-2 font-mono text-[10px] text-ink-4 truncate">{o.title}</span>}
-                </span>
-                <select
-                  value={orphanAssignments[o.id] ?? ''}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setOrphanAssignments(prev => {
-                      const next = { ...prev }
-                      if (v === '') delete next[o.id]
-                      else next[o.id] = Number(v)
-                      return next
-                    })
-                  }}
-                  className="rounded-lg border border-rule bg-bg px-2 py-1 text-[12px] text-ink focus:outline-none focus:border-ink-3 min-w-[140px]"
-                >
-                  <option value="">{t('orphan_no_assign')}</option>
-                  {pillars.map((p, i) => (
-                    <option key={i} value={i}>{p?.title ?? `Pillar ${i + 1}`}</option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {error && <p className="text-[12px] text-rust" role="alert">{error}</p>}
 
@@ -144,14 +187,18 @@ const PILLAR_COLORS = ['p1', 'p2', 'p3'] as const
 function PillarCard({
   index,
   pillar,
+  orphansById,
 }: {
   index: number
   pillar: DeepPartial<PillarPlan['pillars'][number]> | undefined
+  orphansById: Map<string, OrphanArticle>
 }) {
   const color = PILLAR_COLORS[index % PILLAR_COLORS.length]
   const textMap = { p1: 'text-p1', p2: 'text-p2', p3: 'text-p3' }
 
   if (!pillar) return null
+
+  const existingIds = (pillar.existing_article_ids ?? []).filter((id): id is string => !!id)
 
   return (
     <article className="rounded-xl bg-white p-5 shadow-sh-1 space-y-3">
@@ -173,6 +220,26 @@ function PillarCard({
 
       {pillar.description && (
         <p className="text-[13px] text-ink-2 leading-[1.55]">{pillar.description}</p>
+      )}
+
+      {existingIds.length > 0 && (
+        <ul className="space-y-1.5 border-t border-rule/60 pt-3">
+          {existingIds.map((id) => {
+            const o = orphansById.get(id)
+            if (!o) return null
+            return (
+              <li key={id} className="flex items-start justify-between gap-3 text-[13px]">
+                <div className="min-w-0 flex-1">
+                  <div className="text-ink font-medium truncate">{o.title}</div>
+                  {o.target_keyword && (
+                    <div className="font-mono text-[10px] text-ink-3 truncate">{o.target_keyword}</div>
+                  )}
+                </div>
+                <span className="font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded border bg-bg-2 border-rule text-ink-3">existing</span>
+              </li>
+            )
+          })}
+        </ul>
       )}
 
       {pillar.articles && pillar.articles.length > 0 && (

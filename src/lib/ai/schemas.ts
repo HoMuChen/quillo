@@ -22,8 +22,9 @@ export const pillarPlanSchema = z.object({
         )
         .min(5)
         .max(10),
+      existing_article_ids: z.array(z.string().uuid()).optional(),
     }),
-  ).min(3).max(5),
+  ).min(3).max(6),
 })
 
 export type PillarPlan = z.infer<typeof pillarPlanSchema>

@@ -22,12 +22,19 @@ Given a topic, propose 3-5 core aspects the content hub should cover, plus a sho
 Respond in the project's content_locale. Output plain text with short headings; no JSON, no markdown code fences.`
 
 export const PLAN_STEP2_SYSTEM = `You are an SEO content planner.
-Given a confirmed direction, produce 3-5 Pillars, each with 5-10 Cluster articles.
 Follow brand_context strictly. Produce output matching the JSON schema exactly.
 Write all titles and descriptions in the project's content_locale.
 Avoid forbidden_terms. Favor preferred_terms where natural.
 search_intent must be one of: informational | commercial | transactional.
 role must be one of: hub | supporting | comparison. Each Pillar should have exactly one 'hub' article.`
+
+export function planStep2System(pillarCount: number): string {
+  return `${PLAN_STEP2_SYSTEM}
+
+Given a confirmed direction, produce exactly ${pillarCount} Pillars, each with 5-10 NEW Cluster articles.
+
+If <existing_articles> is provided in the prompt, assign each existing article to the single most relevant Pillar by including its id in that Pillar's existing_article_ids array. Do NOT duplicate existing articles as new articles. Every existing article id MUST appear in exactly one Pillar's existing_article_ids. Existing articles supplement the 5-10 new cluster articles but do not count toward that quota.`
+}
 
 export const OUTLINE_SYSTEM = `You are an SEO writer.
 Produce an article outline of 3-15 sections. Each section has:
