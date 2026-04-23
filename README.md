@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quillo
+
+AI-powered SEO content planning and writing tool. Quillo helps content teams go from topic idea to published article through a structured pillar-cluster workflow — with AI at every step.
+
+## Features
+
+### Content Planning
+- **Pillar Cluster Wizard** — two-step AI workflow: generate a strategic direction, then produce a full pillar-cluster plan with configurable pillar count (3–6)
+- **Orphan Article Assignment** — select existing unassigned articles before generation; AI automatically assigns them to the most relevant pillars
+- **Cluster Regeneration** — regenerate articles for an individual pillar without touching the rest of the plan
+- **Orphan Organizer** — AI groups unassigned articles into new pillars or assigns them to existing ones
+- **Visual Planning Board** — bento-grid layout showing each pillar and its cluster articles; responsive for any pillar count
+
+### Article Workflow
+- **AI Draft Generation** — produces a full Markdown draft grounded in the outline and interview answers; respects word count target and brand voice
+- **Outline Builder** — AI generates a 3–15 section outline with section purpose and interview flags
+- **Interview Phase** — AI generates targeted questions for sections requiring first-hand experience; supports skipping or answering per-section
+- **AI Rewrite** — select any passage in the editor and rewrite it with a custom instruction
+- **Focus Editor** — distraction-free Tiptap rich-text editor with full article context in the sidebar
+
+### SEO Tools
+- **SEO Metadata Suggestions** — AI generates meta title, meta description, slug, excerpt, focus keyword, and tags in one shot
+- **Meta Fields** — editable meta title and description with character-count guardrails
+
+### Brand Voice
+- **Brand Material Analysis** — paste up to 20 existing articles; AI extracts tone, author background, reader persona, preferred terms, forbidden terms, and E-E-A-T cases
+- **Brand Context** — brand voice is automatically injected into every AI prompt across the product
+
+### Publishing
+- **Ghost Integration** — publish or update articles directly to a Ghost blog via the Admin API
+- **Shopify Integration** — sync articles to/from a Shopify store blog via the Admin REST API
+
+### Project Management
+- **Multi-project** — separate brand, planning, and article space per project
+- **Project Settings** — configure theme, target audience, content locale, and CMS connections
+- **i18n** — UI available in Traditional Chinese (zh-TW) and English
+
+## Tech Stack
+
+- **Framework** — Next.js 15 (App Router)
+- **Database** — Supabase (Postgres + RLS)
+- **AI** — Vercel AI Gateway → Anthropic Claude (streamed text and structured object generation)
+- **Editor** — Tiptap
+- **Auth** — Supabase Auth
+- **Styling** — Tailwind CSS
+- **i18n** — next-intl
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copy `.env.example` to `.env.local` and fill in your Supabase credentials, then run database migrations:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx supabase db push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000).
