@@ -98,5 +98,19 @@
   "col_title": "Article",
   "col_pillar": "Pillar",
   "col_status": "Status",
-  "col_updated": "Updated"
+  "col_updated": "Updated",
+  "tab_performance": "Performance",
+  "perf_not_published": "Publish this article first to see performance data.",
+  "perf_no_connection": "Connect Google Search Console in Settings to see performance data.",
+  "perf_no_data": "No GSC data yet for this URL.",
+  "perf_url_hint": "Looking for: {url}",
+  "perf_clicks": "Clicks",
+  "perf_impressions": "Impressions",
+  "perf_ctr": "CTR",
+  "perf_position": "Avg position",
+  "perf_top_queries": "Top queries",
+  "perf_col_query": "Query",
+  "perf_col_clicks": "Clicks",
+  "perf_col_impressions": "Impressions",
+  "perf_col_position": "Position"
 }

@@ -98,5 +98,19 @@
   "col_title": "文章",
   "col_pillar": "Pillar",
   "col_status": "狀態",
-  "col_updated": "更新時間"
+  "col_updated": "更新時間",
+  "tab_performance": "成效數據",
+  "perf_not_published": "請先發布文章以查看成效數據。",
+  "perf_no_connection": "請在設定中連接 Google Search Console 以查看成效數據。",
+  "perf_no_data": "此網址尚無 GSC 資料。",
+  "perf_url_hint": "查詢網址：{url}",
+  "perf_clicks": "點擊數",
+  "perf_impressions": "曝光數",
+  "perf_ctr": "點擊率",
+  "perf_position": "平均排名",
+  "perf_top_queries": "熱門查詢",
+  "perf_col_query": "查詢",
+  "perf_col_clicks": "點擊數",
+  "perf_col_impressions": "曝光數",
+  "perf_col_position": "排名"
 }

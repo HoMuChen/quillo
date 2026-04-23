@@ -87,6 +87,7 @@ export function ArticleScreen({
       <div className="fixed inset-x-0 top-0 z-30 flex items-start justify-between px-7 py-5 pointer-events-none">
         <CornerLeft
           projectId={projectId}
+          articleId={articleId}
           connections={connections}
           activePlatform={activePlatform}
         />
@@ -149,10 +150,12 @@ export function ArticleScreen({
 
 function CornerLeft({
   projectId,
+  articleId,
   connections,
   activePlatform,
 }: {
   projectId: string
+  articleId: string
   connections: ConnectionWithTarget[]
   activePlatform: string | null
 }) {
@@ -191,6 +194,13 @@ function CornerLeft({
       ) : anyDraft ? (
         <span className="text-[13px] text-ink-4">{tp('save_as_draft')}</span>
       ) : null}
+
+      <Link
+        href={`/projects/${projectId}/articles/${articleId}?view=performance`}
+        className="text-[13px] text-ink-3 hover:text-ink transition-colors"
+      >
+        {t('tab_performance')}
+      </Link>
     </div>
   )
 }

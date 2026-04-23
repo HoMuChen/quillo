@@ -6,6 +6,7 @@ import { FeatureImage } from './_feature-image'
 import { EditorTab } from './editor/_editor-tab'
 import { InterviewTab } from './interview/_interview-tab'
 import { SeoTab } from './seo/_seo-tab'
+import { PerformanceTab } from './_performance-tab'
 
 type Props = {
   params: Promise<{ locale: string; projectId: string; articleId: string }>
@@ -16,6 +17,8 @@ export default async function ArticlePage({ params, searchParams }: Props) {
   const { locale, projectId, articleId } = await params
   const { view } = await searchParams
   setRequestLocale(locale)
+
+  const showPerformance = view === 'performance'
 
   const supabase = await createClient()
 
@@ -139,7 +142,9 @@ export default async function ArticlePage({ params, searchParams }: Props) {
       featureImageSlot={featureImageSlot}
       settingsSlot={settingsSlot}
     >
-      {showInterview ? (
+      {showPerformance ? (
+        <PerformanceTab projectId={projectId} articleId={articleId} />
+      ) : showInterview ? (
         <InterviewTab
           projectId={projectId}
           articleId={articleId}
