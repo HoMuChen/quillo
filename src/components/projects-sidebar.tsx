@@ -52,6 +52,7 @@ export function ProjectsSidebar({ projects }: { projects: Project[] }) {
     ? [
         { href: `/projects/${currentId}/planning`, label: t('nav_planning') },
         { href: `/projects/${currentId}/articles`, label: t('nav_articles') },
+        { href: `/projects/${currentId}/opportunities`, label: t('nav_opportunities') },
         { href: `/projects/${currentId}/brand`,    label: tBrand('nav_brand') },
         { href: `/projects/${currentId}/settings`, label: t('nav_settings') },
       ]

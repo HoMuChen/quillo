@@ -1,0 +1,23 @@
+{
+  "title": "Content opportunities",
+  "no_connection": "Connect Google Search Console in Settings to see opportunities.",
+  "no_connection_cta": "Go to settings",
+  "no_data": "Sync needs at least 2 weeks of data for most insights.",
+  "striking_title": "Striking distance",
+  "striking_help": "Queries ranking position 5–20 with ≥100 impressions. Push these up with a refresh or internal links.",
+  "rising_title": "Rising queries",
+  "rising_help": "Queries whose impressions grew ≥50% this 28-day window vs the previous one.",
+  "decaying_title": "Decaying pages",
+  "decaying_help": "Pages whose clicks dropped ≥30% this window vs the previous one.",
+  "col_query": "Query",
+  "col_page": "Page",
+  "col_clicks": "Clicks",
+  "col_impressions": "Impressions",
+  "col_position": "Avg position",
+  "col_current": "Current",
+  "col_previous": "Previous",
+  "col_growth": "Growth",
+  "col_decline": "Decline",
+  "open_article": "Open",
+  "section_empty": "Nothing to show here yet."
+}

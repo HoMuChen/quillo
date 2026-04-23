@@ -2,7 +2,7 @@ import { getRequestConfig } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from './routing'
 
-const namespaces = ['common', 'auth', 'projects', 'planning', 'articles', 'editor', 'publish', 'brand'] as const
+const namespaces = ['common', 'auth', 'projects', 'planning', 'articles', 'editor', 'publish', 'brand', 'opportunities'] as const
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const locale = await requestLocale

@@ -1,0 +1,23 @@
+{
+  "title": "成長機會",
+  "no_connection": "請在設定中連接 Google Search Console 以查看機會。",
+  "no_connection_cta": "前往設定",
+  "no_data": "需要至少 2 週的數據才能顯示大部分洞察。",
+  "striking_title": "接近上位關鍵字",
+  "striking_help": "排名在第 5–20 名且曝光數 ≥100 的查詢。透過更新或內部連結提升排名。",
+  "rising_title": "上升中的查詢",
+  "rising_help": "本 28 天視窗曝光數較前期成長 ≥50% 的查詢。",
+  "decaying_title": "衰退中的頁面",
+  "decaying_help": "本視窗點擊數較前期下降 ≥30% 的頁面。",
+  "col_query": "查詢",
+  "col_page": "頁面",
+  "col_clicks": "點擊數",
+  "col_impressions": "曝光數",
+  "col_position": "平均排名",
+  "col_current": "本期",
+  "col_previous": "前期",
+  "col_growth": "成長",
+  "col_decline": "衰退",
+  "open_article": "開啟",
+  "section_empty": "目前尚無資料。"
+}
