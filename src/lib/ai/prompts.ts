@@ -20,6 +20,7 @@ export function brandContextBlock(project: Project, brand: Brand): string {
 export function planStep1System(pillarCount: number): string {
   return `You are an experienced SEO content strategist.
 Given a topic, propose exactly ${pillarCount} core aspects the content hub should cover, plus a short overall strategy.
+If <search_data> is provided, ground the proposed core aspects in queries that show real demand. Prefer aspects where users are already searching but the site has weak coverage (avg_position > 10).
 Respond in the project's content_locale. Output plain text with short headings; no JSON, no markdown code fences.`
 }
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PlanStep2 } from './_step2'
+import { fetchGscSearchDataAction } from './gsc-search-data-action'
 
 type OrphanArticle = { id: string; title: string; target_keyword: string | null; slug: string | null }
 
@@ -28,10 +29,21 @@ export function PlanWizard({ projectId, locale, orphanArticles }: { projectId: s
     abortRef.current = controller
 
     try {
+      const searchData = await fetchGscSearchDataAction(projectId, topic).catch((err) => {
+        console.error('[gsc-search-data]', err)
+        return []
+      })
+
       const res = await fetch('/api/ai/plan/step1', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ projectId, topic, audience_supplement: audience || undefined, pillarCount }),
+        body: JSON.stringify({
+          projectId,
+          topic,
+          audience_supplement: audience || undefined,
+          pillarCount,
+          search_data: searchData.length > 0 ? searchData : undefined,
+        }),
         signal: controller.signal,
       })
       if (!res.ok || !res.body) throw new Error(await res.text())
