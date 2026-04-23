@@ -711,6 +711,36 @@ export type Database = {
         Args: { p_plan: Json; p_project_id: string }
         Returns: Json
       }
+      gsc_decaying_pages: {
+        Args: { p_project: string; p_window_days: number }
+        Returns: {
+          current_clicks: number
+          decline_pct: number
+          matching_article_id: string
+          normalized_page_url: string
+          previous_clicks: number
+        }[]
+      }
+      gsc_rising_queries: {
+        Args: { p_project: string; p_window_days: number }
+        Returns: {
+          current_impressions: number
+          growth: number
+          previous_impressions: number
+          query: string
+        }[]
+      }
+      gsc_striking_distance: {
+        Args: { p_project: string; p_window_days: number }
+        Returns: {
+          avg_position: number
+          clicks: number
+          impressions: number
+          matching_article_id: string
+          normalized_page_url: string
+          query: string
+        }[]
+      }
       normalize_url: { Args: { u: string }; Returns: string }
       user_tenant_ids: { Args: never; Returns: string[] }
     }
