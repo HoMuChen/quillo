@@ -61,10 +61,14 @@ CREATE TABLE gsc_connections (
 CREATE INDEX ON gsc_connections(tenant_id);
 
 ALTER TABLE gsc_connections ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "gsc_connections tenant isolation"
-  ON gsc_connections FOR ALL
-  USING (tenant_id IN (SELECT tenant_id FROM tenant_members WHERE user_id = auth.uid()))
-  WITH CHECK (tenant_id IN (SELECT tenant_id FROM tenant_members WHERE user_id = auth.uid()));
+CREATE POLICY tenant_isolation ON gsc_connections FOR ALL TO authenticated
+  USING (tenant_id IN (SELECT public.user_tenant_ids()))
+  WITH CHECK (tenant_id IN (SELECT public.user_tenant_ids()));
+
+CREATE TRIGGER t_gsc_connections_tenant BEFORE INSERT ON gsc_connections
+  FOR EACH ROW EXECUTE FUNCTION public.set_tenant_from_project();
+CREATE TRIGGER t_touch_gsc_connections BEFORE UPDATE ON gsc_connections
+  FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 -- Raw per-day/query/page metrics. No retention; user cleans up manually if it grows.
 CREATE TABLE gsc_daily_query_page (
@@ -80,15 +84,17 @@ CREATE TABLE gsc_daily_query_page (
   position numeric NOT NULL DEFAULT 0,
   PRIMARY KEY (project_id, date, query, normalized_page_url)
 );
-CREATE INDEX ON gsc_daily_query_page (project_id, date);
+-- Note: no (project_id, date) index — the PK already covers that prefix.
 CREATE INDEX ON gsc_daily_query_page (project_id, normalized_page_url);
 CREATE INDEX ON gsc_daily_query_page (project_id, query);
 
 ALTER TABLE gsc_daily_query_page ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "gsc_daily_query_page tenant isolation"
-  ON gsc_daily_query_page FOR ALL
-  USING (tenant_id IN (SELECT tenant_id FROM tenant_members WHERE user_id = auth.uid()))
-  WITH CHECK (tenant_id IN (SELECT tenant_id FROM tenant_members WHERE user_id = auth.uid()));
+CREATE POLICY tenant_isolation ON gsc_daily_query_page FOR ALL TO authenticated
+  USING (tenant_id IN (SELECT public.user_tenant_ids()))
+  WITH CHECK (tenant_id IN (SELECT public.user_tenant_ids()));
+
+CREATE TRIGGER t_gsc_daily_query_page_tenant BEFORE INSERT ON gsc_daily_query_page
+  FOR EACH ROW EXECUTE FUNCTION public.set_tenant_from_project();
 
 -- Sync audit log.
 CREATE TABLE gsc_sync_runs (
@@ -104,10 +110,12 @@ CREATE TABLE gsc_sync_runs (
 CREATE INDEX ON gsc_sync_runs(project_id, started_at DESC);
 
 ALTER TABLE gsc_sync_runs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "gsc_sync_runs tenant isolation"
-  ON gsc_sync_runs FOR ALL
-  USING (tenant_id IN (SELECT tenant_id FROM tenant_members WHERE user_id = auth.uid()))
-  WITH CHECK (tenant_id IN (SELECT tenant_id FROM tenant_members WHERE user_id = auth.uid()));
+CREATE POLICY tenant_isolation ON gsc_sync_runs FOR ALL TO authenticated
+  USING (tenant_id IN (SELECT public.user_tenant_ids()))
+  WITH CHECK (tenant_id IN (SELECT public.user_tenant_ids()));
+
+CREATE TRIGGER t_gsc_sync_runs_tenant BEFORE INSERT ON gsc_sync_runs
+  FOR EACH ROW EXECUTE FUNCTION public.set_tenant_from_project();
 ```
 
 **Step 2: Apply locally**
