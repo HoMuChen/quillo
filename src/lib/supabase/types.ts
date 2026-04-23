@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       article_images: {
@@ -251,6 +226,150 @@ export type Database = {
             foreignKeyName: "brand_materials_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_connections: {
+        Row: {
+          access_token_encrypted: string | null
+          access_token_expires_at: string | null
+          created_at: string
+          google_user_email: string
+          id: string
+          last_sync_error: string | null
+          last_sync_status: string | null
+          last_synced_at: string | null
+          project_id: string
+          property_url: string
+          refresh_token_encrypted: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          google_user_email: string
+          id?: string
+          last_sync_error?: string | null
+          last_sync_status?: string | null
+          last_synced_at?: string | null
+          project_id: string
+          property_url: string
+          refresh_token_encrypted: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          google_user_email?: string
+          id?: string
+          last_sync_error?: string | null
+          last_sync_status?: string | null
+          last_synced_at?: string | null
+          project_id?: string
+          property_url?: string
+          refresh_token_encrypted?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_connections_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_daily_query_page: {
+        Row: {
+          clicks: number
+          ctr: number
+          date: string
+          impressions: number
+          normalized_page_url: string
+          page_url: string
+          position: number
+          project_id: string
+          query: string
+          tenant_id: string
+        }
+        Insert: {
+          clicks?: number
+          ctr?: number
+          date: string
+          impressions?: number
+          normalized_page_url?: string
+          page_url: string
+          position?: number
+          project_id: string
+          query: string
+          tenant_id: string
+        }
+        Update: {
+          clicks?: number
+          ctr?: number
+          date?: string
+          impressions?: number
+          normalized_page_url?: string
+          page_url?: string
+          position?: number
+          project_id?: string
+          query?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_daily_query_page_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_sync_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          project_id: string
+          rows_inserted: number
+          started_at: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          project_id: string
+          rows_inserted?: number
+          started_at?: string
+          status: string
+          tenant_id: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          project_id?: string
+          rows_inserted?: number
+          started_at?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_sync_runs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -722,9 +841,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
