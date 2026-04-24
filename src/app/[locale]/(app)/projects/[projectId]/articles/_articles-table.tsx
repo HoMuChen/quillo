@@ -105,8 +105,6 @@ export function ArticlesTable({
           options={[
             { value: 'updated', label: t('sort_updated') },
             { value: 'status', label: t('sort_status') },
-            { value: 'clicks', label: t('sort_clicks') },
-            { value: 'position', label: t('sort_position') },
           ]}
         />
         <span className="ml-auto text-[11px] font-mono text-ink-4">
@@ -122,8 +120,24 @@ export function ArticlesTable({
               <th className="px-4 py-2 font-medium">{t('col_pillar')}</th>
               <th className="px-4 py-2 font-medium">{t('col_status')}</th>
               <th className="px-4 py-2 font-medium">{t('col_updated')}</th>
-              <th className="px-4 py-2 font-medium text-right">Clicks</th>
-              <th className="px-4 py-2 font-medium text-right">Position</th>
+              <th className="px-4 py-2 font-medium text-right">
+                <button
+                  type="button"
+                  onClick={() => setSort(sort === 'clicks' ? 'updated' : 'clicks')}
+                  className="inline-flex items-center gap-1 cursor-pointer hover:text-ink-2 transition-colors"
+                >
+                  Clicks {sort === 'clicks' ? '↓' : ''}
+                </button>
+              </th>
+              <th className="px-4 py-2 font-medium text-right">
+                <button
+                  type="button"
+                  onClick={() => setSort(sort === 'position' ? 'updated' : 'position')}
+                  className="inline-flex items-center gap-1 cursor-pointer hover:text-ink-2 transition-colors"
+                >
+                  Position {sort === 'position' ? '↑' : ''}
+                </button>
+              </th>
               <th className="px-2 py-2 font-medium"></th>
             </tr>
           </thead>
