@@ -1,5 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
+import { normalizeUrl } from '@/lib/url/normalize'
 import { getGscAccessToken } from './auth'
 import { querySearchAnalytics, type SearchAnalyticsRow } from './client'
 
@@ -73,24 +74,53 @@ export async function runGscSync(projectId: string, coldStartDays = 90): Promise
       })
       if (rows.length === 0) break
 
-      const upsertRows = rows.map((r: SearchAnalyticsRow) => ({
-        project_id: projectId,
-        tenant_id: conn.tenant_id,
-        date: r.date,
-        query: r.query,
-        page_url: r.page,
-        clicks: r.clicks,
-        impressions: r.impressions,
-        ctr: r.ctr,
-        position: r.position,
-      }))
+      // Deduplicate by the normalized PK before upserting.
+      // Two GSC page_url values may normalize to the same string (e.g. trailing slash),
+      // which would cause "ON CONFLICT DO UPDATE command cannot affect row a second time".
+      type UpsertRow = {
+        project_id: string; tenant_id: string; date: string; query: string
+        page_url: string; clicks: number; impressions: number; ctr: number; position: number
+      }
+      const deduped = new Map<string, UpsertRow>()
+      const upsertRows: UpsertRow[] = []
+      for (const r of rows) {
+        const normUrl = normalizeUrl(r.page) ?? r.page
+        const key = `${r.date}|${r.query}|${normUrl}`
+        const existing = deduped.get(key)
+        if (existing) {
+          // Merge: sum clicks/impressions, weighted-average position and ctr
+          const totalImp = existing.impressions + r.impressions
+          existing.clicks += r.clicks
+          existing.position = totalImp > 0
+            ? (existing.position * existing.impressions + r.position * r.impressions) / totalImp
+            : existing.position
+          existing.ctr = totalImp > 0
+            ? (existing.ctr * existing.impressions + r.ctr * r.impressions) / totalImp
+            : existing.ctr
+          existing.impressions = totalImp
+        } else {
+          const row: UpsertRow = {
+            project_id: projectId,
+            tenant_id: conn.tenant_id,
+            date: r.date,
+            query: r.query,
+            page_url: r.page,
+            clicks: r.clicks,
+            impressions: r.impressions,
+            ctr: r.ctr,
+            position: r.position,
+          }
+          deduped.set(key, row)
+          upsertRows.push(row)
+        }
+      }
 
       const { error: upsertErr } = await supabase
         .from('gsc_daily_query_page')
         .upsert(upsertRows, { onConflict: 'project_id,date,query,normalized_page_url' })
       if (upsertErr) throw new Error(`upsert failed: ${upsertErr.message}`)
 
-      rowsInserted += rows.length
+      rowsInserted += upsertRows.length
       if (rows.length < ROW_LIMIT) break
       startRow += ROW_LIMIT
     }
