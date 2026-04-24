@@ -2,9 +2,7 @@ import { notFound } from 'next/navigation'
 import { setRequestLocale, getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { decryptJson, fromBytea } from '@/lib/crypto/encrypt'
-import { ConnectionForm } from './_connection-form'
-import { ShopifyConnectionForm } from './_shopify-connection-form'
-import { GscConnectionCard } from './_gsc-connection-card'
+import { SettingsPanel } from './_settings-panel'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
 
@@ -69,26 +67,24 @@ export default async function SettingsPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-10 max-w-2xl">
+    <div className="space-y-8 max-w-2xl">
       <header>
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">{t('settings_title')}</h1>
         <p className="text-[12px] text-ink-3 mt-1">{t('settings_subtitle')}</p>
       </header>
-      <ConnectionForm
+      <SettingsPanel
         projectId={projectId}
-        initial={ghostConn ? {
+        locale={locale}
+        ghostInitial={ghostConn ? {
           id: ghostConn.id,
           name: ghostConn.name,
           last_tested_at: ghostConn.last_tested_at,
           last_test_ok: ghostConn.last_test_ok,
           apiUrl: ghostApiUrl,
         } : null}
+        shopifyInitial={shopifyInitial}
+        gscInitial={gscConn ?? null}
       />
-      <ShopifyConnectionForm
-        projectId={projectId}
-        initial={shopifyInitial}
-      />
-      <GscConnectionCard projectId={projectId} initial={gscConn ?? null} />
     </div>
   )
 }

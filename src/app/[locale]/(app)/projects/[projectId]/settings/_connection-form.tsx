@@ -99,8 +99,6 @@ export function ConnectionForm({
 
   return (
     <section className="space-y-4">
-      <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('ghost_title')}</h2>
-
       {initial && !editing ? (
         <div className="rounded-xl bg-white p-5 shadow-sh-1 space-y-3">
           <div className="flex items-center justify-between">

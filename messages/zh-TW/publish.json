@@ -69,5 +69,11 @@
   "gsc_not_connected_body": "連接 Google Search Console，查看成效數據，並以真實搜尋查詢豐富內容規劃。",
   "gsc_banner_stale": "GSC 同步已逾期（上次同步：{when}）。請前往設定立即同步。",
   "gsc_banner_never": "GSC 已連結但尚未同步。請前往設定 → 立即同步。",
-  "gsc_banner_go_settings": "設定"
+  "gsc_banner_go_settings": "設定",
+  "section_publish": "發布設定",
+  "section_seo": "SEO 串接",
+  "card_connected": "已連線",
+  "card_error": "有錯誤",
+  "card_not_set": "未設定",
+  "card_click_to_setup": "點擊以設定"
 }

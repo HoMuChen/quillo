@@ -61,8 +61,6 @@ export function GscConnectionCard({
 
   return (
     <section className="space-y-4">
-      <h2 className="font-sans font-semibold text-[18px] text-ink tracking-tight">{t('gsc_title')}</h2>
-
       {initial ? (
         <div className="rounded-xl bg-white p-5 shadow-sh-1 space-y-3">
           {isRevoked && (
