@@ -95,6 +95,8 @@
   "sort": "Sort",
   "sort_updated": "Recently updated",
   "sort_status": "Status",
+  "sort_clicks": "Clicks (28d)",
+  "sort_position": "Position (28d)",
   "col_title": "Article",
   "col_pillar": "Pillar",
   "col_status": "Status",

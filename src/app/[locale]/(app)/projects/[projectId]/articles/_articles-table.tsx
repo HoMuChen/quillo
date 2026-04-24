@@ -38,7 +38,7 @@ export function ArticlesTable({
   const t = useTranslations('articles')
   const [pillarFilter, setPillarFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<Status | 'all'>('all')
-  const [sort, setSort] = useState<'updated' | 'status'>('updated')
+  const [sort, setSort] = useState<'updated' | 'status' | 'clicks' | 'position'>('updated')
   const [page, setPage] = useState(1)
 
   const visible = useMemo(() => {
@@ -54,8 +54,23 @@ export function ArticlesTable({
         return bi - ai
       })
     }
+    if (sort === 'clicks') {
+      return filtered.sort((a, b) => {
+        const ac = gscMetrics?.[a.id]?.clicks ?? -1
+        const bc = gscMetrics?.[b.id]?.clicks ?? -1
+        return bc - ac
+      })
+    }
+    if (sort === 'position') {
+      // lower position = better rank; articles without data go to the end
+      return filtered.sort((a, b) => {
+        const ap = gscMetrics?.[a.id]?.position ?? Infinity
+        const bp = gscMetrics?.[b.id]?.position ?? Infinity
+        return ap - bp
+      })
+    }
     return filtered.sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-  }, [articles, pillarFilter, statusFilter, sort])
+  }, [articles, pillarFilter, statusFilter, sort, gscMetrics])
 
   const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
@@ -86,10 +101,12 @@ export function ArticlesTable({
         <FilterSelect
           label={t('sort')}
           value={sort}
-          onChange={(v) => setSort(v as 'updated' | 'status')}
+          onChange={(v) => setSort(v as 'updated' | 'status' | 'clicks' | 'position')}
           options={[
             { value: 'updated', label: t('sort_updated') },
             { value: 'status', label: t('sort_status') },
+            { value: 'clicks', label: t('sort_clicks') },
+            { value: 'position', label: t('sort_position') },
           ]}
         />
         <span className="ml-auto text-[11px] font-mono text-ink-4">
