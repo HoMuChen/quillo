@@ -66,5 +66,8 @@
   "gsc_disconnect": "Disconnect",
   "gsc_reconnect_needed": "Google access was revoked. Reconnect to resume syncing.",
   "gsc_connected_banner": "Connected. First sync started.",
-  "gsc_not_connected_body": "Connect your Google Search Console property to see performance data and enrich planning with real search queries."
+  "gsc_not_connected_body": "Connect your Google Search Console property to see performance data and enrich planning with real search queries.",
+  "gsc_banner_stale": "GSC sync is overdue (last synced {when}). Sync now in Settings.",
+  "gsc_banner_never": "GSC connected but not synced yet. Go to Settings → Sync now.",
+  "gsc_banner_go_settings": "Settings"
 }

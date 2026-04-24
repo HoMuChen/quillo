@@ -66,5 +66,8 @@
   "gsc_disconnect": "中斷連結",
   "gsc_reconnect_needed": "Google 存取權已撤銷，請重新連結以繼續同步。",
   "gsc_connected_banner": "已連結，首次同步已啟動。",
-  "gsc_not_connected_body": "連接 Google Search Console，查看成效數據，並以真實搜尋查詢豐富內容規劃。"
+  "gsc_not_connected_body": "連接 Google Search Console，查看成效數據，並以真實搜尋查詢豐富內容規劃。",
+  "gsc_banner_stale": "GSC 同步已逾期（上次同步：{when}）。請前往設定立即同步。",
+  "gsc_banner_never": "GSC 已連結但尚未同步。請前往設定 → 立即同步。",
+  "gsc_banner_go_settings": "設定"
 }

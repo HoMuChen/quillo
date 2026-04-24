@@ -1,5 +1,6 @@
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, getLocale } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import { GscStatusBanner } from '@/app/[locale]/(app)/projects/[projectId]/_gsc-status-banner'
 
 type Props = {
   projectId: string
@@ -9,18 +10,21 @@ type Props = {
 
 export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: Props) {
   const t = await getTranslations('articles')
+  const locale = await getLocale()
   const supabase = await createClient()
 
   // 1. Check GSC connection exists
   const { data: gscConn } = await supabase
     .from('gsc_connections')
-    .select('last_synced_at')
+    .select('last_synced_at, last_sync_error')
     .eq('project_id', projectId)
     .maybeSingle()
 
   if (!gscConn) {
     return <EmptyState>{t('perf_no_connection')}</EmptyState>
   }
+
+  const banner = <GscStatusBanner gscConn={gscConn} projectId={projectId} locale={locale} />
 
   // 2. Find the most-recently-published URL for this article
   const { data: target } = await supabase
@@ -33,7 +37,12 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
     .maybeSingle()
 
   if (!target?.normalized_url) {
-    return <EmptyState>{t('perf_not_published')}</EmptyState>
+    return (
+      <div className="space-y-3">
+        {banner}
+        <EmptyState>{t('perf_not_published')}</EmptyState>
+      </div>
+    )
   }
 
   const normalizedUrl = target.normalized_url
@@ -64,10 +73,13 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
 
   if (!curRows || curRows.length === 0) {
     return (
-      <EmptyState>
-        {t('perf_no_data')}
-        <p className="text-[11px] font-mono text-ink-4 mt-1">{t('perf_url_hint', { url: normalizedUrl })}</p>
-      </EmptyState>
+      <div className="space-y-3">
+        {banner}
+        <EmptyState>
+          {t('perf_no_data')}
+          <p className="text-[11px] font-mono text-ink-4 mt-1">{t('perf_url_hint', { url: normalizedUrl })}</p>
+        </EmptyState>
+      </div>
     )
   }
 
@@ -111,6 +123,7 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
 
   return (
     <div className="space-y-8">
+      {banner}
       {/* Summary tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Tile label={t('perf_clicks')} value={totalClicks.toLocaleString()} delta={delta(totalClicks, prevClicks)} />

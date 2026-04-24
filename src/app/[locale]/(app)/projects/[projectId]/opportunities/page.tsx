@@ -7,6 +7,7 @@ import {
   getRisingQueries,
   getDecayingPages,
 } from '@/lib/gsc/opportunities'
+import { GscStatusBanner } from '../_gsc-status-banner'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
 
@@ -23,7 +24,7 @@ export default async function OpportunitiesPage({ params }: Props) {
   // Check if GSC is connected
   const { data: gscConn } = await supabase
     .from('gsc_connections')
-    .select('last_synced_at')
+    .select('last_synced_at, last_sync_error')
     .eq('project_id', projectId)
     .maybeSingle()
 
@@ -58,6 +59,8 @@ export default async function OpportunitiesPage({ params }: Props) {
       <header>
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">{t('title')}</h1>
       </header>
+
+      <GscStatusBanner gscConn={gscConn} projectId={projectId} locale={locale} />
 
       {!hasSyncData || !hasAnyData ? (
         <div className="rounded-xl border border-dashed border-rule bg-bg/60 p-10 text-center">
