@@ -30,6 +30,62 @@ export default async function ArticlesPage({ params }: Props) {
     .eq('project_id', projectId)
     .order('position')
 
+  // GSC metrics for published articles
+  let gscMetrics: Record<string, { clicks: number; position: number }> = {}
+
+  const { data: gscConn } = await supabase
+    .from('gsc_connections')
+    .select('last_synced_at')
+    .eq('project_id', projectId)
+    .maybeSingle()
+
+  if (gscConn?.last_synced_at && (articles ?? []).length > 0) {
+    const articleIds = (articles ?? []).map((a) => a.id)
+
+    // Get normalized_url per article (most recent published target)
+    const { data: targets } = await supabase
+      .from('publish_targets')
+      .select('article_id, normalized_url')
+      .in('article_id', articleIds)
+      .not('normalized_url', 'is', null)
+
+    if (targets && targets.length > 0) {
+      const urlToArticle = new Map(targets.map((t) => [t.normalized_url!, t.article_id]))
+      const urls = [...urlToArticle.keys()]
+
+      const since = new Date()
+      since.setUTCDate(since.getUTCDate() - 28)
+
+      const { data: gscRows } = await supabase
+        .from('gsc_daily_query_page')
+        .select('normalized_page_url, clicks, impressions, position')
+        .eq('project_id', projectId)
+        .in('normalized_page_url', urls)
+        .gte('date', since.toISOString().slice(0, 10))
+
+      // Aggregate by URL
+      const urlMetrics = new Map<string, { clicks: number; impSum: number; posSum: number }>()
+      for (const r of gscRows ?? []) {
+        const prev = urlMetrics.get(r.normalized_page_url) ?? { clicks: 0, impSum: 0, posSum: 0 }
+        prev.clicks += r.clicks
+        prev.impSum += r.impressions
+        prev.posSum += r.position * r.impressions
+        urlMetrics.set(r.normalized_page_url, prev)
+      }
+
+      // Map back to article IDs
+      for (const [url, v] of urlMetrics.entries()) {
+        const articleId = urlToArticle.get(url)
+        if (articleId) {
+          gscMetrics[articleId] = {
+            clicks: v.clicks,
+            position: v.impSum > 0 ? v.posSum / v.impSum : 0,
+          }
+        }
+      }
+    }
+  }
+
   return (
     <div className="space-y-5 max-w-6xl">
       <header className="flex items-start justify-between gap-4">
@@ -61,6 +117,7 @@ export default async function ArticlesPage({ params }: Props) {
             pillar_title: (a.pillars as { title: string } | null)?.title ?? null,
           }))}
           pillars={pillars ?? []}
+          gscMetrics={gscMetrics}
         />
       )}
     </div>

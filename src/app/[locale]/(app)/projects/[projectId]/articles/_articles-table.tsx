@@ -28,11 +28,12 @@ type Status = typeof STATUS_ORDER[number]
 const PAGE_SIZE = 20
 
 export function ArticlesTable({
-  projectId, articles, pillars,
+  projectId, articles, pillars, gscMetrics,
 }: {
   projectId: string
   articles: Row[]
   pillars: Pillar[]
+  gscMetrics?: Record<string, { clicks: number; position: number }>
 }) {
   const t = useTranslations('articles')
   const [pillarFilter, setPillarFilter] = useState<string>('all')
@@ -104,12 +105,14 @@ export function ArticlesTable({
               <th className="px-4 py-2 font-medium">{t('col_pillar')}</th>
               <th className="px-4 py-2 font-medium">{t('col_status')}</th>
               <th className="px-4 py-2 font-medium">{t('col_updated')}</th>
+              <th className="px-4 py-2 font-medium text-right">Clicks</th>
+              <th className="px-4 py-2 font-medium text-right">Position</th>
               <th className="px-2 py-2 font-medium"></th>
             </tr>
           </thead>
           <tbody>
             {pageRows.map((a) => (
-              <ArticleRow key={a.id} projectId={projectId} row={a} />
+              <ArticleRow key={a.id} projectId={projectId} row={a} gscMetrics={gscMetrics} />
             ))}
           </tbody>
         </table>
@@ -174,7 +177,7 @@ function pageNumbers(current: number, total: number): (number | '…')[] {
   return pages
 }
 
-function ArticleRow({ projectId, row }: { projectId: string; row: Row }) {
+function ArticleRow({ projectId, row, gscMetrics }: { projectId: string; row: Row; gscMetrics?: Record<string, { clicks: number; position: number }> }) {
   const t = useTranslations('articles')
   const [confirming, setConfirming] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -206,6 +209,18 @@ function ArticleRow({ projectId, row }: { projectId: string; row: Row }) {
       </td>
       <td className="px-4 py-2.5 font-mono text-[11px] text-ink-3 whitespace-nowrap">
         {new Date(row.updated_at).toISOString().slice(0, 10)}
+      </td>
+      <td className="px-4 py-2.5 font-mono text-[11px] text-ink-3 text-right whitespace-nowrap">
+        {gscMetrics?.[row.id]?.clicks != null
+          ? gscMetrics[row.id].clicks > 999
+            ? `${(gscMetrics[row.id].clicks / 1000).toFixed(1)}k`
+            : String(gscMetrics[row.id].clicks)
+          : '—'}
+      </td>
+      <td className="px-4 py-2.5 font-mono text-[11px] text-ink-3 text-right whitespace-nowrap">
+        {gscMetrics?.[row.id]?.position != null && gscMetrics[row.id].position > 0
+          ? gscMetrics[row.id].position.toFixed(1)
+          : '—'}
       </td>
       <td className="px-2 py-2.5">
         {confirming ? (

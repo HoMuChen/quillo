@@ -57,7 +57,7 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
   const [{ data: curRows }, { data: prevRows }] = await Promise.all([
     supabase
       .from('gsc_daily_query_page')
-      .select('clicks, impressions, ctr, position, query')
+      .select('clicks, impressions, ctr, position, query, date')
       .eq('project_id', projectId)
       .eq('normalized_page_url', normalizedUrl)
       .gte('date', toDateStr(periodStart))
@@ -100,7 +100,19 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
     return pct >= 0 ? `+${pct}%` : `${pct}%`
   }
 
-  // 6. Top 20 queries by clicks
+  // 6. Aggregate by date for chart (sorted ascending)
+  const dateMap = new Map<string, { clicks: number; impressions: number }>()
+  for (const r of curRows) {
+    const prev = dateMap.get(r.date as string) ?? { clicks: 0, impressions: 0 }
+    prev.clicks += r.clicks
+    prev.impressions += r.impressions
+    dateMap.set(r.date as string, prev)
+  }
+  const chartData = Array.from(dateMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, v]) => ({ date, ...v }))
+
+  // 7. Top 20 queries by clicks
   const queryMap = new Map<string, { clicks: number; impressions: number; ctrSum: number; posSum: number; count: number }>()
   for (const r of curRows) {
     const prev = queryMap.get(r.query) ?? { clicks: 0, impressions: 0, ctrSum: 0, posSum: 0, count: 0 }
@@ -131,6 +143,17 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
         <Tile label={t('perf_ctr')} value={`${(avgCtr * 100).toFixed(1)}%`} />
         <Tile label={t('perf_position')} value={avgPosition.toFixed(1)} />
       </div>
+
+      {/* Daily chart */}
+      {chartData.length >= 2 && (
+        <div className="rounded-xl bg-white shadow-sh-1 px-4 py-3">
+          <MiniChart data={chartData} />
+          <div className="flex justify-between text-[10px] text-ink-4 mt-1">
+            <span>{chartData[0].date}</span>
+            <span>{chartData[chartData.length - 1].date}</span>
+          </div>
+        </div>
+      )}
 
       {/* Top queries table */}
       {topQueries.length > 0 && (
@@ -174,6 +197,28 @@ function Tile({ label, value, delta }: { label: string; value: string; delta?: s
         <div className={`text-[11px] font-medium ${positive ? 'text-sage' : 'text-rust'}`}>{delta}</div>
       )}
     </div>
+  )
+}
+
+function MiniChart({ data }: { data: Array<{ date: string; clicks: number; impressions: number }> }) {
+  if (data.length < 2) return null
+  const W = 600, H = 80, PAD = 4
+  const maxC = Math.max(...data.map((d) => d.clicks), 1)
+  const maxI = Math.max(...data.map((d) => d.impressions), 1)
+  const n = data.length
+
+  const pts = (vals: number[], max: number) =>
+    vals.map((v, i) => `${(i / (n - 1)) * W},${H - PAD - (v / max) * (H - PAD * 2)}`).join(' ')
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[72px]" preserveAspectRatio="none">
+      {/* impressions — lighter */}
+      <polyline points={pts(data.map((d) => d.impressions), maxI)}
+        fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-4" />
+      {/* clicks — stronger */}
+      <polyline points={pts(data.map((d) => d.clicks), maxC)}
+        fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-2" />
+    </svg>
   )
 }
 
