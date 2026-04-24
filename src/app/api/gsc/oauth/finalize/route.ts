@@ -69,5 +69,5 @@ export async function POST(req: Request) {
   }, { onConflict: 'project_id' })
   if (error) return new Response(`db error: ${error.message}`, { status: 500 })
 
-  return Response.redirect(new URL(`/zh-TW/projects/${envelope.projectId}/settings?gsc=connected`, req.url), 303)
+  return Response.redirect(new URL(`/projects/${envelope.projectId}/settings?gsc=connected`, req.url), 303)
 }

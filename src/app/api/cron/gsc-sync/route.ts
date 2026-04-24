@@ -14,6 +14,7 @@ export async function GET(req: Request) {
   const { data: conns } = await supabase
     .from('gsc_connections')
     .select('project_id')
+    .neq('last_sync_error', 'refresh_token_revoked')
 
   const results: Array<{ projectId: string; ok: boolean; rows?: number; error?: string }> = []
   for (const { project_id } of conns ?? []) {

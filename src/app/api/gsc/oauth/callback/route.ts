@@ -54,7 +54,7 @@ export async function GET(req: Request) {
     userId: user.id,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
-    expiresAt: Date.now() + tokens.expiresInSeconds * 1000,
+    expiresAt: Date.now() + 10 * 60 * 1000,
     googleEmail,
     projectId,
   }))
@@ -84,13 +84,13 @@ label{display:block;margin-top:12px}select,input[type=submit]{padding:8px;margin
   <label>Property<select name="propertyUrl">${options}</select></label>
   <input type="submit" value="Connect" />
 </form>
-<p><a href="/zh-TW/projects/${escape(projectId)}/settings">Cancel</a></p>
+<p><a href="/projects/${escape(projectId)}/settings">Cancel</a></p>
 </body></html>`
 }
 
 function renderErrorPage(message: string, projectId: string) {
   return `<!doctype html><html><body style="font-family:system-ui;max-width:480px;margin:40px auto;padding:20px">
 <h1>Connection failed</h1><p>${escape(message)}</p>
-<p><a href="/zh-TW/projects/${escape(projectId)}/settings">Back to settings</a></p>
+<p><a href="/projects/${escape(projectId)}/settings">Back to settings</a></p>
 </body></html>`
 }
