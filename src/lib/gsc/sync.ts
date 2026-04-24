@@ -9,11 +9,13 @@ const ROW_LIMIT = 25000
 // API fetches, not runaway storage — the overshoot is bounded and acceptable.
 const MAX_ROWS_PER_RUN = 100_000
 
-export function computeSyncWindow(lastSyncedAt: string | null, today: Date): {
-  startDate: string; endDate: string
-} {
+export function computeSyncWindow(
+  lastSyncedAt: string | null,
+  today: Date,
+  coldStartDays = 90,
+): { startDate: string; endDate: string } {
   const end = new Date(today); end.setUTCDate(end.getUTCDate() - 1)
-  const coldStart = new Date(today); coldStart.setUTCDate(coldStart.getUTCDate() - 16)
+  const coldStart = new Date(today); coldStart.setUTCDate(coldStart.getUTCDate() - coldStartDays)
   let start: Date
   if (!lastSyncedAt) {
     start = coldStart
@@ -28,7 +30,7 @@ function toIsoDate(d: Date) {
   return d.toISOString().slice(0, 10)
 }
 
-export async function runGscSync(projectId: string): Promise<{
+export async function runGscSync(projectId: string, coldStartDays = 90): Promise<{
   rowsInserted: number; status: 'ok' | 'partial' | 'error'
 }> {
   const supabase = await createClient()
@@ -51,7 +53,7 @@ export async function runGscSync(projectId: string): Promise<{
     .single()
   const runId = runStart?.id
 
-  const window = computeSyncWindow(conn.last_synced_at, new Date())
+  const window = computeSyncWindow(conn.last_synced_at, new Date(), coldStartDays)
 
   let rowsInserted = 0
   let status: 'ok' | 'partial' | 'error' = 'ok'
