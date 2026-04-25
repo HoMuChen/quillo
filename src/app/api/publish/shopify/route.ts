@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
-import { marked } from 'marked'
 import { createClient } from '@/lib/supabase/server'
 import {
   shopifyConfigFromRow,
@@ -9,6 +8,12 @@ import {
   deleteShopifyArticle,
   upsertShopifyMetafield,
 } from '@/lib/shopify/client'
+import {
+  loadPublishContext,
+  makePublishLogger,
+  markdownToHtml,
+  upsertPublishTarget,
+} from '@/lib/publish/helpers'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -28,53 +33,12 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await createClient()
-
-  const { data: article, error: artErr } = await supabase
-    .from('articles')
-    .select('id,project_id,tenant_id,title,slug,excerpt,meta_title,meta_description,canonical_url,feature_image_url,tags,body_markdown')
-    .eq('id', parsed.articleId)
-    .single()
-  if (artErr || !article) return NextResponse.json({ error: 'Article not found' }, { status: 404 })
-
-  const { data: conn, error: connErr } = await supabase
-    .from('site_connections')
-    .select('id,project_id,config_encrypted,platform')
-    .eq('id', parsed.connectionId)
-    .single()
-  if (connErr || !conn || conn.platform !== 'shopify') {
-    return NextResponse.json({ error: 'Connection not found' }, { status: 404 })
-  }
-  if (conn.project_id !== article.project_id) {
-    return NextResponse.json({ error: 'Connection does not belong to article project' }, { status: 403 })
-  }
-
-  const { data: existingTarget } = await supabase
-    .from('publish_targets')
-    .select('id,remote_post_id,remote_url,remote_status')
-    .eq('article_id', article.id)
-    .eq('connection_id', conn.id)
-    .maybeSingle()
+  const ctx = await loadPublishContext(supabase, parsed.articleId, parsed.connectionId, 'shopify')
+  if (ctx instanceof NextResponse) return ctx
+  const { article, conn, existingTarget } = ctx
 
   const config = shopifyConfigFromRow({ config_encrypted: conn.config_encrypted })
-
-  async function writeLog(
-    publish_target_id: string,
-    action: 'publish' | 'republish' | 'unpublish',
-    status: 'success' | 'failure',
-    errorMessage: string | null = null,
-  ) {
-    try {
-      await supabase.from('publish_logs').insert({
-        publish_target_id,
-        tenant_id: article!.tenant_id,
-        action,
-        status,
-        error_message: errorMessage,
-      })
-    } catch (err) {
-      console.error('Could not write publish log', err)
-    }
-  }
+  const writeLog = makePublishLogger(supabase, article.tenant_id)
 
   // --- UNPUBLISH branch ---
   if (parsed.action === 'unpublish') {
@@ -92,15 +56,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unpublish failed'
-      if (existingTarget) await writeLog(existingTarget.id, 'unpublish', 'failure', msg)
+      await writeLog(existingTarget.id, 'unpublish', 'failure', msg)
       return NextResponse.json({ error: msg }, { status: 500 })
     }
   }
 
   // --- PUBLISH / DRAFT branch ---
-  const normalizedMd = (article.body_markdown ?? '').replace(/^# /gm, '## ')
-  const bodyHtml = (await marked.parse(normalizedMd, { async: true })) as string
-
+  const bodyHtml = await markdownToHtml(article.body_markdown ?? '')
   const published = parsed.action === 'publish'
   const tagString = (article.tags ?? []).join(', ')
 
@@ -147,23 +109,16 @@ export async function POST(req: NextRequest) {
   const remoteUrl = remoteArticle.url ?? null
   const remoteStatus = published ? 'published' : 'draft'
 
-  const { data: saved, error: saveErr } = await supabase
-    .from('publish_targets')
-    .upsert(
-      {
-        id: existingTarget?.id,
-        article_id: article.id,
-        connection_id: conn.id,
-        tenant_id: article.tenant_id,
-        remote_post_id: String(remoteArticle.id),
-        remote_url: remoteUrl,
-        remote_status: remoteStatus,
-        published_at: published ? new Date().toISOString() : null,
-      },
-      { onConflict: 'article_id,connection_id' },
-    )
-    .select('id')
-    .single()
+  const { data: saved, error: saveErr } = await upsertPublishTarget(supabase, {
+    id: existingTarget?.id,
+    article_id: article.id,
+    connection_id: conn.id,
+    tenant_id: article.tenant_id,
+    remote_post_id: String(remoteArticle.id),
+    remote_url: remoteUrl,
+    remote_status: remoteStatus,
+    published_at: published ? new Date().toISOString() : null,
+  })
 
   if (saveErr || !saved) {
     return NextResponse.json(
