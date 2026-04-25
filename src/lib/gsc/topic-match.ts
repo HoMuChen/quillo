@@ -30,7 +30,7 @@ export async function getSearchDataForTopic(
   since.setUTCDate(since.getUTCDate() - 90)
 
   const { data, error } = await supabase
-    .from('gsc_daily_query_page')
+    .from('gsc_query_daily')     // changed from gsc_daily_query_page
     .select('query,impressions,clicks,position')
     .eq('project_id', projectId)
     .gte('date', since.toISOString().slice(0, 10))
