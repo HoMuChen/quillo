@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { throwIfError } from '@/lib/supabase/helpers'
 import { clusterArticlesSchema, type ClusterArticles, type OrganizePlan } from '@/lib/ai/schemas'
 import { ghostClientFromRow } from '@/lib/ghost/client'
 import { shopifyConfigFromRow, listShopifyArticles } from '@/lib/shopify/client'
@@ -34,15 +35,13 @@ export async function updatePillar(
 ) {
   const patch = pillarUpdateSchema.parse(input)
   const supabase = await sb()
-  const { error } = await supabase.from('pillars').update(patch).eq('id', pillarId)
-  if (error) throw error
+  throwIfError(await supabase.from('pillars').update(patch).eq('id', pillarId))
   revalidatePath(`/projects/${projectId}/planning`)
 }
 
 export async function deletePillar(projectId: string, pillarId: string) {
   const supabase = await sb()
-  const { error } = await supabase.from('pillars').delete().eq('id', pillarId)
-  if (error) throw error
+  throwIfError(await supabase.from('pillars').delete().eq('id', pillarId))
   revalidatePath(`/projects/${projectId}/planning`)
 }
 
@@ -79,16 +78,17 @@ export async function addPillar(
     .single()
   if (!membership) throw new Error('No tenant')
 
-  const { error } = await supabase.from('pillars').insert({
-    project_id: projectId,
-    tenant_id: membership.tenant_id,
-    title: parsed.title,
-    description: parsed.description ?? null,
-    target_keyword: parsed.target_keyword ?? null,
-    search_intent: parsed.search_intent ?? null,
-    position: nextPos,
-  })
-  if (error) throw error
+  throwIfError(
+    await supabase.from('pillars').insert({
+      project_id: projectId,
+      tenant_id: membership.tenant_id,
+      title: parsed.title,
+      description: parsed.description ?? null,
+      target_keyword: parsed.target_keyword ?? null,
+      search_intent: parsed.search_intent ?? null,
+      position: nextPos,
+    }),
+  )
   revalidatePath(`/projects/${projectId}/planning`)
 }
 
@@ -110,25 +110,25 @@ export async function updateArticle(
 ) {
   const patch = articleUpdateSchema.parse(input)
   const supabase = await sb()
-  const { error } = await supabase
-    .from('articles')
-    .update({
-      title: patch.title,
-      target_keyword: patch.target_keyword ?? null,
-      lsi_keywords: patch.lsi_keywords ?? [],
-      search_intent: patch.search_intent ?? null,
-      word_count_target: patch.word_count_target ?? null,
-      role: patch.role ?? null,
-    })
-    .eq('id', articleId)
-  if (error) throw error
+  throwIfError(
+    await supabase
+      .from('articles')
+      .update({
+        title: patch.title,
+        target_keyword: patch.target_keyword ?? null,
+        lsi_keywords: patch.lsi_keywords ?? [],
+        search_intent: patch.search_intent ?? null,
+        word_count_target: patch.word_count_target ?? null,
+        role: patch.role ?? null,
+      })
+      .eq('id', articleId),
+  )
   revalidatePath(`/projects/${projectId}/planning`)
 }
 
 export async function deleteArticle(projectId: string, articleId: string) {
   const supabase = await sb()
-  const { error } = await supabase.from('articles').delete().eq('id', articleId)
-  if (error) throw error
+  throwIfError(await supabase.from('articles').delete().eq('id', articleId))
   revalidatePath(`/projects/${projectId}/planning`)
 }
 
@@ -160,19 +160,20 @@ export async function addArticle(
     .maybeSingle()
   const nextPos = (last?.position ?? -1) + 1
 
-  const { error } = await supabase.from('articles').insert({
-    project_id: projectId,
-    pillar_id: pillarId,
-    tenant_id: membership.tenant_id,
-    title: parsed.title,
-    target_keyword: parsed.target_keyword ?? null,
-    lsi_keywords: parsed.lsi_keywords ?? [],
-    search_intent: parsed.search_intent ?? null,
-    word_count_target: parsed.word_count_target ?? null,
-    role: parsed.role ?? 'supporting',
-    position: nextPos,
-  })
-  if (error) throw error
+  throwIfError(
+    await supabase.from('articles').insert({
+      project_id: projectId,
+      pillar_id: pillarId,
+      tenant_id: membership.tenant_id,
+      title: parsed.title,
+      target_keyword: parsed.target_keyword ?? null,
+      lsi_keywords: parsed.lsi_keywords ?? [],
+      search_intent: parsed.search_intent ?? null,
+      word_count_target: parsed.word_count_target ?? null,
+      role: parsed.role ?? 'supporting',
+      position: nextPos,
+    }),
+  )
   revalidatePath(`/projects/${projectId}/planning`)
 }
 
@@ -202,9 +203,7 @@ export async function regenerateClusterAction(
   if (blocker) throw new Error('Some articles already past planning — cannot regenerate')
 
   // Replace: delete all children, insert new ones
-  const { error: delError } = await supabase
-    .from('articles').delete().eq('pillar_id', pillarId)
-  if (delError) throw delError
+  throwIfError(await supabase.from('articles').delete().eq('pillar_id', pillarId))
 
   const rows = parsed.articles.map((a, i) => ({
     project_id: projectId,
@@ -218,8 +217,7 @@ export async function regenerateClusterAction(
     role: a.role,
     position: i,
   }))
-  const { error: insError } = await supabase.from('articles').insert(rows)
-  if (insError) throw insError
+  throwIfError(await supabase.from('articles').insert(rows))
 
   revalidatePath(`/projects/${projectId}/planning`)
 }
@@ -341,14 +339,15 @@ export async function assignOrphanToPillarAction(
     .eq('project_id', projectId)
     .maybeSingle()
   if (!pillarCheck) throw new Error('Pillar does not belong to this project')
-  const { error } = await supabase
-    .from('articles')
-    .update({ pillar_id: pillarId })
-    .eq('id', articleId)
-    .eq('project_id', projectId)
-    .eq('source', 'ghost')
-    .is('pillar_id', null)
-  if (error) throw error
+  throwIfError(
+    await supabase
+      .from('articles')
+      .update({ pillar_id: pillarId })
+      .eq('id', articleId)
+      .eq('project_id', projectId)
+      .eq('source', 'ghost')
+      .is('pillar_id', null),
+  )
   revalidatePath(`/projects/${projectId}/planning`)
 }
 
@@ -382,12 +381,13 @@ export async function createPillarAndAssignAction(
     .single()
   if (pillarErr || !pillar) throw pillarErr ?? new Error('Failed to create pillar')
 
-  const { error: assignErr } = await supabase
-    .from('articles')
-    .update({ pillar_id: pillar.id })
-    .eq('id', articleId)
-    .eq('project_id', projectId)
-  if (assignErr) throw assignErr
+  throwIfError(
+    await supabase
+      .from('articles')
+      .update({ pillar_id: pillar.id })
+      .eq('id', articleId)
+      .eq('project_id', projectId),
+  )
 
   revalidatePath(`/projects/${projectId}/planning`)
   return { pillarId: pillar.id }

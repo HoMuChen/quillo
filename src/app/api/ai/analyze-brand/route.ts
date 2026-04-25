@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { MODELS } from '@/lib/ai/gateway'
 import { analyzeBrandSchema } from '@/lib/ai/schemas'
+import { validateBody } from '@/lib/http/validate'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -24,8 +25,8 @@ function extractText(node: unknown): string {
 }
 
 export async function POST(req: Request) {
-  const parsed = bodySchema.safeParse(await req.json())
-  if (!parsed.success) return new Response('Bad request', { status: 400 })
+  const parsed = await validateBody(req, bodySchema)
+  if (parsed instanceof Response) return parsed
   const { projectId, articleIds } = parsed.data
 
   const supabase = await createClient()

@@ -2,6 +2,7 @@ import type { Database } from '@/lib/supabase/types'
 
 type Brand = Database['public']['Tables']['brand_materials']['Row'] | null
 type Project = Database['public']['Tables']['projects']['Row']
+type Pillar = Database['public']['Tables']['pillars']['Row']
 
 export function brandContextBlock(project: Project, brand: Brand): string {
   return `<brand_context>
@@ -15,6 +16,48 @@ export function brandContextBlock(project: Project, brand: Brand): string {
 <forbidden_terms>${(brand?.forbidden_terms ?? []).join(', ')}</forbidden_terms>
 <ee_at_cases>${brand?.ee_at_cases ?? ''}</ee_at_cases>
 </brand_context>`
+}
+
+export function pillarContextBlock(
+  pillar: Pick<Pillar, 'title' | 'description' | 'target_keyword' | 'search_intent'>,
+): string {
+  return `<pillar>
+<title>${pillar.title}</title>
+<description>${pillar.description ?? ''}</description>
+<target_keyword>${pillar.target_keyword ?? ''}</target_keyword>
+<search_intent>${pillar.search_intent ?? ''}</search_intent>
+</pillar>`
+}
+
+export function existingArticlesBlock(
+  articles: ReadonlyArray<{ id: string; title: string; target_keyword?: string | null }>,
+): string {
+  if (articles.length === 0) return ''
+  const items = articles
+    .map(
+      (a) =>
+        `<article id="${a.id}"><title>${a.title}</title><target_keyword>${a.target_keyword ?? ''}</target_keyword></article>`,
+    )
+    .join('\n')
+  return `\n\n<existing_articles>\n${items}\n</existing_articles>`
+}
+
+export function searchDataBlock(
+  queries: ReadonlyArray<{
+    query: string
+    impressions: number
+    clicks: number
+    avg_position: number
+  }>,
+): string {
+  if (queries.length === 0) return ''
+  const items = queries
+    .map(
+      (q) =>
+        `<query><text>${q.query}</text><impressions>${q.impressions}</impressions><clicks>${q.clicks}</clicks><avg_position>${q.avg_position.toFixed(1)}</avg_position></query>`,
+    )
+    .join('\n')
+  return `\n\n<search_data>\n${items}\n</search_data>`
 }
 
 export function planStep1System(pillarCount: number): string {

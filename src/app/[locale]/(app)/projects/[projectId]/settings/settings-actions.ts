@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import { throwIfError } from '@/lib/supabase/helpers'
 import { encryptJson, decryptJson, toBytea, fromBytea } from '@/lib/crypto/encrypt'
 import { ghostClientFromConfig } from '@/lib/ghost/client'
 import {
@@ -39,20 +40,22 @@ async function upsertConnection(
     .maybeSingle()
 
   if (existing) {
-    const { error } = await supabase
-      .from('site_connections')
-      .update({ name, config_encrypted: ciphertext })
-      .eq('id', existing.id)
-    if (error) throw error
+    throwIfError(
+      await supabase
+        .from('site_connections')
+        .update({ name, config_encrypted: ciphertext })
+        .eq('id', existing.id),
+    )
   } else {
-    const { error } = await supabase.from('site_connections').insert({
-      project_id: projectId,
-      tenant_id: membership.tenant_id,
-      platform,
-      name,
-      config_encrypted: ciphertext,
-    })
-    if (error) throw error
+    throwIfError(
+      await supabase.from('site_connections').insert({
+        project_id: projectId,
+        tenant_id: membership.tenant_id,
+        platform,
+        name,
+        config_encrypted: ciphertext,
+      }),
+    )
   }
 
   revalidatePath(`/projects/${projectId}/settings`)
@@ -94,12 +97,13 @@ async function runConnectionTest<Config>(
 
 async function deleteConnection(projectId: string, platform: Platform) {
   const supabase: SupabaseClient = await createClient()
-  const { error } = await supabase
-    .from('site_connections')
-    .delete()
-    .eq('project_id', projectId)
-    .eq('platform', platform)
-  if (error) throw error
+  throwIfError(
+    await supabase
+      .from('site_connections')
+      .delete()
+      .eq('project_id', projectId)
+      .eq('platform', platform),
+  )
   revalidatePath(`/projects/${projectId}/settings`)
 }
 

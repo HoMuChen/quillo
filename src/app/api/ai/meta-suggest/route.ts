@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { MODELS } from '@/lib/ai/gateway'
 import { SEO_SUGGESTION_SYSTEM, brandContextBlock } from '@/lib/ai/prompts'
 import { seoSuggestionSchema } from '@/lib/ai/schemas'
+import { validateBody } from '@/lib/http/validate'
+import { fetchProjectContext } from '@/lib/supabase/helpers'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -11,8 +13,8 @@ export const maxDuration = 60
 const bodySchema = z.object({ articleId: z.string().uuid() })
 
 export async function POST(req: Request) {
-  const parsed = bodySchema.safeParse(await req.json())
-  if (!parsed.success) return new Response('Bad request', { status: 400 })
+  const parsed = await validateBody(req, bodySchema)
+  if (parsed instanceof Response) return parsed
 
   const supabase = await createClient()
   const { data: article } = await supabase
@@ -22,11 +24,9 @@ export async function POST(req: Request) {
     .single()
   if (!article) return new Response('Not found', { status: 404 })
 
-  const [{ data: project }, { data: brand }] = await Promise.all([
-    supabase.from('projects').select('*').eq('id', article.project_id).single(),
-    supabase.from('brand_materials').select('*').eq('project_id', article.project_id).single(),
-  ])
-  if (!project) return new Response('Project missing', { status: 404 })
+  const ctx = await fetchProjectContext(supabase, article.project_id)
+  if (!ctx) return new Response('Project missing', { status: 404 })
+  const { project, brand } = ctx
 
   const bodyTruncated = (article.body_markdown ?? '').slice(0, 4000)
   const focus = article.focus_keyword || article.target_keyword || ''

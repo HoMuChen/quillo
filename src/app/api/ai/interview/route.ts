@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { MODELS } from '@/lib/ai/gateway'
 import { PLAN_AND_QUESTIONS_SYSTEM, brandContextBlock } from '@/lib/ai/prompts'
 import { planAndQuestionsSchema } from '@/lib/ai/schemas'
+import { validateBody } from '@/lib/http/validate'
+import { fetchProjectContext, setArticleStatus } from '@/lib/supabase/helpers'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -11,8 +13,8 @@ export const maxDuration = 120
 const bodySchema = z.object({ articleId: z.string().uuid() })
 
 export async function POST(req: Request) {
-  const parsed = bodySchema.safeParse(await req.json())
-  if (!parsed.success) return new Response('Bad request', { status: 400 })
+  const parsed = await validateBody(req, bodySchema)
+  if (parsed instanceof Response) return parsed
 
   const supabase = await createClient()
 
@@ -26,14 +28,12 @@ export async function POST(req: Request) {
     return new Response('Busy', { status: 409 })
   }
 
-  const [{ data: project }, { data: brand }] = await Promise.all([
-    supabase.from('projects').select('*').eq('id', article.project_id).single(),
-    supabase.from('brand_materials').select('*').eq('project_id', article.project_id).single(),
-  ])
-  if (!project) return new Response('Project missing', { status: 404 })
+  const ctx = await fetchProjectContext(supabase, article.project_id)
+  if (!ctx) return new Response('Project missing', { status: 404 })
+  const { project, brand } = ctx
 
   // Advance status (acts as concurrency lock)
-  await supabase.from('articles').update({ status: 'outlining' }).eq('id', article.id)
+  await setArticleStatus(supabase, article.id, 'outlining')
 
   const result = streamObject({
     model: MODELS.main,
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     }),
     onFinish: async ({ object }) => {
       if (!object) {
-        await supabase.from('articles').update({ status: 'planned' }).eq('id', article.id)
+        await setArticleStatus(supabase, article.id, 'planned')
         return
       }
 
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
         await supabase.from('interview_questions').insert(rows)
       }
 
-      await supabase.from('articles').update({ status: 'interviewing' }).eq('id', article.id)
+      await setArticleStatus(supabase, article.id, 'interviewing')
     },
   })
 

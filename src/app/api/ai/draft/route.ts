@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { MODELS } from '@/lib/ai/gateway'
 import { DRAFT_SYSTEM, brandContextBlock } from '@/lib/ai/prompts'
+import { validateBody } from '@/lib/http/validate'
+import { fetchProjectContext, setArticleStatus } from '@/lib/supabase/helpers'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -10,8 +12,8 @@ export const maxDuration = 300
 const bodySchema = z.object({ articleId: z.string().uuid() })
 
 export async function POST(req: Request) {
-  const parsed = bodySchema.safeParse(await req.json())
-  if (!parsed.success) return new Response('Bad request', { status: 400 })
+  const parsed = await validateBody(req, bodySchema)
+  if (parsed instanceof Response) return parsed
 
   const supabase = await createClient()
 
@@ -23,22 +25,22 @@ export async function POST(req: Request) {
   if (!article) return new Response('Not found', { status: 404 })
   if (['drafting'].includes(article.status)) return new Response('Busy', { status: 409 })
 
-  const [{ data: project }, { data: brand }, { data: questions }] = await Promise.all([
-    supabase.from('projects').select('*').eq('id', article.project_id).single(),
-    supabase.from('brand_materials').select('*').eq('project_id', article.project_id).single(),
+  const [ctx, { data: questions }] = await Promise.all([
+    fetchProjectContext(supabase, article.project_id),
     supabase
       .from('interview_questions')
       .select('section_id,question,answer,status')
       .eq('article_id', article.id)
       .order('position'),
   ])
-  if (!project) return new Response('Project missing', { status: 404 })
+  if (!ctx) return new Response('Project missing', { status: 404 })
+  const { project, brand } = ctx
 
   const sections = (article.article_outlines as { sections: Array<{ id: string; title: string; purpose: string; needs_interview: boolean }> } | null)?.sections ?? []
 
   // Advance status
   const previousStatus = article.status
-  await supabase.from('articles').update({ status: 'drafting' }).eq('id', article.id)
+  await setArticleStatus(supabase, article.id, 'drafting')
 
   const isCjk = /^(zh|ja|ko)/i.test(project.content_locale ?? '')
   const lengthUnit = isCjk ? '字 (characters)' : 'words'
@@ -73,7 +75,7 @@ export async function POST(req: Request) {
     onFinish: async ({ text }) => {
       if (!text) {
         // Roll back status
-        await supabase.from('articles').update({ status: previousStatus }).eq('id', article.id)
+        await setArticleStatus(supabase, article.id, previousStatus)
         return
       }
       await supabase
