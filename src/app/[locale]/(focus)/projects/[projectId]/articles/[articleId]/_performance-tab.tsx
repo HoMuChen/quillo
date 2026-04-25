@@ -84,7 +84,7 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
         {banner}
         <EmptyState>
           {t('perf_no_data')}
-          <p className="text-[11px] font-mono text-ink-4 mt-1">{t('perf_url_hint', { url: normalizedUrl })}</p>
+          <span className="block text-[11px] font-mono text-ink-4 mt-1">{t('perf_url_hint', { url: normalizedUrl })}</span>
         </EmptyState>
       </div>
     )
