@@ -47,31 +47,38 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
 
   const normalizedUrl = target.normalized_url
 
-  // 3. Query current + previous period from gsc_daily_query_page
+  // 3. Query current + previous period page-level (accurate) + query-level (sampled, for top-queries table)
   const today = new Date()
   const periodStart = new Date(today); periodStart.setUTCDate(today.getUTCDate() - rangeDays)
   const prevStart = new Date(periodStart); prevStart.setUTCDate(periodStart.getUTCDate() - rangeDays)
 
   const toDateStr = (d: Date) => d.toISOString().slice(0, 10)
 
-  const [{ data: curRows }, { data: prevRows }] = await Promise.all([
+  const [{ data: pageRowsCur }, { data: pageRowsPrev }, { data: queryRows }] = await Promise.all([
     supabase
-      .from('gsc_daily_query_page')
-      .select('clicks, impressions, ctr, position, query, date')
+      .from('gsc_page_daily')
+      .select('date, clicks, impressions, ctr, position')
       .eq('project_id', projectId)
       .eq('normalized_page_url', normalizedUrl)
       .gte('date', toDateStr(periodStart))
       .lt('date', toDateStr(today)),
     supabase
-      .from('gsc_daily_query_page')
+      .from('gsc_page_daily')
       .select('clicks, impressions')
       .eq('project_id', projectId)
       .eq('normalized_page_url', normalizedUrl)
       .gte('date', toDateStr(prevStart))
       .lt('date', toDateStr(periodStart)),
+    supabase
+      .from('gsc_daily_query_page')
+      .select('query, clicks, impressions, position')
+      .eq('project_id', projectId)
+      .eq('normalized_page_url', normalizedUrl)
+      .gte('date', toDateStr(periodStart))
+      .lt('date', toDateStr(today)),
   ])
 
-  if (!curRows || curRows.length === 0) {
+  if (!pageRowsCur || pageRowsCur.length === 0) {
     return (
       <div className="space-y-3">
         {banner}
@@ -83,16 +90,16 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
     )
   }
 
-  // 4. Aggregate current period
-  const totalClicks = curRows.reduce((s, r) => s + r.clicks, 0)
-  const totalImpressions = curRows.reduce((s, r) => s + r.impressions, 0)
+  // 4. Aggregate current period (accurate page-level data)
+  const totalClicks = pageRowsCur.reduce((s, r) => s + r.clicks, 0)
+  const totalImpressions = pageRowsCur.reduce((s, r) => s + r.impressions, 0)
   const avgCtr = totalImpressions > 0 ? totalClicks / totalImpressions : 0
-  const weightedPos = curRows.reduce((s, r) => s + r.position * r.impressions, 0)
+  const weightedPos = pageRowsCur.reduce((s, r) => s + r.position * r.impressions, 0)
   const avgPosition = totalImpressions > 0 ? weightedPos / totalImpressions : 0
 
   // 5. Aggregate previous period for deltas
-  const prevClicks = (prevRows ?? []).reduce((s, r) => s + r.clicks, 0)
-  const prevImpressions = (prevRows ?? []).reduce((s, r) => s + r.impressions, 0)
+  const prevClicks = (pageRowsPrev ?? []).reduce((s, r) => s + r.clicks, 0)
+  const prevImpressions = (pageRowsPrev ?? []).reduce((s, r) => s + r.impressions, 0)
 
   function delta(cur: number, prev: number): string | null {
     if (prev === 0) return null
@@ -100,21 +107,15 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
     return pct >= 0 ? `+${pct}%` : `${pct}%`
   }
 
-  // 6. Aggregate by date for chart (sorted ascending)
-  const dateMap = new Map<string, { clicks: number; impressions: number }>()
-  for (const r of curRows) {
-    const prev = dateMap.get(r.date as string) ?? { clicks: 0, impressions: 0 }
-    prev.clicks += r.clicks
-    prev.impressions += r.impressions
-    dateMap.set(r.date as string, prev)
-  }
-  const chartData = Array.from(dateMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, v]) => ({ date, ...v }))
+  // 6. Build chart data from accurate page-level rows (one row per date, no grouping needed)
+  const chartData = pageRowsCur
+    .slice()
+    .sort((a, b) => (a.date as string).localeCompare(b.date as string))
+    .map((r) => ({ date: r.date as string, clicks: r.clicks, impressions: r.impressions }))
 
-  // 7. Top 20 queries by clicks
+  // 7. Top 20 queries by clicks (sampled query-level data)
   const queryMap = new Map<string, { clicks: number; impressions: number; ctrSum: number; posSum: number; count: number }>()
-  for (const r of curRows) {
+  for (const r of queryRows ?? []) {
     const prev = queryMap.get(r.query) ?? { clicks: 0, impressions: 0, ctrSum: 0, posSum: 0, count: 0 }
     prev.clicks += r.clicks
     prev.impressions += r.impressions

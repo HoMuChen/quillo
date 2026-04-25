@@ -57,7 +57,7 @@ export default async function ArticlesPage({ params }: Props) {
       since.setUTCDate(since.getUTCDate() - 28)
 
       const { data: gscRows } = await supabase
-        .from('gsc_daily_query_page')
+        .from('gsc_page_daily')
         .select('normalized_page_url, clicks, impressions, position')
         .eq('project_id', projectId)
         .in('normalized_page_url', urls)
