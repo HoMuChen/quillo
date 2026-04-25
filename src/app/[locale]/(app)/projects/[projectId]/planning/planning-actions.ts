@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { throwIfError } from '@/lib/supabase/helpers'
 import { requireTenant } from '@/lib/auth/require-user'
+import type { ArticleStatus } from '@/lib/article'
 import { clusterArticlesSchema, type ClusterArticles, type OrganizePlan } from '@/lib/ai/schemas'
 import { ghostClientFromRow } from '@/lib/ghost/client'
 import { shopifyConfigFromRow, listShopifyArticles } from '@/lib/shopify/client'
@@ -259,7 +260,7 @@ export async function syncGhostArticlesAction(projectId: string) {
           ? generateJSON(post.html, [StarterKit, TiptapImage, TiptapLink])
           : null,
         tags: tagNames,
-        status: 'draft_ready',
+        status: 'draft_ready' satisfies ArticleStatus,
         position: nextPos++,
         // source is not in generated types yet but exists in DB
         ...({ source: 'ghost' } as Record<string, unknown>),
@@ -459,7 +460,7 @@ export async function syncShopifyArticlesAction(projectId: string) {
         excerpt: post.excerpt ?? null,
         body_tiptap: bodyTiptap,
         tags: tagNames,
-        status: 'draft_ready',
+        status: 'draft_ready' satisfies ArticleStatus,
         position: nextPos++,
         ...({ source: 'shopify' } as Record<string, unknown>),
       })

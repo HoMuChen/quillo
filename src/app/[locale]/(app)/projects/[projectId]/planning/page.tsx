@@ -3,21 +3,12 @@ import { setRequestLocale, getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/routing'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
+import type { OrphanArticle } from '@/lib/planning'
 import { PlanningGraph } from './_graph'
 import { SyncGhostButton } from './_sync-button'
 import { OrganizeOrphansButton } from './_organize-button'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
-
-type OrphanArticle = {
-  id: string
-  title: string
-  target_keyword: string | null
-  slug: string | null
-  tags: string[]
-  status: string
-  source: string
-}
 
 export default async function PlanningPage({ params }: Props) {
   const { locale, projectId } = await params

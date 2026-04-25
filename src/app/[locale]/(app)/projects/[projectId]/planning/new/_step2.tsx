@@ -7,9 +7,8 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
 import { pillarPlanSchema, type PillarPlan } from '@/lib/ai/schemas'
+import type { OrphanArticleInput as OrphanArticle } from '@/lib/planning'
 import { savePlanAction } from './actions'
-
-type OrphanArticle = { id: string; title: string; target_keyword: string | null; slug: string | null }
 
 export function PlanStep2({
   projectId,

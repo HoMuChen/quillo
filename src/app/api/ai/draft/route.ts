@@ -5,6 +5,7 @@ import { MODELS } from '@/lib/ai/gateway'
 import { DRAFT_SYSTEM, brandContextBlock } from '@/lib/ai/prompts'
 import { validateBody } from '@/lib/http/validate'
 import { fetchProjectContext, setArticleStatus } from '@/lib/supabase/helpers'
+import type { ArticleStatus } from '@/lib/article'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -23,7 +24,8 @@ export async function POST(req: Request) {
     .eq('id', parsed.data.articleId)
     .single()
   if (!article) return new Response('Not found', { status: 404 })
-  if (['drafting'].includes(article.status)) return new Response('Busy', { status: 409 })
+  const busy: ArticleStatus[] = ['drafting']
+  if (busy.includes(article.status as ArticleStatus)) return new Response('Busy', { status: 409 })
 
   const [ctx, { data: questions }] = await Promise.all([
     fetchProjectContext(supabase, article.project_id),
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
   const sections = (article.article_outlines as { sections: Array<{ id: string; title: string; purpose: string; needs_interview: boolean }> } | null)?.sections ?? []
 
   // Advance status
-  const previousStatus = article.status
+  const previousStatus = article.status as ArticleStatus
   await setArticleStatus(supabase, article.id, 'drafting')
 
   const isCjk = /^(zh|ja|ko)/i.test(project.content_locale ?? '')
@@ -83,7 +85,7 @@ export async function POST(req: Request) {
         .update({
           body_markdown: text,
           // Leave body_tiptap null — client converts on first editor mount.
-          status: 'draft_ready',
+          status: 'draft_ready' satisfies ArticleStatus,
         })
         .eq('id', article.id)
     },

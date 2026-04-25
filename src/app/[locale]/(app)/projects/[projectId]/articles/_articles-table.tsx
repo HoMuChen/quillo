@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ArticleStatusChip } from '@/components/ui/chip'
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ARTICLE_STATUSES, type ArticleStatus } from '@/lib/article'
 import { deleteArticleAction } from './articles-actions'
 
 type Row = {
@@ -22,8 +23,7 @@ type Row = {
 
 type Pillar = { id: string; title: string }
 
-const STATUS_ORDER = ['planned', 'outlining', 'outline_ready', 'interviewing', 'drafting', 'draft_ready', 'editing'] as const
-type Status = typeof STATUS_ORDER[number]
+type Status = ArticleStatus
 
 const PAGE_SIZE = 20
 
@@ -49,8 +49,8 @@ export function ArticlesTable({
     })
     if (sort === 'status') {
       return filtered.sort((a, b) => {
-        const ai = STATUS_ORDER.indexOf(a.status as Status)
-        const bi = STATUS_ORDER.indexOf(b.status as Status)
+        const ai = ARTICLE_STATUSES.indexOf(a.status as Status)
+        const bi = ARTICLE_STATUSES.indexOf(b.status as Status)
         return bi - ai
       })
     }
@@ -95,7 +95,7 @@ export function ArticlesTable({
           onChange={(v) => { setStatusFilter(v as Status | 'all'); setPage(1) }}
           options={[
             { value: 'all', label: t('filter_all') },
-            ...STATUS_ORDER.map((s) => ({ value: s, label: s })),
+            ...ARTICLE_STATUSES.map((s) => ({ value: s, label: s })),
           ]}
         />
         <FilterSelect

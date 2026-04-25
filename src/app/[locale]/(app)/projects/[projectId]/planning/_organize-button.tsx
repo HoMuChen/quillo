@@ -8,17 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Sparkles, X, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { organizeOrphansSchema, type OrganizePlan } from '@/lib/ai/schemas'
+import type { OrphanArticle } from '@/lib/planning'
 import { applyOrganizeAction } from './planning-actions'
-
-type OrphanArticle = {
-  id: string
-  title: string
-  target_keyword: string | null
-  slug: string | null
-  tags: string[]
-  status: string
-  source: string
-}
 
 type Pillar = {
   id: string

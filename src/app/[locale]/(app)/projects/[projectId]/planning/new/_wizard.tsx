@@ -5,10 +5,9 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import type { OrphanArticleInput as OrphanArticle } from '@/lib/planning'
 import { PlanStep2 } from './_step2'
 import { fetchGscSearchDataAction } from './gsc-search-data-action'
-
-type OrphanArticle = { id: string; title: string; target_keyword: string | null; slug: string | null }
 
 export function PlanWizard({ projectId, locale, orphanArticles }: { projectId: string; locale: 'zh-TW' | 'en'; orphanArticles: OrphanArticle[] }) {
   const t = useTranslations('planning')

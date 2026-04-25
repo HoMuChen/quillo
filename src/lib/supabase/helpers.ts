@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './types'
+import type { ArticleStatus } from '@/lib/article'
 
 type DB = SupabaseClient<Database>
 type Project = Database['public']['Tables']['projects']['Row']
@@ -20,7 +21,7 @@ export async function fetchProjectContext(
 export async function setArticleStatus(
   supabase: DB,
   articleId: string,
-  status: string,
+  status: ArticleStatus,
 ): Promise<void> {
   await supabase.from('articles').update({ status }).eq('id', articleId)
 }

@@ -6,6 +6,7 @@ import { PLAN_AND_QUESTIONS_SYSTEM, brandContextBlock } from '@/lib/ai/prompts'
 import { planAndQuestionsSchema } from '@/lib/ai/schemas'
 import { validateBody } from '@/lib/http/validate'
 import { fetchProjectContext, setArticleStatus } from '@/lib/supabase/helpers'
+import type { ArticleStatus } from '@/lib/article'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -24,7 +25,8 @@ export async function POST(req: Request) {
     .eq('id', parsed.data.articleId)
     .single()
   if (!article) return new Response('Not found', { status: 404 })
-  if (['outlining', 'drafting'].includes(article.status)) {
+  const busy: ArticleStatus[] = ['outlining', 'drafting']
+  if (busy.includes(article.status as ArticleStatus)) {
     return new Response('Busy', { status: 409 })
   }
 

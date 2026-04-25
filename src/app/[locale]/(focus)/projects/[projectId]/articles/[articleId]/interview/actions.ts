@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { throwIfError } from '@/lib/supabase/helpers'
+import type { ArticleStatus } from '@/lib/article'
 
 export async function answerQuestionAction(
   projectId: string,
@@ -54,7 +55,7 @@ export async function startManualDraftAction(projectId: string, articleId: strin
   throwIfError(
     await supabase
       .from('articles')
-      .update({ body_tiptap: emptyDoc, body_markdown: '', status: 'editing' })
+      .update({ body_tiptap: emptyDoc, body_markdown: '', status: 'editing' satisfies ArticleStatus })
       .eq('id', articleId),
   )
   revalidatePath(`/projects/${projectId}/articles/${articleId}`)

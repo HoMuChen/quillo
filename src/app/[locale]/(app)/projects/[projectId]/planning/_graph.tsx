@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SlideOverPanel } from '@/components/ui/slide-over'
 import { Pencil, Trash2, RefreshCw, Plus, X } from 'lucide-react'
+import type { OrphanArticle } from '@/lib/planning'
 import {
   updatePillar, deletePillar, addArticle,
   assignOrphanToPillarAction, createPillarAndAssignAction,
@@ -35,16 +36,6 @@ type Article = {
   status: string
   position: number
   pillar_id: string | null
-}
-
-type OrphanArticle = {
-  id: string
-  title: string
-  target_keyword: string | null
-  slug: string | null
-  tags: string[]
-  status: string
-  source: string
 }
 
 type PublishTarget = {

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { setRequestLocale, getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import type { OrphanArticleInput } from '@/lib/planning'
 import { PlanWizard } from './_wizard'
 
 type Props = { params: Promise<{ locale: string; projectId: string }> }
@@ -21,9 +22,7 @@ export default async function NewPlanPage({ params }: Props) {
     .is('pillar_id', null)
     .order('created_at', { ascending: false })
 
-  const orphanArticles = (orphanArticlesRaw ?? []) as Array<{
-    id: string; title: string; target_keyword: string | null; slug: string | null
-  }>
+  const orphanArticles = (orphanArticlesRaw ?? []) as OrphanArticleInput[]
 
   return (
     <div className="space-y-6 max-w-3xl">
