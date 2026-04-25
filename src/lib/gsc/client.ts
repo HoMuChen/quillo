@@ -108,12 +108,13 @@ export type SearchAnalyticsParams = {
   endDate: string
   rowLimit: number
   startRow: number
+  dimensions?: string[]  // default: ['date', 'query', 'page']
 }
 
 export type SearchAnalyticsRow = {
-  date: string
-  query: string
-  page: string
+  date?: string
+  query?: string
+  page?: string
   clicks: number
   impressions: number
   ctr: number
@@ -125,6 +126,7 @@ export async function querySearchAnalytics(
   propertyUrl: string,
   params: SearchAnalyticsParams,
 ): Promise<{ rows: SearchAnalyticsRow[] }> {
+  const dims = params.dimensions ?? ['date', 'query', 'page']
   const url = `${SC_BASE}/sites/${encodeURIComponent(propertyUrl)}/searchAnalytics/query`
   const res = await fetch(url, {
     method: 'POST',
@@ -135,7 +137,7 @@ export async function querySearchAnalytics(
     body: JSON.stringify({
       startDate: params.startDate,
       endDate: params.endDate,
-      dimensions: ['date', 'query', 'page'],
+      dimensions: dims,
       rowLimit: params.rowLimit,
       startRow: params.startRow,
       dataState: 'final',
@@ -144,21 +146,21 @@ export async function querySearchAnalytics(
   if (!res.ok) throw new Error(`searchAnalytics.query failed: ${res.status} ${await res.text()}`)
   const json = (await res.json()) as {
     rows?: Array<{
-      keys: [string, string, string]
+      keys: string[]
       clicks: number
       impressions: number
       ctr: number
       position: number
     }>
   }
-  const rows = (json.rows ?? []).map((r) => ({
-    date: r.keys[0],
-    query: r.keys[1],
-    page: r.keys[2],
-    clicks: r.clicks,
-    impressions: r.impressions,
-    ctr: r.ctr,
-    position: r.position,
-  }))
+  const rows = (json.rows ?? []).map((r) => {
+    const result: SearchAnalyticsRow = { clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position }
+    dims.forEach((d, i) => {
+      if (d === 'date') result.date = r.keys[i]
+      else if (d === 'query') result.query = r.keys[i]
+      else if (d === 'page') result.page = r.keys[i]
+    })
+    return result
+  })
   return { rows }
 }

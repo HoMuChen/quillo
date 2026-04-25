@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { normalizeUrl } from '@/lib/url/normalize'
 import { getGscAccessToken } from './auth'
 import { querySearchAnalytics, type SearchAnalyticsRow } from './client'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const ROW_LIMIT = 25000
 // Rows per sync run cap. The actual stored count may exceed this by up to ROW_LIMIT-1
@@ -29,6 +30,46 @@ export function computeSyncWindow(
 
 function toIsoDate(d: Date) {
   return d.toISOString().slice(0, 10)
+}
+
+type SyncDimensionOptions<T extends Record<string, unknown>> = {
+  supabase: SupabaseClient
+  accessToken: string
+  conn: { tenant_id: string; property_url: string }
+  projectId: string
+  dimensions: string[]
+  tableName: string
+  buildRow: (r: SearchAnalyticsRow) => T
+  conflictKey: string
+  window: { startDate: string; endDate: string }
+}
+
+async function syncDimension<T extends Record<string, unknown>>(
+  opts: SyncDimensionOptions<T>,
+): Promise<number> {
+  const { supabase, accessToken, conn, projectId, dimensions, tableName, buildRow, conflictKey, window: win } = opts
+  let rowsInserted = 0
+  let startRow = 0
+  while (rowsInserted < MAX_ROWS_PER_RUN) {
+    const { rows } = await querySearchAnalytics(accessToken, conn.property_url, {
+      startDate: win.startDate, endDate: win.endDate,
+      rowLimit: ROW_LIMIT, startRow,
+      dimensions,
+    })
+    if (rows.length === 0) break
+
+    const upsertRows = rows.map(buildRow)
+
+    const { error: upsertErr } = await supabase
+      .from(tableName)
+      .upsert(upsertRows, { onConflict: conflictKey })
+    if (upsertErr) throw new Error(`upsert failed (${tableName}): ${upsertErr.message}`)
+
+    rowsInserted += upsertRows.length
+    if (rows.length < ROW_LIMIT) break
+    startRow += ROW_LIMIT
+  }
+  return rowsInserted
 }
 
 export async function runGscSync(projectId: string, coldStartDays = 90): Promise<{
@@ -66,63 +107,105 @@ export async function runGscSync(projectId: string, coldStartDays = 90): Promise
   try {
     const accessToken = await getGscAccessToken(projectId)
 
-    let startRow = 0
-    while (rowsInserted < MAX_ROWS_PER_RUN) {
-      const { rows } = await querySearchAnalytics(accessToken, conn.property_url, {
-        startDate: window.startDate, endDate: window.endDate,
-        rowLimit: ROW_LIMIT, startRow,
-      })
-      if (rows.length === 0) break
+    // --- 1. Page-level (accurate) ---
+    rowsInserted += await syncDimension({
+      supabase, accessToken, conn, projectId,
+      dimensions: ['date', 'page'],
+      tableName: 'gsc_page_daily',
+      buildRow: (r) => ({
+        project_id: projectId,
+        tenant_id: conn.tenant_id,
+        date: r.date!,
+        page_url: r.page!,
+        clicks: r.clicks,
+        impressions: r.impressions,
+        ctr: r.ctr,
+        position: r.position,
+      }),
+      conflictKey: 'project_id,date,normalized_page_url',
+      window,
+    })
 
-      // Deduplicate by the normalized PK before upserting.
-      // Two GSC page_url values may normalize to the same string (e.g. trailing slash),
-      // which would cause "ON CONFLICT DO UPDATE command cannot affect row a second time".
-      type UpsertRow = {
-        project_id: string; tenant_id: string; date: string; query: string
-        page_url: string; clicks: number; impressions: number; ctr: number; position: number
-      }
-      const deduped = new Map<string, UpsertRow>()
-      const upsertRows: UpsertRow[] = []
-      for (const r of rows) {
-        const normUrl = normalizeUrl(r.page) ?? r.page
-        const key = `${r.date}|${r.query}|${normUrl}`
-        const existing = deduped.get(key)
-        if (existing) {
-          // Merge: sum clicks/impressions, weighted-average position and ctr
-          const totalImp = existing.impressions + r.impressions
-          existing.clicks += r.clicks
-          existing.position = totalImp > 0
-            ? (existing.position * existing.impressions + r.position * r.impressions) / totalImp
-            : existing.position
-          existing.ctr = totalImp > 0
-            ? (existing.ctr * existing.impressions + r.ctr * r.impressions) / totalImp
-            : existing.ctr
-          existing.impressions = totalImp
-        } else {
-          const row: UpsertRow = {
-            project_id: projectId,
-            tenant_id: conn.tenant_id,
-            date: r.date,
-            query: r.query,
-            page_url: r.page,
-            clicks: r.clicks,
-            impressions: r.impressions,
-            ctr: r.ctr,
-            position: r.position,
-          }
-          deduped.set(key, row)
-          upsertRows.push(row)
+    // --- 2. Query-level (accurate) ---
+    rowsInserted += await syncDimension({
+      supabase, accessToken, conn, projectId,
+      dimensions: ['date', 'query'],
+      tableName: 'gsc_query_daily',
+      buildRow: (r) => ({
+        project_id: projectId,
+        tenant_id: conn.tenant_id,
+        date: r.date!,
+        query: r.query!,
+        clicks: r.clicks,
+        impressions: r.impressions,
+        ctr: r.ctr,
+        position: r.position,
+      }),
+      conflictKey: 'project_id,date,query',
+      window,
+    })
+
+    // --- 3. Query+page (sampled, for top-queries per article) ---
+    // Deduplicate by the normalized PK before upserting.
+    // Two GSC page_url values may normalize to the same string (e.g. trailing slash),
+    // which would cause "ON CONFLICT DO UPDATE command cannot affect row a second time".
+    {
+      let startRow = 0
+      while (rowsInserted < MAX_ROWS_PER_RUN) {
+        const { rows } = await querySearchAnalytics(accessToken, conn.property_url, {
+          startDate: window.startDate, endDate: window.endDate,
+          rowLimit: ROW_LIMIT, startRow,
+          dimensions: ['date', 'query', 'page'],
+        })
+        if (rows.length === 0) break
+
+        type UpsertRow = {
+          project_id: string; tenant_id: string; date: string; query: string
+          page_url: string; clicks: number; impressions: number; ctr: number; position: number
         }
+        const deduped = new Map<string, UpsertRow>()
+        const upsertRows: UpsertRow[] = []
+        for (const r of rows) {
+          const normUrl = normalizeUrl(r.page!) ?? r.page!
+          const key = `${r.date}|${r.query}|${normUrl}`
+          const existing = deduped.get(key)
+          if (existing) {
+            // Merge: sum clicks/impressions, weighted-average position and ctr
+            const totalImp = existing.impressions + r.impressions
+            existing.clicks += r.clicks
+            existing.position = totalImp > 0
+              ? (existing.position * existing.impressions + r.position * r.impressions) / totalImp
+              : existing.position
+            existing.ctr = totalImp > 0
+              ? (existing.ctr * existing.impressions + r.ctr * r.impressions) / totalImp
+              : existing.ctr
+            existing.impressions = totalImp
+          } else {
+            const row: UpsertRow = {
+              project_id: projectId,
+              tenant_id: conn.tenant_id,
+              date: r.date!,
+              query: r.query!,
+              page_url: r.page!,
+              clicks: r.clicks,
+              impressions: r.impressions,
+              ctr: r.ctr,
+              position: r.position,
+            }
+            deduped.set(key, row)
+            upsertRows.push(row)
+          }
+        }
+
+        const { error: upsertErr } = await supabase
+          .from('gsc_daily_query_page')
+          .upsert(upsertRows, { onConflict: 'project_id,date,query,normalized_page_url' })
+        if (upsertErr) throw new Error(`upsert failed: ${upsertErr.message}`)
+
+        rowsInserted += upsertRows.length
+        if (rows.length < ROW_LIMIT) break
+        startRow += ROW_LIMIT
       }
-
-      const { error: upsertErr } = await supabase
-        .from('gsc_daily_query_page')
-        .upsert(upsertRows, { onConflict: 'project_id,date,query,normalized_page_url' })
-      if (upsertErr) throw new Error(`upsert failed: ${upsertErr.message}`)
-
-      rowsInserted += upsertRows.length
-      if (rows.length < ROW_LIMIT) break
-      startRow += ROW_LIMIT
     }
 
     if (rowsInserted >= MAX_ROWS_PER_RUN) status = 'partial'
