@@ -29,7 +29,7 @@
   "save": "儲存",
   "add_pillar": "＋ 新增 Pillar",
   "add_article": "新增文章",
-  "confirm_delete_pillar": "刪除此 Pillar？所有 Cluster 文章也會一併刪除。",
+  "confirm_delete_pillar": "刪除此 Pillar？有內容的文章會移到 Cluster Inbox；空白文章則一併刪除。",
   "confirm_delete_article": "確認刪除這篇文章？",
   "form_pillar_title": "Pillar 標題",
   "form_pillar_description": "描述",

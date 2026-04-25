@@ -39,6 +39,19 @@ export async function updatePillar(
 
 export async function deletePillar(projectId: string, pillarId: string) {
   const supabase = await createClient()
+
+  // Delete articles that have no content — they become orphans otherwise.
+  // Articles WITH content are kept: the ON DELETE SET NULL FK moves them to
+  // the Cluster Inbox (pillar_id → null) automatically when the pillar is deleted.
+  throwIfError(
+    await supabase
+      .from('articles')
+      .delete()
+      .eq('pillar_id', pillarId)
+      .is('body_markdown', null)
+      .is('body_tiptap', null),
+  )
+
   throwIfError(await supabase.from('pillars').delete().eq('id', pillarId))
   revalidatePath(`/projects/${projectId}/planning`)
 }

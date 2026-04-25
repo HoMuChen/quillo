@@ -29,7 +29,7 @@
   "save": "Save",
   "add_pillar": "+ Add Pillar",
   "add_article": "Add article",
-  "confirm_delete_pillar": "Delete this Pillar? All Cluster articles will also be removed.",
+  "confirm_delete_pillar": "Delete this Pillar? Articles with content move to the Cluster Inbox; empty articles are deleted.",
   "confirm_delete_article": "Delete this article?",
   "form_pillar_title": "Pillar title",
   "form_pillar_description": "Description",
