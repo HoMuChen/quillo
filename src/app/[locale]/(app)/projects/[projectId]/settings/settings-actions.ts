@@ -5,6 +5,7 @@ import { z } from 'zod'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { throwIfError } from '@/lib/supabase/helpers'
+import { requireTenant } from '@/lib/auth/require-user'
 import { encryptJson, decryptJson, toBytea, fromBytea } from '@/lib/crypto/encrypt'
 import { ghostClientFromConfig } from '@/lib/ghost/client'
 import {
@@ -25,12 +26,7 @@ async function upsertConnection(
   ciphertext: string,
 ) {
   const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data: membership } = await supabase
-    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
-  if (!membership) throw new Error('No tenant')
+  const { tenantId } = await requireTenant(supabase)
 
   const { data: existing } = await supabase
     .from('site_connections')
@@ -50,7 +46,7 @@ async function upsertConnection(
     throwIfError(
       await supabase.from('site_connections').insert({
         project_id: projectId,
-        tenant_id: membership.tenant_id,
+        tenant_id: tenantId,
         platform,
         name,
         config_encrypted: ciphertext,

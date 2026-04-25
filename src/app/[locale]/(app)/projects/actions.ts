@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from '@/i18n/routing'
 import { createClient } from '@/lib/supabase/server'
+import { requireTenant } from '@/lib/auth/require-user'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -26,17 +27,7 @@ export async function createProjectAction(
   })
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const { data: membership, error: memErr } = await supabase
-    .from('tenant_members')
-    .select('tenant_id')
-    .eq('user_id', user.id)
-    .single()
-  if (memErr || !membership) throw new Error('No tenant found for user')
+  const { tenantId } = await requireTenant(supabase)
 
   const { data: project, error } = await supabase
     .from('projects')
@@ -45,7 +36,7 @@ export async function createProjectAction(
       domain: parsed.domain || null,
       audience: parsed.audience || null,
       theme: parsed.theme || null,
-      tenant_id: membership.tenant_id,
+      tenant_id: tenantId,
     })
     .select('id')
     .single()
@@ -54,7 +45,7 @@ export async function createProjectAction(
   // Create the empty brand_materials row so the brand page has something to load
   await supabase
     .from('brand_materials')
-    .insert({ project_id: project.id, tenant_id: membership.tenant_id })
+    .insert({ project_id: project.id, tenant_id: tenantId })
 
   revalidatePath('/projects')
   redirect({ href: `/projects/${project.id}/brand`, locale })

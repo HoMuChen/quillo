@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { throwIfError } from '@/lib/supabase/helpers'
+import { requireTenant } from '@/lib/auth/require-user'
 import { clusterArticlesSchema, type ClusterArticles, type OrganizePlan } from '@/lib/ai/schemas'
 import { ghostClientFromRow } from '@/lib/ghost/client'
 import { shopifyConfigFromRow, listShopifyArticles } from '@/lib/shopify/client'
@@ -62,22 +63,12 @@ export async function addPillar(
     .maybeSingle()
   const nextPos = (last?.position ?? -1) + 1
 
-  // tenant_id from membership
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data: membership } = await supabase
-    .from('tenant_members')
-    .select('tenant_id')
-    .eq('user_id', user.id)
-    .single()
-  if (!membership) throw new Error('No tenant')
+  const { tenantId } = await requireTenant(supabase)
 
   throwIfError(
     await supabase.from('pillars').insert({
       project_id: projectId,
-      tenant_id: membership.tenant_id,
+      tenant_id: tenantId,
       title: parsed.title,
       description: parsed.description ?? null,
       target_keyword: parsed.target_keyword ?? null,
@@ -135,17 +126,7 @@ export async function addArticle(
 ) {
   const parsed = articleUpdateSchema.parse(input)
   const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data: membership } = await supabase
-    .from('tenant_members')
-    .select('tenant_id')
-    .eq('user_id', user.id)
-    .single()
-  if (!membership) throw new Error('No tenant')
+  const { tenantId } = await requireTenant(supabase)
 
   const { data: last } = await supabase
     .from('articles')
@@ -160,7 +141,7 @@ export async function addArticle(
     await supabase.from('articles').insert({
       project_id: projectId,
       pillar_id: pillarId,
-      tenant_id: membership.tenant_id,
+      tenant_id: tenantId,
       title: parsed.title,
       target_keyword: parsed.target_keyword ?? null,
       lsi_keywords: parsed.lsi_keywords ?? [],
@@ -183,14 +164,7 @@ export async function regenerateClusterAction(
   const parsed = clusterArticlesSchema.parse({ articles })
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const { data: membership } = await supabase
-    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
-  if (!membership) throw new Error('No tenant')
+  const { tenantId } = await requireTenant(supabase)
 
   // Guard: all existing articles for this pillar must be planned
   const { data: existing } = await supabase
@@ -204,7 +178,7 @@ export async function regenerateClusterAction(
   const rows = parsed.articles.map((a, i) => ({
     project_id: projectId,
     pillar_id: pillarId,
-    tenant_id: membership.tenant_id,
+    tenant_id: tenantId,
     title: a.title,
     target_keyword: a.target_keyword,
     lsi_keywords: a.lsi_keywords,
@@ -222,12 +196,7 @@ export async function regenerateClusterAction(
 
 export async function syncGhostArticlesAction(projectId: string) {
   const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data: membership } = await supabase
-    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
-  if (!membership) throw new Error('No tenant')
+  const { tenantId } = await requireTenant(supabase)
 
   const { data: conn } = await supabase
     .from('site_connections')
@@ -279,7 +248,7 @@ export async function syncGhostArticlesAction(projectId: string) {
       .from('articles')
       .insert({
         project_id: projectId,
-        tenant_id: membership.tenant_id,
+        tenant_id: tenantId,
         pillar_id: null,
         title: post.title ?? '(untitled)',
         slug: post.slug ?? null,
@@ -302,7 +271,7 @@ export async function syncGhostArticlesAction(projectId: string) {
     const { error: ptErr } = await supabase.from('publish_targets').insert({
       article_id: article.id,
       connection_id: conn.id,
-      tenant_id: membership.tenant_id,
+      tenant_id: tenantId,
       remote_post_id: post.id ?? null,
       remote_url: (typeof post.url === 'string' ? post.url : null),
       remote_status: post.status ?? null,
@@ -353,11 +322,7 @@ export async function createPillarAndAssignAction(
   pillarInput: { title: string; target_keyword?: string | null },
 ) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data: membership } = await supabase
-    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
-  if (!membership) throw new Error('No tenant')
+  const { tenantId } = await requireTenant(supabase)
 
   const { data: last } = await supabase
     .from('pillars').select('position').eq('project_id', projectId)
@@ -368,7 +333,7 @@ export async function createPillarAndAssignAction(
     .from('pillars')
     .insert({
       project_id: projectId,
-      tenant_id: membership.tenant_id,
+      tenant_id: tenantId,
       title: pillarInput.title,
       target_keyword: pillarInput.target_keyword ?? null,
       position: nextPos,
@@ -393,11 +358,7 @@ export async function createPillarAndAssignAction(
 
 export async function applyOrganizeAction(projectId: string, plan: OrganizePlan) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data: membership } = await supabase
-    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
-  if (!membership) throw new Error('No tenant')
+  const { tenantId } = await requireTenant(supabase)
 
   const { data: lastPillar } = await supabase
     .from('pillars').select('position').eq('project_id', projectId)
@@ -409,7 +370,7 @@ export async function applyOrganizeAction(projectId: string, plan: OrganizePlan)
     if (np.article_ids.length < 3) continue
     const { data: pillar } = await supabase.from('pillars').insert({
       project_id: projectId,
-      tenant_id: membership.tenant_id,
+      tenant_id: tenantId,
       title: np.title,
       target_keyword: np.target_keyword ?? null,
       position: nextPos++,
@@ -434,12 +395,7 @@ export async function applyOrganizeAction(projectId: string, plan: OrganizePlan)
 
 export async function syncShopifyArticlesAction(projectId: string) {
   const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data: membership } = await supabase
-    .from('tenant_members').select('tenant_id').eq('user_id', user.id).single()
-  if (!membership) throw new Error('No tenant')
+  const { tenantId } = await requireTenant(supabase)
 
   const { data: conn } = await supabase
     .from('site_connections')
@@ -496,7 +452,7 @@ export async function syncShopifyArticlesAction(projectId: string) {
       .from('articles')
       .insert({
         project_id: projectId,
-        tenant_id: membership.tenant_id,
+        tenant_id: tenantId,
         pillar_id: null,
         title: post.title ?? '(untitled)',
         slug: post.handle ?? null,
@@ -521,7 +477,7 @@ export async function syncShopifyArticlesAction(projectId: string) {
     const { error: ptErr } = await supabase.from('publish_targets').insert({
       article_id: article.id,
       connection_id: conn.id,
-      tenant_id: membership.tenant_id,
+      tenant_id: tenantId,
       remote_post_id: String(post.id),
       remote_url: remoteUrl,
       remote_status: post.published ? 'published' : 'draft',

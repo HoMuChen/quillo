@@ -1,5 +1,5 @@
 import 'server-only'
-import { decryptJson, fromBytea } from '@/lib/crypto/encrypt'
+import { decryptConfig } from '@/lib/crypto/encrypt'
 
 export type ShopifyConfig = {
   storeUrl: string     // https://xxx.myshopify.com
@@ -142,7 +142,7 @@ export async function listShopifyArticles(
 }
 
 export function shopifyConfigFromRow(row: { config_encrypted: unknown }): ShopifyConfig {
-  return decryptJson<ShopifyConfig>(fromBytea(row.config_encrypted))
+  return decryptConfig<ShopifyConfig>(row)
 }
 
 export function normalizeStoreUrl(input: string): string {

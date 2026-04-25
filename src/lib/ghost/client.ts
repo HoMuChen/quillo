@@ -1,6 +1,6 @@
 import 'server-only'
 import GhostAdminAPI from '@tryghost/admin-api'
-import { decryptJson, fromBytea } from '@/lib/crypto/encrypt'
+import { decryptConfig } from '@/lib/crypto/encrypt'
 
 export type GhostConfig = { apiUrl: string; apiKey: string }
 
@@ -13,6 +13,5 @@ export function ghostClientFromConfig(config: GhostConfig) {
 }
 
 export function ghostClientFromRow(row: { config_encrypted: unknown }) {
-  const config = decryptJson<GhostConfig>(fromBytea(row.config_encrypted))
-  return ghostClientFromConfig(config)
+  return ghostClientFromConfig(decryptConfig<GhostConfig>(row))
 }

@@ -38,6 +38,10 @@ export function toBytea(buf: Buffer): string {
   return '\\x' + buf.toString('hex')
 }
 
+export function decryptConfig<T>(row: { config_encrypted: unknown }): T {
+  return decryptJson<T>(fromBytea(row.config_encrypted))
+}
+
 export function fromBytea(raw: unknown): Buffer {
   if (Buffer.isBuffer(raw)) return raw
   if (raw instanceof Uint8Array) return Buffer.from(raw)
