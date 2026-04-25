@@ -138,11 +138,17 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
     <div className="space-y-8">
       {banner}
       {/* Summary tiles */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Tile label={t('perf_clicks')} value={totalClicks.toLocaleString()} delta={delta(totalClicks, prevClicks)} />
-        <Tile label={t('perf_impressions')} value={totalImpressions.toLocaleString()} delta={delta(totalImpressions, prevImpressions)} />
-        <Tile label={t('perf_ctr')} value={`${(avgCtr * 100).toFixed(1)}%`} />
-        <Tile label={t('perf_position')} value={avgPosition.toFixed(1)} />
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <span className="text-[11px] text-ink-3 uppercase tracking-[0.08em]">{t('perf_window_label')}</span>
+          <span className="text-[11px] text-ink-4">{t('perf_window_compare')}</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Tile label={t('perf_clicks')} value={totalClicks.toLocaleString()} delta={delta(totalClicks, prevClicks)} />
+          <Tile label={t('perf_impressions')} value={totalImpressions.toLocaleString()} delta={delta(totalImpressions, prevImpressions)} />
+          <Tile label={t('perf_ctr')} value={`${(avgCtr * 100).toFixed(1)}%`} />
+          <Tile label={t('perf_position')} value={avgPosition.toFixed(1)} />
+        </div>
       </div>
 
       {/* Daily chart */}
@@ -159,7 +165,10 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
       {/* Top queries table */}
       {topQueries.length > 0 && (
         <section className="space-y-2">
-          <h2 className="font-sans font-semibold text-[16px] text-ink tracking-tight">{t('perf_top_queries')}</h2>
+          <div>
+            <h2 className="font-sans font-semibold text-[16px] text-ink tracking-tight">{t('perf_top_queries')}</h2>
+            <p className="text-[11px] text-ink-4 mt-0.5">{t('perf_top_queries_subtitle')}</p>
+          </div>
           <div className="rounded-xl bg-white shadow-sh-1 overflow-hidden">
             <table className="w-full text-[13px]">
               <thead>

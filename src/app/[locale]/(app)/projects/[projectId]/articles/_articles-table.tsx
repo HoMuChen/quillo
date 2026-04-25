@@ -125,8 +125,9 @@ export function ArticlesTable({
                   type="button"
                   onClick={() => setSort(sort === 'clicks' ? 'updated' : 'clicks')}
                   className="inline-flex items-center gap-1 cursor-pointer hover:text-ink-2 transition-colors"
+                  title={t('col_clicks_28d')}
                 >
-                  Clicks {sort === 'clicks' ? '↓' : ''}
+                  {t('col_clicks_28d')} {sort === 'clicks' ? '↓' : ''}
                 </button>
               </th>
               <th className="px-4 py-2 font-medium text-right">
@@ -134,8 +135,9 @@ export function ArticlesTable({
                   type="button"
                   onClick={() => setSort(sort === 'position' ? 'updated' : 'position')}
                   className="inline-flex items-center gap-1 cursor-pointer hover:text-ink-2 transition-colors"
+                  title={t('col_position_28d')}
                 >
-                  Position {sort === 'position' ? '↑' : ''}
+                  {t('col_position_28d')} {sort === 'position' ? '↑' : ''}
                 </button>
               </th>
               <th className="px-2 py-2 font-medium"></th>
