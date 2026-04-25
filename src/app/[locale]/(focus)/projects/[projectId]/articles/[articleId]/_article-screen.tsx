@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import type { ReactNode } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
@@ -161,6 +162,8 @@ function CornerLeft({
 }) {
   const t = useTranslations('articles')
   const tp = useTranslations('publish')
+  const searchParams = useSearchParams()
+  const isPerformanceView = searchParams.get('view') === 'performance'
 
   // Prefer the currently active platform's target; otherwise fall back to the
   // first connection that has a live URL so we still surface a "view live"
@@ -195,12 +198,21 @@ function CornerLeft({
         <span className="text-[13px] text-ink-4">{tp('save_as_draft')}</span>
       ) : null}
 
-      <Link
-        href={`/projects/${projectId}/articles/${articleId}?view=performance`}
-        className="text-[13px] text-ink-3 hover:text-ink transition-colors"
-      >
-        {t('tab_performance')}
-      </Link>
+      {isPerformanceView ? (
+        <Link
+          href={`/projects/${projectId}/articles/${articleId}`}
+          className="text-[13px] text-ink-3 hover:text-ink transition-colors"
+        >
+          {t('tab_editor')}
+        </Link>
+      ) : (
+        <Link
+          href={`/projects/${projectId}/articles/${articleId}?view=performance`}
+          className="text-[13px] text-ink-3 hover:text-ink transition-colors"
+        >
+          {t('tab_performance')}
+        </Link>
+      )}
     </div>
   )
 }
