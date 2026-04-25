@@ -15,10 +15,6 @@ import TiptapLink from '@tiptap/extension-link'
 const intent = z.enum(['informational', 'commercial', 'transactional'])
 const role = z.enum(['hub', 'supporting', 'comparison'])
 
-async function sb() {
-  return createClient()
-}
-
 // --- Pillar ---
 
 const pillarUpdateSchema = z.object({
@@ -34,13 +30,13 @@ export async function updatePillar(
   input: z.infer<typeof pillarUpdateSchema>,
 ) {
   const patch = pillarUpdateSchema.parse(input)
-  const supabase = await sb()
+  const supabase = await createClient()
   throwIfError(await supabase.from('pillars').update(patch).eq('id', pillarId))
   revalidatePath(`/projects/${projectId}/planning`)
 }
 
 export async function deletePillar(projectId: string, pillarId: string) {
-  const supabase = await sb()
+  const supabase = await createClient()
   throwIfError(await supabase.from('pillars').delete().eq('id', pillarId))
   revalidatePath(`/projects/${projectId}/planning`)
 }
@@ -55,7 +51,7 @@ export async function addPillar(
   },
 ) {
   const parsed = pillarUpdateSchema.parse({ ...input })
-  const supabase = await sb()
+  const supabase = await createClient()
   // Determine next position
   const { data: last } = await supabase
     .from('pillars')
@@ -109,7 +105,7 @@ export async function updateArticle(
   input: z.infer<typeof articleUpdateSchema>,
 ) {
   const patch = articleUpdateSchema.parse(input)
-  const supabase = await sb()
+  const supabase = await createClient()
   throwIfError(
     await supabase
       .from('articles')
@@ -127,7 +123,7 @@ export async function updateArticle(
 }
 
 export async function deleteArticle(projectId: string, articleId: string) {
-  const supabase = await sb()
+  const supabase = await createClient()
   throwIfError(await supabase.from('articles').delete().eq('id', articleId))
   revalidatePath(`/projects/${projectId}/planning`)
 }
@@ -138,7 +134,7 @@ export async function addArticle(
   input: z.infer<typeof articleUpdateSchema>,
 ) {
   const parsed = articleUpdateSchema.parse(input)
-  const supabase = await sb()
+  const supabase = await createClient()
 
   const {
     data: { user },
@@ -186,7 +182,7 @@ export async function regenerateClusterAction(
 ) {
   const parsed = clusterArticlesSchema.parse({ articles })
 
-  const supabase = await sb()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -225,7 +221,7 @@ export async function regenerateClusterAction(
 // --- Ghost sync ---
 
 export async function syncGhostArticlesAction(projectId: string) {
-  const supabase = await sb()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
@@ -331,7 +327,7 @@ export async function assignOrphanToPillarAction(
   articleId: string,
   pillarId: string,
 ) {
-  const supabase = await sb()
+  const supabase = await createClient()
   const { data: pillarCheck } = await supabase
     .from('pillars')
     .select('id')
@@ -356,7 +352,7 @@ export async function createPillarAndAssignAction(
   articleId: string,
   pillarInput: { title: string; target_keyword?: string | null },
 ) {
-  const supabase = await sb()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
   const { data: membership } = await supabase
@@ -396,7 +392,7 @@ export async function createPillarAndAssignAction(
 // --- Organize orphans ---
 
 export async function applyOrganizeAction(projectId: string, plan: OrganizePlan) {
-  const supabase = await sb()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
   const { data: membership } = await supabase
@@ -437,7 +433,7 @@ export async function applyOrganizeAction(projectId: string, plan: OrganizePlan)
 }
 
 export async function syncShopifyArticlesAction(projectId: string) {
-  const supabase = await sb()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
