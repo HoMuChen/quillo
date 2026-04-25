@@ -32,7 +32,14 @@ function toIsoDate(d: Date) {
   return d.toISOString().slice(0, 10)
 }
 
-type SyncDimensionOptions<T extends Record<string, unknown>> = {
+type MetricRow = {
+  clicks: number
+  impressions: number
+  ctr: number
+  position: number
+}
+
+type SyncDimensionOptions<T extends MetricRow & Record<string, unknown>> = {
   supabase: SupabaseClient
   accessToken: string
   conn: { tenant_id: string; property_url: string }
@@ -40,14 +47,16 @@ type SyncDimensionOptions<T extends Record<string, unknown>> = {
   dimensions: string[]
   tableName: string
   buildRow: (r: SearchAnalyticsRow) => T
+  /** Returns a unique PK string for dedup (must match the conflictKey columns). */
+  dedupKey: (r: T) => string
   conflictKey: string
   window: { startDate: string; endDate: string }
 }
 
-async function syncDimension<T extends Record<string, unknown>>(
+async function syncDimension<T extends MetricRow & Record<string, unknown>>(
   opts: SyncDimensionOptions<T>,
 ): Promise<number> {
-  const { supabase, accessToken, conn, projectId, dimensions, tableName, buildRow, conflictKey, window: win } = opts
+  const { supabase, accessToken, conn, dimensions, tableName, buildRow, dedupKey, conflictKey, window: win } = opts
   let rowsInserted = 0
   let startRow = 0
   while (rowsInserted < MAX_ROWS_PER_RUN) {
@@ -58,7 +67,29 @@ async function syncDimension<T extends Record<string, unknown>>(
     })
     if (rows.length === 0) break
 
-    const upsertRows = rows.map(buildRow)
+    // Dedup by PK — GSC may return two URLs that normalize to the same value
+    // (e.g. trailing slash). Postgres rejects duplicate PKs in a single upsert batch.
+    const deduped = new Map<string, T>()
+    const upsertRows: T[] = []
+    for (const r of rows) {
+      const built = buildRow(r)
+      const key = dedupKey(built)
+      const existing = deduped.get(key)
+      if (existing) {
+        const totalImp = existing.impressions + built.impressions
+        existing.clicks += built.clicks
+        existing.position = totalImp > 0
+          ? (existing.position * existing.impressions + built.position * built.impressions) / totalImp
+          : existing.position
+        existing.ctr = totalImp > 0
+          ? (existing.ctr * existing.impressions + built.ctr * built.impressions) / totalImp
+          : existing.ctr
+        existing.impressions = totalImp
+      } else {
+        deduped.set(key, built)
+        upsertRows.push(built)
+      }
+    }
 
     const { error: upsertErr } = await supabase
       .from(tableName)
@@ -122,6 +153,7 @@ export async function runGscSync(projectId: string, coldStartDays = 90): Promise
         ctr: r.ctr,
         position: r.position,
       }),
+      dedupKey: (r) => `${r.date}|${normalizeUrl(r.page_url as string) ?? r.page_url}`,
       conflictKey: 'project_id,date,normalized_page_url',
       window,
     })
@@ -141,6 +173,7 @@ export async function runGscSync(projectId: string, coldStartDays = 90): Promise
         ctr: r.ctr,
         position: r.position,
       }),
+      dedupKey: (r) => `${r.date}|${r.query}`,
       conflictKey: 'project_id,date,query',
       window,
     })
