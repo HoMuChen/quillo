@@ -1,6 +1,7 @@
 import { getTranslations, getLocale } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { GscStatusBanner } from '@/app/[locale]/(app)/projects/[projectId]/_gsc-status-banner'
+import { PerformanceChart } from './_performance-chart'
 
 type Props = {
   projectId: string
@@ -153,12 +154,12 @@ export async function PerformanceTab({ projectId, articleId, rangeDays = 28 }: P
 
       {/* Daily chart */}
       {chartData.length >= 2 && (
-        <div className="rounded-xl bg-white shadow-sh-1 px-4 py-3">
-          <MiniChart data={chartData} />
-          <div className="flex justify-between text-[10px] text-ink-4 mt-1">
-            <span>{chartData[0].date}</span>
-            <span>{chartData[chartData.length - 1].date}</span>
-          </div>
+        <div className="rounded-xl bg-white shadow-sh-1 px-4 py-4">
+          <PerformanceChart
+            data={chartData}
+            labelClicks={t('perf_clicks')}
+            labelImpressions={t('perf_impressions')}
+          />
         </div>
       )}
 
@@ -210,27 +211,6 @@ function Tile({ label, value, delta }: { label: string; value: string; delta?: s
   )
 }
 
-function MiniChart({ data }: { data: Array<{ date: string; clicks: number; impressions: number }> }) {
-  if (data.length < 2) return null
-  const W = 600, H = 80, PAD = 4
-  const maxC = Math.max(...data.map((d) => d.clicks), 1)
-  const maxI = Math.max(...data.map((d) => d.impressions), 1)
-  const n = data.length
-
-  const pts = (vals: number[], max: number) =>
-    vals.map((v, i) => `${(i / (n - 1)) * W},${H - PAD - (v / max) * (H - PAD * 2)}`).join(' ')
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[72px]" preserveAspectRatio="none">
-      {/* impressions — lighter */}
-      <polyline points={pts(data.map((d) => d.impressions), maxI)}
-        fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-4" />
-      {/* clicks — stronger */}
-      <polyline points={pts(data.map((d) => d.clicks), maxC)}
-        fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-2" />
-    </svg>
-  )
-}
 
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
