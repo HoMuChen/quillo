@@ -334,6 +334,91 @@ export type Database = {
           },
         ]
       }
+      gsc_page_daily: {
+        Row: {
+          clicks: number
+          ctr: number
+          date: string
+          impressions: number
+          normalized_page_url: string
+          page_url: string
+          position: number
+          project_id: string
+          tenant_id: string
+        }
+        Insert: {
+          clicks?: number
+          ctr?: number
+          date: string
+          impressions?: number
+          normalized_page_url?: string
+          page_url: string
+          position?: number
+          project_id: string
+          tenant_id: string
+        }
+        Update: {
+          clicks?: number
+          ctr?: number
+          date?: string
+          impressions?: number
+          normalized_page_url?: string
+          page_url?: string
+          position?: number
+          project_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_page_daily_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_query_daily: {
+        Row: {
+          clicks: number
+          ctr: number
+          date: string
+          impressions: number
+          position: number
+          project_id: string
+          query: string
+          tenant_id: string
+        }
+        Insert: {
+          clicks?: number
+          ctr?: number
+          date: string
+          impressions?: number
+          position?: number
+          project_id: string
+          query: string
+          tenant_id: string
+        }
+        Update: {
+          clicks?: number
+          ctr?: number
+          date?: string
+          impressions?: number
+          position?: number
+          project_id?: string
+          query?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_query_daily_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gsc_sync_runs: {
         Row: {
           error: string | null
