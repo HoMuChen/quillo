@@ -30,7 +30,7 @@ export default async function OpportunitiesPage({ params }: Props) {
 
   if (!gscConn) {
     return (
-      <div className="space-y-5 max-w-4xl">
+      <div className="space-y-5 max-w-6xl">
         <header>
           <h1 className="font-serif italic text-[32px] text-ink leading-tight">{t('title')}</h1>
         </header>
@@ -55,7 +55,7 @@ export default async function OpportunitiesPage({ params }: Props) {
   const hasSyncData = gscConn.last_synced_at !== null
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="space-y-8 max-w-6xl">
       <header>
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">{t('title')}</h1>
       </header>

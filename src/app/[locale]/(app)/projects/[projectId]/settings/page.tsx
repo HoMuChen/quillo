@@ -67,7 +67,7 @@ export default async function SettingsPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-8 max-w-4xl">
       <header>
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">{t('settings_title')}</h1>
         <p className="text-[12px] text-ink-3 mt-1">{t('settings_subtitle')}</p>

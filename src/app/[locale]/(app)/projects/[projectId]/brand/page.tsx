@@ -28,7 +28,7 @@ export default async function BrandPage({ params }: Props) {
   if (error || !brand) notFound()
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       <header>
         <h1 className="font-serif italic text-[32px] text-ink leading-tight">{t('title')}</h1>
         <p className="text-[13px] text-ink-3 mt-2">{t('subtitle')}</p>
