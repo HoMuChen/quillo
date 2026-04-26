@@ -85,7 +85,7 @@ export async function POST(req: Request) {
         .update({
           body_markdown: text,
           // Leave body_tiptap null — client converts on first editor mount.
-          status: 'draft_ready' satisfies ArticleStatus,
+          status: 'editing' satisfies ArticleStatus,
         })
         .eq('id', article.id)
     },

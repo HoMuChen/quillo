@@ -48,9 +48,9 @@ type VisualStatus = 'published' | 'draft' | 'empty'
 const COLOR_IDX = [0, 1, 2] as const
 
 function articleVisualStatus(article: Article, target: PublishTarget | undefined): VisualStatus {
-  if (target?.remote_status === 'published') return 'published'
+  if (article.status === 'published' || target?.remote_status === 'published') return 'published'
   if (target?.remote_status === 'draft' || target?.remote_status === 'scheduled') return 'draft'
-  if (article.status === 'editing' || article.status === 'draft_ready') return 'draft'
+  if (article.status === 'editing') return 'draft'
   return 'empty'
 }
 
@@ -466,7 +466,7 @@ function PillarDetail({
   const [pending, startTransition] = useTransition()
   const [mode, setMode] = useState<'view' | 'edit' | 'confirm-delete' | 'add-article'>('view')
   const [regenerating, setRegenerating] = useState(false)
-  const canRegenerate = articles.every((a) => a.status === 'planned')
+  const canRegenerate = articles.every((a) => a.status === 'planning')
 
   const refresh = useCallback(() => {
     router.refresh()

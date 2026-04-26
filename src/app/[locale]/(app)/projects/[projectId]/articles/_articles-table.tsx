@@ -27,6 +27,12 @@ type Status = ArticleStatus
 
 const PAGE_SIZE = 20
 
+function statusLabel(t: (key: string) => string, status: string): string {
+  return (ARTICLE_STATUSES as readonly string[]).includes(status)
+    ? t(`status_${status}`)
+    : status.replace(/_/g, ' ')
+}
+
 export function ArticlesTable({
   projectId, articles, pillars, gscMetrics,
 }: {
@@ -95,7 +101,7 @@ export function ArticlesTable({
           onChange={(v) => { setStatusFilter(v as Status | 'all'); setPage(1) }}
           options={[
             { value: 'all', label: t('filter_all') },
-            ...ARTICLE_STATUSES.map((s) => ({ value: s, label: s })),
+            ...ARTICLE_STATUSES.map((s) => ({ value: s, label: statusLabel(t, s) })),
           ]}
         />
         <FilterSelect
@@ -238,7 +244,7 @@ function ArticleRow({ projectId, row, gscMetrics }: { projectId: string; row: Ro
       </td>
       <td className="px-4 py-2.5 text-ink-2 text-[12px]">{row.pillar_title ?? '—'}</td>
       <td className="px-4 py-2.5">
-        <ArticleStatusChip status={row.status} />
+        <ArticleStatusChip status={row.status} label={statusLabel(t, row.status)} />
       </td>
       <td className="px-4 py-2.5 font-mono text-[11px] text-ink-3 whitespace-nowrap">
         {new Date(row.updated_at).toISOString().slice(0, 10)}

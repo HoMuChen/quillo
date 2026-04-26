@@ -5,10 +5,10 @@ import { cn } from '@/lib/utils'
 /*
   Chip — see docs/DESIGN.md §7.3.
   Tone semantics:
-    - neutral   : default / planned / editing chrome
+    - neutral   : default / planning chrome
     - muted     : in-flight state with no AI involvement
-    - aiActive  : AI is generating this right now (e.g. outlining)
-    - aiReady   : AI finished, awaiting user action (e.g. outline_ready)
+    - aiActive  : AI is generating this right now (e.g. drafting)
+    - aiReady   : AI finished, awaiting user action
     - info      : state the user is actively working in
     - solid     : terminal / published
     - warning   : needs update / soft alarm
@@ -70,24 +70,29 @@ export { chipVariants }
 
 /* -----------------------------------------------------------------
    Domain wrappers — keep status → tone mappings in one place so the
-   rule "outlining is an AI-active state" can be read as one line.
+   rule "drafting is an AI-active state" can be read as one line.
    ----------------------------------------------------------------- */
 
 export const ARTICLE_STATUS_TONE: Record<string, ChipTone> = {
-  planned:       'neutral',
-  outlining:     'aiActive',
-  outline_ready: 'aiReady',
-  interviewing:  'aiActive',
-  drafting:      'aiActive',
-  draft_ready:   'aiReady',
-  editing:       'info',
+  planning:  'neutral',
+  drafting:  'aiActive',
+  editing:   'info',
+  published: 'solid',
 }
 
-export function ArticleStatusChip({ status, className }: { status: string; className?: string }) {
+export function ArticleStatusChip({
+  status,
+  label,
+  className,
+}: {
+  status: string
+  label?: string
+  className?: string
+}) {
   const tone = ARTICLE_STATUS_TONE[status] ?? 'neutral'
   return (
     <Chip tone={tone} shape="rounded" size="sm" dot className={className}>
-      {status.replace(/_/g, ' ')}
+      {label ?? status.replace(/_/g, ' ')}
     </Chip>
   )
 }

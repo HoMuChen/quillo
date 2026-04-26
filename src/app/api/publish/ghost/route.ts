@@ -7,6 +7,7 @@ import {
   loadPublishContext,
   makePublishLogger,
   markdownToHtml,
+  syncArticlePublishStatus,
   upsertPublishTarget,
 } from '@/lib/publish/helpers'
 import type { GhostPost } from '@tryghost/admin-api'
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
         .eq('id', existingTarget.id)
       if (updErr) throw updErr
 
+      await syncArticlePublishStatus(supabase, article.id)
       await writeLog(existingTarget.id, 'unpublish', 'success')
       return NextResponse.json({ ok: true })
     } catch (err) {
@@ -190,6 +192,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  await syncArticlePublishStatus(supabase, article.id)
   await writeLog(saved.id, existingTarget ? 'republish' : 'publish', 'success')
 
   return NextResponse.json({

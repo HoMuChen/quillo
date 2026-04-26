@@ -130,3 +130,18 @@ export async function upsertPublishTarget(
     .select('id')
     .single()
 }
+
+// Derive articles.status from publish_targets after any publish/unpublish:
+// any target with remote_status='published' → 'published', otherwise 'editing'.
+// (We assume the caller knows the article already has content.)
+export async function syncArticlePublishStatus(supabase: DB, articleId: string) {
+  const { data } = await supabase
+    .from('publish_targets')
+    .select('remote_status')
+    .eq('article_id', articleId)
+  const isPublished = (data ?? []).some((t) => t.remote_status === 'published')
+  await supabase
+    .from('articles')
+    .update({ status: isPublished ? 'published' : 'editing' })
+    .eq('id', articleId)
+}

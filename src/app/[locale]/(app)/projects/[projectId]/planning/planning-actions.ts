@@ -183,7 +183,7 @@ export async function regenerateClusterAction(
   // Guard: all existing articles for this pillar must be planned
   const { data: existing } = await supabase
     .from('articles').select('id,status').eq('pillar_id', pillarId)
-  const blocker = (existing ?? []).find((a) => a.status !== 'planned')
+  const blocker = (existing ?? []).find((a) => a.status !== 'planning')
   if (blocker) throw new Error('Some articles already past planning — cannot regenerate')
 
   // Replace: delete all children, insert new ones
@@ -273,7 +273,7 @@ export async function syncGhostArticlesAction(projectId: string) {
           ? generateJSON(post.html, [StarterKit, TiptapImage, TiptapLink])
           : null,
         tags: tagNames,
-        status: 'draft_ready' satisfies ArticleStatus,
+        status: (post.status === 'published' ? 'published' : 'editing') satisfies ArticleStatus,
         position: nextPos++,
         // source is not in generated types yet but exists in DB
         ...({ source: 'ghost' } as Record<string, unknown>),
@@ -473,7 +473,7 @@ export async function syncShopifyArticlesAction(projectId: string) {
         excerpt: post.excerpt ?? null,
         body_tiptap: bodyTiptap,
         tags: tagNames,
-        status: 'draft_ready' satisfies ArticleStatus,
+        status: (post.published ? 'published' : 'editing') satisfies ArticleStatus,
         position: nextPos++,
         ...({ source: 'shopify' } as Record<string, unknown>),
       })

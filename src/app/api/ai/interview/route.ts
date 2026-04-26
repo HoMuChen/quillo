@@ -5,7 +5,7 @@ import { MODELS } from '@/lib/ai/gateway'
 import { PLAN_AND_QUESTIONS_SYSTEM, brandContextBlock } from '@/lib/ai/prompts'
 import { planAndQuestionsSchema } from '@/lib/ai/schemas'
 import { validateBody } from '@/lib/http/validate'
-import { fetchProjectContext, setArticleStatus } from '@/lib/supabase/helpers'
+import { fetchProjectContext } from '@/lib/supabase/helpers'
 import type { ArticleStatus } from '@/lib/article'
 
 export const runtime = 'nodejs'
@@ -25,17 +25,13 @@ export async function POST(req: Request) {
     .eq('id', parsed.data.articleId)
     .single()
   if (!article) return new Response('Not found', { status: 404 })
-  const busy: ArticleStatus[] = ['outlining', 'drafting']
-  if (busy.includes(article.status as ArticleStatus)) {
+  if ((article.status as ArticleStatus) === 'drafting') {
     return new Response('Busy', { status: 409 })
   }
 
   const ctx = await fetchProjectContext(supabase, article.project_id)
   if (!ctx) return new Response('Project missing', { status: 404 })
   const { project, brand } = ctx
-
-  // Advance status (acts as concurrency lock)
-  await setArticleStatus(supabase, article.id, 'outlining')
 
   const result = streamObject({
     model: MODELS.main,
@@ -53,10 +49,7 @@ export async function POST(req: Request) {
       pillar: article.pillars,
     }),
     onFinish: async ({ object }) => {
-      if (!object) {
-        await setArticleStatus(supabase, article.id, 'planned')
-        return
-      }
+      if (!object) return
 
       // Upsert outline
       await supabase.from('article_outlines').upsert({
@@ -77,8 +70,6 @@ export async function POST(req: Request) {
         }))
         await supabase.from('interview_questions').insert(rows)
       }
-
-      await setArticleStatus(supabase, article.id, 'interviewing')
     },
   })
 

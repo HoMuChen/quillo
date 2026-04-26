@@ -12,6 +12,7 @@ import {
   loadPublishContext,
   makePublishLogger,
   markdownToHtml,
+  syncArticlePublishStatus,
   upsertPublishTarget,
 } from '@/lib/publish/helpers'
 
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
         .update({ remote_status: 'unpublished', remote_post_id: null, remote_url: null, published_at: null })
         .eq('id', existingTarget.id)
       if (updErr) throw updErr
+      await syncArticlePublishStatus(supabase, article.id)
       await writeLog(existingTarget.id, 'unpublish', 'success')
       return NextResponse.json({ ok: true })
     } catch (err) {
@@ -127,6 +129,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  await syncArticlePublishStatus(supabase, article.id)
   await writeLog(saved.id, existingTarget ? 'republish' : 'publish', 'success')
 
   return NextResponse.json({ ok: true, publishTargetId: saved.id, remoteUrl, remoteStatus })

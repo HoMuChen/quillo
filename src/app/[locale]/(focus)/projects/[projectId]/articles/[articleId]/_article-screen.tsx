@@ -239,7 +239,7 @@ function CornerRight({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
-  const contentReady = article.status === 'editing' || article.status === 'draft_ready'
+  const contentReady = article.status === 'editing' || article.status === 'published'
 
   const activeConn =
     connections.find((c) => c.connection.platform === activePlatform) ?? connections[0] ?? null
